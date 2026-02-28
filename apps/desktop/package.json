@@ -7,11 +7,13 @@
     "build": "electron-builder",
     "build:mac": "electron-builder --mac",
     "build:win": "electron-builder --win",
-    "build:linux": "electron-builder --linux"
+    "build:linux": "electron-builder --linux",
+    "lint": "eslint . --ext .js"
   },
   "devDependencies": {
     "electron": "^25.0.0",
-    "electron-builder": "^24.0.0"
+    "electron-builder": "^24.0.0",
+    "eslint": "^8.0.0"
   },
   "build": {
     "appId": "com.calendar.app",
