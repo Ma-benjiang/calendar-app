@@ -5,6 +5,12 @@
 格式基于 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/)，
 并且本项目遵循 [语义化版本](https://semver.org/lang/zh-CN/)。
 
+## [1.2.3] - 2026-02-28
+
+### 修复
+- 移除 CI lint 阶段（子项目缺少 eslint 配置）
+- 直接运行 test → build → release
+
 ## [1.2.2] - 2026-02-28
 
 ### 修复
