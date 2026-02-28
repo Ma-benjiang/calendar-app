@@ -42,6 +42,9 @@ CR-REPORT-*.md
 TEST-PLAN-*.md
 TEST-WAITING.md
 RESEARCH*.md
+PRD*.md
+TECH-SPEC*.md
+Sprint1-Implementation.md
 
 # Sprint scripts (local use only)
 start-sprint.sh
