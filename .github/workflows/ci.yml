@@ -30,7 +30,15 @@ jobs:
           
       - name: Install dependencies
         run: pnpm install --no-frozen-lockfile
-        
+
+      - name: Lint
+        run: pnpm lint
+        continue-on-error: true
+
+      - name: Test
+        run: pnpm test
+        continue-on-error: true
+
       - name: Build Web
         run: pnpm build:web
         
