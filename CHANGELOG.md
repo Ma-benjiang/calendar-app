@@ -5,6 +5,22 @@
 格式基于 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/)，
 并且本项目遵循 [语义化版本](https://semver.org/lang/zh-CN/)。
 
+## [1.2.1] - 2026-02-28
+
+### 修复
+- 修复 CI/CD 构建脚本缺失问题
+  - 添加 `build:web` 脚本
+  - 添加 `build:desktop` 脚本
+- 修复包管理器不匹配问题
+  - CI 从 npm 切换到 pnpm
+  - 添加 pnpm/action-setup@v4
+
+### 变更
+- 清理 GitHub 仓库，移除内部文档
+  - 移除 PRD、TECH-SPEC、RESEARCH 等内部文档
+  - 更新 .gitignore 防止误提交
+- 简化 GitHub Actions 配置
+
 ## [1.2.0] - 2026-02-28
 
 ### 新增 (AI 智能日程安排)
