@@ -802,7 +802,7 @@ export class AIScheduler {
   /**
    * 预览调度结果（不实际调度）
    */
-  public previewSchedule(tasks: Task[], events: CalendarEvent[] = []): ScheduleResult {
+  public previewSchedule(tasks: Task[], events: CalendarEvent[] = []): ScheduledTask[] {
     const result = this.scheduleTasks(tasks, events, { dryRun: true });
     return result.scheduled;
   }
