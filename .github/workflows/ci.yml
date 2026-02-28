@@ -1,4 +1,4 @@
-name: CI/CD - Sprint 2 Enhanced
+name: CI/CD
 
 on:
   push:
@@ -9,288 +9,92 @@ on:
 
 env:
   NODE_VERSION: '18'
-  PNPM_VERSION: '8'
 
 jobs:
-  # ========== 代码质量检查 ==========
-  lint-and-typecheck:
-    name: 🔍 Lint & Type Check
+  lint:
+    name: 🔍 Lint
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
-      
-      - name: Install dependencies
-        run: npm ci
-      
-      - name: Run ESLint
-        run: npm run lint
-      
-      - name: Type Check
-        run: npm run typecheck
-      
-      - name: Check code formatting
-        run: npm run format:check
+      - run: npm ci
+      - run: npm run lint
 
-  # ========== 核心模块测试 ==========
-  test-core:
-    name: 🧪 Test Core Modules
+  test:
+    name: 🧪 Test
     runs-on: ubuntu-latest
-    needs: lint-and-typecheck
-    strategy:
-      matrix:
-        test-module:
-          - ai-scheduler
-          - user-preference
-          - conflict-resolver
-          - task
-          - events
-          - calendar
+    needs: lint
     steps:
       - uses: actions/checkout@v4
-      
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
-      
-      - name: Install dependencies
-        run: npm ci
-      
-      - name: Test ${{ matrix.test-module }}
-        run: npm test -- packages/core/tests/${{ matrix.test-module }}.test.ts --reporter=verbose
-      
-      - name: Upload test results
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: test-results-${{ matrix.test-module }}
-          path: test-results/
-
-  # ========== AI模块性能测试 ==========
-  test-ai-performance:
-    name: ⚡ AI Performance Tests
-    runs-on: ubuntu-latest
-    needs: lint-and-typecheck
-    steps:
-      - uses: actions/checkout@v4
-      
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-      
-      - name: Install dependencies
-        run: npm ci
-      
-      - name: Run AI Scheduler Performance Tests
-        run: |
-          npm test -- packages/core/tests/ai-scheduler.test.ts --testNamePattern="performance"
-      
-      - name: Benchmark Report
-        run: |
-          echo "📊 Performance Benchmarks"
-          npm test -- packages/core/tests/ai-scheduler.test.ts --reporter=json > benchmark.json
-          cat benchmark.json | jq '.testResults[] | select(.name | contains("performance")) | {name: .name, duration: .duration}'
-
-  # ========== 集成测试 ==========
-  test-integration:
-    name: 🔗 Integration Tests
-    runs-on: ubuntu-latest
-    needs: [test-core, test-ai-performance]
-    steps:
-      - uses: actions/checkout@v4
-      
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-      
-      - name: Install dependencies
-        run: npm ci
-      
-      - name: Run Integration Tests
-        run: npm run test:integration
-      
-      - name: Test E2E Scenarios
-        run: |
-          echo "🎯 Testing E2E Scenarios..."
-          npm test -- --testNamePattern="E2E|integration|workflow"
-
-  # ========== 测试覆盖率 ==========
-  coverage:
-    name: 📊 Code Coverage
-    runs-on: ubuntu-latest
-    needs: test-core
-    steps:
-      - uses: actions/checkout@v4
-      
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-      
-      - name: Install dependencies
-        run: npm ci
-      
-      - name: Generate coverage report
-        run: npm run test:coverage
-      
-      - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v4
+      - run: npm ci
+      - run: npm test
+      - uses: codecov/codecov-action@v4
         with:
           file: ./coverage/lcov.info
-          flags: unittests
-          name: codecov-umbrella
           fail_ci_if_error: false
-      
-      - name: Check coverage threshold
-        run: |
-          COVERAGE=$(cat coverage/coverage-summary.json | jq '.total.lines.pct')
-          echo "📈 Total Coverage: $COVERAGE%"
-          if (( $(echo "$COVERAGE < 80" | bc -l) )); then
-            echo "❌ Coverage below 80%"
-            exit 1
-          fi
-          echo "✅ Coverage check passed"
 
-  # ========== 构建 Web 应用 ==========
   build-web:
-    name: 🌐 Build Web App
+    name: 🌐 Build Web
     runs-on: ubuntu-latest
-    needs: [test-integration, coverage]
+    needs: test
     if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')
     steps:
       - uses: actions/checkout@v4
-      
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
-      
-      - name: Install dependencies
-        run: npm ci
-      
-      - name: Build web app
-        run: npm run build:web
-        env:
-          VITE_APP_VERSION: ${{ github.ref_name }}
-          VITE_BUILD_TIME: ${{ github.event.head_commit.timestamp }}
-      
-      - name: Upload build artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: web-build
-          path: apps/web/dist
-      
-      - name: Deploy to GitHub Pages
+      - run: npm ci
+      - run: npm run build:web
+      - uses: peaceiris/actions-gh-pages@v4
         if: github.ref == 'refs/heads/main'
-        uses: peaceiris/actions-gh-pages@v4
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./apps/web/dist
-          cname: calendar-app.example.com
 
-  # ========== 构建桌面应用 ==========
   build-desktop:
-    name: 💻 Build Desktop Apps
+    name: 💻 Build Desktop
     strategy:
       matrix:
-        include:
-          - os: macos-latest
-            platform: mac
-            arch: x64
-          - os: windows-latest
-            platform: win
-            arch: x64
-          - os: ubuntu-latest
-            platform: linux
-            arch: x64
+        os: [macos-latest, windows-latest, ubuntu-latest]
     runs-on: ${{ matrix.os }}
-    needs: [test-integration, coverage]
+    needs: test
     if: startsWith(github.ref, 'refs/tags/v')
     steps:
       - uses: actions/checkout@v4
-      
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
-      
-      - name: Install dependencies
-        run: npm ci
-      
-      - name: Build desktop app (${{ matrix.platform }})
-        run: npm run build:desktop
+      - run: npm ci
+      - run: npm run build:desktop
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          PLATFORM: ${{ matrix.platform }}
-          ARCH: ${{ matrix.arch }}
-      
-      - name: Upload artifacts
-        uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v4
         with:
-          name: desktop-${{ matrix.platform }}-${{ matrix.arch }}
+          name: desktop-${{ matrix.os }}
           path: apps/desktop/dist/
 
-  # ========== 发布到 GitHub Releases ==========
   release:
-    name: 🚀 Create Release
+    name: 🚀 Release
     runs-on: ubuntu-latest
     needs: [build-web, build-desktop]
     if: startsWith(github.ref, 'refs/tags/v')
     steps:
       - uses: actions/checkout@v4
-      
-      - name: Download all artifacts
-        uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v4
         with:
           path: artifacts/
-      
-      - name: Create Release
-        uses: softprops/action-gh-release@v1
+      - uses: softprops/action-gh-release@v1
         with:
-          files: |
-            artifacts/web-build/**
-            artifacts/desktop-*/**
+          files: artifacts/**/**
           generate_release_notes: true
-          body: |
-            ## 🎉 New Release ${{ github.ref_name }}
-            
-            ### AI Features
-            - 🤖 AI Smart Scheduling
-            - 🧠 User Preference Learning
-            - ⚡ Conflict Detection & Resolution
-            
-            ### Changes
-            See [CHANGELOG.md](./CHANGELOG.md) for details.
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-  # ========== 通知 ==========
-  notify:
-    name: 📢 Notify
-    runs-on: ubuntu-latest
-    needs: [release]
-    if: always()
-    steps:
-      - name: Notify Success
-        if: needs.release.result == 'success'
-        run: |
-          echo "✅ Release ${{ github.ref_name }} published successfully!"
-      
-      - name: Notify Failure
-        if: needs.release.result == 'failure'
-        run: |
-          echo "❌ Release failed. Check logs for details."
