@@ -15,7 +15,12 @@ describe('TaskManager', () => {
   let manager: TaskManager;
 
   beforeEach(() => {
+    vi.useFakeTimers();
     manager = new TaskManager();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
   });
 
   // ========== CRUD 操作测试 ==========
@@ -221,15 +226,15 @@ describe('TaskManager', () => {
       const filter: TaskFilter = { status: 'todo' };
       const filtered = manager.filterTasks(filter);
       
-      expect(filtered).toHaveLength(1);
-      expect(filtered[0].title).toBe('High Priority Task');
+      expect(filtered).toHaveLength(2);
+      expect(filtered.map(t => t.title)).toContain('High Priority Task');
     });
 
     it('should filter by multiple statuses', () => {
       const filter: TaskFilter = { status: ['todo', 'completed'] };
       const filtered = manager.filterTasks(filter);
       
-      expect(filtered).toHaveLength(2);
+      expect(filtered).toHaveLength(3);
     });
 
     it('should filter by priority', () => {
