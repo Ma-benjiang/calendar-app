@@ -16,6 +16,8 @@ import { Task, TaskPriority } from './task';
 import { CalendarEvent } from './calendar';
 import { UserPreferences } from './user-preference';
 import { generateUUID } from './utils';
+import type { TimeSlot } from './ai-scheduler';
+export type { TimeSlot };
 
 // ============== 类型定义 ==============
 
@@ -25,20 +27,33 @@ export type ConflictType = 'hard' | 'soft';
 /** 冲突影响程度 */
 export type ImpactLevel = 'high' | 'low';
 
-/** 已调度任务 */
+/** 已调度任务 - 本地定义避免循环依赖 */
 export interface ScheduledTask {
   taskId: string;
   task: Task;
   start: Date;
   end: Date;
+  confidence: number;
+  reason: string;
 }
 
-/** 时间槽 */
-export interface TimeSlot {
-  start: Date;
-  end: Date;
-  confidence?: number;
-  reason?: string;
+/** 冲突信息 - 本地定义 */
+export interface Conflict {
+  id: string;
+  type: 'hard' | 'soft';
+  task: Task;
+  conflictingEvents: CalendarEvent[];
+  suggestedAlternatives: TimeSlot[];
+  impact: 'high' | 'low';
+  autoResolvable: boolean;
+}
+
+/** 重新调度结果 - 本地定义 */
+export interface RescheduleResult {
+  success: boolean;
+  rescheduledTasks: ScheduledTask[];
+  conflicts: Conflict[];
+  requiresUserConfirmation: Conflict[];
 }
 
 /** 替代时间选项 */
@@ -59,25 +74,6 @@ export interface RescheduleStrategy {
   proposedSlot?: TimeSlot;
   impact: 'high' | 'low';
   requiresConfirmation: boolean;
-}
-
-/** 冲突信息 */
-export interface Conflict {
-  id: string;
-  type: 'hard' | 'soft';
-  task: Task;
-  conflictingEvents: CalendarEvent[];
-  suggestedAlternatives: TimeSlot[];
-  impact: 'high' | 'low';
-  autoResolvable: boolean;
-}
-
-/** 重新调度结果 */
-export interface RescheduleResult {
-  success: boolean;
-  rescheduledTasks: ScheduledTask[];
-  conflicts: Conflict[];
-  requiresUserConfirmation: Conflict[];
 }
 
 /** 冲突检测选项 */
@@ -709,6 +705,8 @@ export class ConflictResolver {
           task,
           start: bestAlternative.start,
           end: bestAlternative.end,
+          confidence: bestAlternative.confidence || 50,
+          reason: bestAlternative.reason || '重新安排',
         };
 
         rescheduledTasks.push(rescheduledTask);

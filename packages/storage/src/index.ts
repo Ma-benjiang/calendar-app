@@ -1,5 +1,5 @@
 // 存储抽象层 - 支持 localStorage 和 SQLite
-import { CalendarEvent } from '../core/src/calendar';
+import { CalendarEvent } from '@calendar/core';
 
 export interface StorageAdapter {
   getItem(key: string): Promise<string | null>;

@@ -12,6 +12,7 @@ import {
   getOnboardingQuestions,
   validatePreferences,
   ONBOARDING_QUESTIONS,
+  OnboardingAnswers,
 } from '../src/user-preference';
 
 describe('UserPreferenceStore', () => {
@@ -76,7 +77,7 @@ describe('UserPreferenceStore', () => {
     });
 
     it('应该从问卷答案生成偏好', () => {
-      const answers = {
+      const answers: OnboardingAnswers = {
         chronotype: 'early-bird',
         focusTime: 'morning',
         bufferTime: 20,

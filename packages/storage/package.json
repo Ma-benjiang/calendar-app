@@ -8,6 +8,9 @@
     "lint": "eslint . --ext .ts",
     "test": "vitest run"
   },
+  "dependencies": {
+    "@calendar/core": "workspace:*"
+  },
   "devDependencies": {
     "eslint": "^8.0.0",
     "@typescript-eslint/eslint-plugin": "^6.0.0",

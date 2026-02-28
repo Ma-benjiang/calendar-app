@@ -845,12 +845,8 @@ export class AIScheduler {
 
 export function calculateUrgencyScore(task: Task): number {
   const now = new Date();
-  // 支持 dueDate 和 endDate 两种字段
-  const deadline = task.dueDate
-    ? new Date(task.dueDate)
-    : task.endDate
-    ? new Date(task.endDate)
-    : null;
+  // 使用 dueDate 作为截止时间
+  const deadline = task.dueDate ? new Date(task.dueDate) : null;
   if (!deadline) return 0;
 
   const hoursUntil = (deadline.getTime() - now.getTime()) / (1000 * 60 * 60);

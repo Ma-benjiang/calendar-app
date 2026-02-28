@@ -37,7 +37,7 @@ describe('TaskManager', () => {
       expect(task.title).toBe('Test Task');
       expect(task.status).toBe('todo');
       expect(task.tags).toEqual([]);
-      expect(task.priority).toBeUndefined();
+      expect(task.priority).toBe('medium');
       expect(task.createdAt).toBeInstanceOf(Date);
       expect(task.updatedAt).toBeInstanceOf(Date);
     });
@@ -117,10 +117,11 @@ describe('TaskManager', () => {
       const originalId = task.id;
       const originalCreatedAt = task.createdAt;
       
-      const updated = manager.updateTask(task.id, { 
-        id: 'new-id' as any,
+      const updates: any = { 
+        id: 'new-id',
         createdAt: new Date('2020-01-01') 
-      });
+      };
+      const updated = manager.updateTask(task.id, updates);
       
       expect(updated?.id).toBe(originalId);
       expect(updated?.createdAt).toEqual(originalCreatedAt);

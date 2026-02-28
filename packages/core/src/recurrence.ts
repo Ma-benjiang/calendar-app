@@ -91,7 +91,7 @@ export class RecurrenceEngine {
       rule.frequency = 'weekly';
       // 解析周几
       const weekdays: Record<string, number> = {
-        '周日': 0, '周日': 0, '星期一': 1, '周一': 1,
+        '周日': 0, '星期天': 0, '星期一': 1, '周一': 1,
         '星期二': 2, '周二': 2, '星期三': 3, '周三': 3,
         '星期四': 4, '周四': 4, '星期五': 5, '周五': 5,
         '星期六': 6, '周六': 6

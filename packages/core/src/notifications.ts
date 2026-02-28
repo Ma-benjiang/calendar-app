@@ -27,7 +27,7 @@ export class NotificationManager {
   }
   
   // 发送立即通知
-  static async sendNotification(payload: Omit<NotificationPayload, 'timestamp'>): Promise<void> {
+  static async sendNotification(payload: NotificationPayload): Promise<void> {
     if (!this.hasPermission()) {
       await this.requestPermission();
     }

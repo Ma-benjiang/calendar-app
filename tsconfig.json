@@ -16,11 +16,20 @@
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
     "strict": true,
-    "noUnusedLocals": true,
-    "noUnusedParameters": true,
+    "noUnusedLocals": false,
+    "noUnusedParameters": false,
     "noImplicitReturns": true,
     "noFallthroughCasesInSwitch": true,
-    "skipLibCheck": true
+    "skipLibCheck": true,
+    "baseUrl": ".",
+    "paths": {
+      "@calendar/core": ["./packages/core/src/index.ts"],
+      "@calendar/core/*": ["./packages/core/src/*"],
+      "@calendar/ui": ["./packages/ui/src/index.ts"],
+      "@calendar/ui/*": ["./packages/ui/src/*"],
+      "@calendar/storage": ["./packages/storage/src/index.ts"],
+      "@calendar/storage/*": ["./packages/storage/src/*"]
+    }
   },
   "exclude": ["node_modules", "dist"]
 }

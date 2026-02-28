@@ -4,6 +4,7 @@
  */
 import { generateUUID } from './utils';
 import { CalendarEvent } from './calendar';
+import { RecurrenceFrequency } from './recurrence';
 
 // ============== 类型定义 ==============
 
@@ -12,9 +13,6 @@ export type TaskStatus = 'todo' | 'in-progress' | 'completed' | 'cancelled';
 
 /** 任务优先级 */
 export type TaskPriority = 'high' | 'medium' | 'low' | 'none';
-
-/** 任务循环频率 */
-export type RecurrenceFrequency = 'daily' | 'weekly' | 'monthly' | 'custom';
 
 /** 任务循环规则 */
 export interface TaskRecurrenceRule {
@@ -117,6 +115,7 @@ export class TaskManager {
       id: generateUUID(),
       status: input.status || 'todo',
       tags: input.tags || [],
+      priority: input.priority || 'medium',
       createdAt: now,
       updatedAt: now,
     };

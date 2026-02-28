@@ -8,6 +8,8 @@ export interface CalendarEvent {
   allDay?: boolean;
   color?: string;
   reminder?: number; // 提前提醒分钟数
+  createdAt?: Date;
+  updatedAt?: Date;
 }
 
 // 重新导出 Task 相关类型

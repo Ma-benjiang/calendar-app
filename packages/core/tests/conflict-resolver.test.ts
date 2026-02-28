@@ -79,6 +79,8 @@ describe('ConflictResolver', () => {
       task,
       start,
       end,
+      confidence: 80,
+      reason: '测试安排',
     };
   }
 
@@ -993,6 +995,8 @@ describe('ConflictResolver', () => {
         task,
         start: new Date(new Date(tomorrow).setHours(10, 0, 0, 0)),
         end: new Date(new Date(tomorrow).setHours(11, 0, 0, 0)),
+        confidence: 80,
+        reason: '测试安排',
       };
 
       // 2. 创建一个冲突的事件

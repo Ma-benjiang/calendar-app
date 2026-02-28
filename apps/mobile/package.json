@@ -5,7 +5,8 @@
     "sync": "cap sync",
     "open:ios": "cap open ios",
     "open:android": "cap open android",
-    "build": "npm run build:web && cap copy",
+    "build:web": "cd ../web && pnpm build",
+    "build": "pnpm build:web && cap copy",
     "lint": "eslint . --ext .js,.ts"
   },
   "dependencies": {
