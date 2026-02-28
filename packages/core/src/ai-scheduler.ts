@@ -1,7 +1,7 @@
 /**
  * AI 智能调度器核心引擎
  * 负责任务的智能排程、冲突检测和重新安排
- * 
+ *
  * 算法复杂度: O(n²)
  * - 优先级排序: O(n log n)
  * - 调度主循环: O(n * m)，其中 m 是时间槽数量
@@ -50,21 +50,24 @@ export interface UserPreference {
     evening: number;    // 18:00-22:00
     night: number;      // 22:00-06:00
   };
-  
+
   /** 任务类型偏好时段 */
   taskTypeSlots: Record<TaskType, Array<{ start: number; end: number }>>;
-  
+
   /** 缓冲时间 (分钟) */
   bufferMinutes: number;
-  
+
   /** 工作时段 */
   workingHours: {
     start: number;  // 0-23
     end: number;    // 0-23
   };
-  
+
   /** 工作日 */
   workDays: number[];  // 0-6, 0=周日
+
+  /** 每日最大任务数 */
+  maxDailyTasks?: number;
 }
 
 /** 调度选项 */
@@ -77,6 +80,26 @@ export interface ScheduleOptions {
   dryRun?: boolean;
   /** 最大调度天数 */
   maxDays?: number;
+}
+
+/** 调度结果 */
+export interface ScheduleResult {
+  scheduled: ScheduledTask[];
+  metadata: {
+    totalTasks: number;
+    scheduledCount: number;
+    failedCount: number;
+    averageConfidence: number;
+    startTime: Date;
+    endTime: Date;
+  };
+}
+
+/** 冲突重新调度结果 */
+export interface RescheduleResult {
+  moved: ScheduledTask[];
+  skipped: string[];
+  conflicts: Conflict[];
 }
 
 /** 优先级权重映射 - 与 task.ts 保持一致 */
@@ -119,7 +142,7 @@ export class AIScheduler {
     // new AIScheduler() - 无参数
     // new AIScheduler(taskManager, eventManager) - 测试用
     // new AIScheduler(partialPreferences) - 带偏好设置
-    if (taskManagerOrPrefs && typeof taskManagerOrPrefs === 'object' && 
+    if (taskManagerOrPrefs && typeof taskManagerOrPrefs === 'object' &&
         ('createTask' in taskManagerOrPrefs || 'getAllTasks' in taskManagerOrPrefs)) {
       // 测试用：传入的是 taskManager
       this.taskManager = taskManagerOrPrefs;
@@ -136,21 +159,19 @@ export class AIScheduler {
 
   /**
    * 核心调度方法 - 为多个任务智能分配时间
-   * 
+   *
    * 算法:
    * 1. 按优先级和截止时间排序任务 (O(n log n))
    * 2. 获取空闲时间槽 (O(m log m)，m 是事件数)
    * 3. 贪心分配任务到最佳时间槽 (O(n * m))
-   * 
+   *
    * 总复杂度: O(n²)，符合要求
    */
   scheduleTasks(
     tasks: Task[],
     events: CalendarEvent[],
-    options: ScheduleOptions = {}
-  ): ScheduledTask[] {
-    if (tasks.length === 0) return [];
-
+    options?: ScheduleOptions
+  ): ScheduleResult {
     const opts = {
       startFrom: new Date(),
       maxDays: 7,
@@ -175,7 +196,7 @@ export class AIScheduler {
     for (const task of sortedTasks) {
       const duration = task.estimatedMinutes || 30;
       const taskType = this.inferTaskType(task);
-      
+
       // 找到最佳时间槽
       const bestSlot = this.findBestSlot(
         task,
@@ -198,12 +219,91 @@ export class AIScheduler {
       }
     }
 
-    return scheduled;
+    // 计算平均置信度
+    const averageConfidence = scheduled.length > 0
+      ? scheduled.reduce((sum, s) => sum + s.confidence, 0) / scheduled.length
+      : 0;
+
+    return {
+      scheduled,
+      metadata: {
+        totalTasks: tasks.length,
+        scheduledCount: scheduled.length,
+        failedCount: tasks.length - scheduled.length,
+        averageConfidence,
+        startTime: new Date(),
+        endTime: new Date(),
+      },
+    };
+  }
+
+  /**
+   * 冲突重新调度
+   * 当有新事件与已调度任务冲突时使用
+   */
+  async rescheduleOnConflict(
+    conflictingEvent: CalendarEvent,
+    options?: { protectedTaskIds?: string[] }
+  ): Promise<RescheduleResult> {
+    const result: RescheduleResult = {
+      moved: [],
+      skipped: [],
+      conflicts: [],
+    };
+
+    // 如果没有 taskManager，返回空结果
+    if (!this.taskManager) {
+      return result;
+    }
+
+    // 获取所有已调度任务
+    const allTasks = this.taskManager.getAllTasks ? this.taskManager.getAllTasks() : [];
+    const scheduledTasks = allTasks.filter((t: Task) => t.scheduledStart && t.scheduledEnd);
+
+    const protectedIds = new Set(options?.protectedTaskIds || []);
+
+    for (const task of scheduledTasks) {
+      // 跳过受保护的任务
+      if (protectedIds.has(task.id)) {
+        continue;
+      }
+
+      // 检查是否与冲突事件时间重叠
+      if (task.scheduledStart && task.scheduledEnd) {
+        const taskStart = task.scheduledStart.getTime();
+        const taskEnd = task.scheduledEnd.getTime();
+        const eventStart = conflictingEvent.startDate.getTime();
+        const eventEnd = conflictingEvent.endDate.getTime();
+
+        if (taskStart < eventEnd && taskEnd > eventStart) {
+          // 有冲突，尝试重新调度
+          const events = this.eventManager?.getAllEvents ? this.eventManager.getAllEvents() : [];
+          const suggestions = this.suggestTimeSlots(task, {}, [conflictingEvent, ...events]);
+
+          if (suggestions.length > 0) {
+            const newSlot = suggestions[0];
+            const scheduledTask = this.rescheduleTask(task, newSlot);
+            result.moved.push(scheduledTask);
+          } else {
+            result.skipped.push(task.id);
+            result.conflicts.push({
+              type: 'overlap',
+              event: conflictingEvent,
+              task,
+              message: `无法为任务 "${task.title}" 找到替代时间`,
+              severity: 'high',
+            });
+          }
+        }
+      }
+    }
+
+    return result;
   }
 
   /**
    * 冲突检测 - 检查任务与事件的时间冲突
-   * 
+   *
    * 复杂度: O(n)，n 是事件数量
    */
   findConflicts(task: Task, events: CalendarEvent[]): Conflict[] {
@@ -273,7 +373,7 @@ export class AIScheduler {
 
   /**
    * 获取建议时间块 - 为任务推荐最佳时间段
-   * 
+   *
    * 返回按匹配度排序的时间块列表
    */
   suggestTimeSlots(
@@ -295,16 +395,16 @@ export class AIScheduler {
 
     const duration = task.estimatedMinutes || 30;
     const taskType = this.inferTaskType(task);
-    
+
     // 获取所有空闲槽
     const freeSlots = this.findFreeSlots(events, opts.startFrom, endTime);
-    
+
     // 评估每个槽的匹配度
     const scoredSlots: TimeSlot[] = [];
 
     for (const slot of freeSlots) {
       const slotDuration = slot.end.getTime() - slot.start.getTime();
-      
+
       // 跳过不够长的槽
       if (slotDuration < duration * 60 * 1000) continue;
 
@@ -348,7 +448,7 @@ export class AIScheduler {
 
   /**
    * 按优先级和截止时间排序任务
-   * 
+   *
    * 排序规则:
    * 1. 优先级高到低
    * 2. 截止时间近到远
@@ -423,7 +523,7 @@ export class AIScheduler {
 
   /**
    * 计算时间槽评分
-   * 
+   *
    * 评分维度:
    * - 时段偏好 (0-40分)
    * - 任务类型匹配 (0-30分)
@@ -467,7 +567,7 @@ export class AIScheduler {
     if (task.dueDate) {
       const endTime = new Date(startTime.getTime() + duration * 60 * 1000);
       const timeToDue = task.dueDate.getTime() - endTime.getTime();
-      
+
       if (timeToDue > 0) {
         // 提前完成，给高分
         const daysToDue = timeToDue / (24 * 60 * 60 * 1000);
@@ -520,7 +620,7 @@ export class AIScheduler {
       // 当天工作时段
       let dayStart = new Date(currentDay);
       dayStart.setHours(workingHours.start, 0, 0, 0);
-      
+
       const dayEnd = new Date(currentDay);
       dayEnd.setHours(workingHours.end, 0, 0, 0);
 
@@ -666,7 +766,7 @@ export class AIScheduler {
   private generateSuggestionReason(score: number, startTime: Date, taskType: TaskType): string {
     const hour = startTime.getHours();
     const timeLabel = hour < 12 ? '上午' : hour < 18 ? '下午' : '晚上';
-    
+
     if (score >= 80) {
       return `${timeLabel}是处理${this.getTaskTypeLabel(taskType)}任务的高效时段`;
     } else if (score >= 60) {
@@ -702,15 +802,23 @@ export class AIScheduler {
   /**
    * 预览调度结果（不实际调度）
    */
-  public previewSchedule(tasks: Task[], events: CalendarEvent[] = []): ScheduledTask[] {
-    return this.scheduleTasks(tasks, events, { dryRun: true });
+  public previewSchedule(tasks: Task[], events: CalendarEvent[] = []): ScheduleResult {
+    const result = this.scheduleTasks(tasks, events, { dryRun: true });
+    return result.scheduled;
   }
 
   /**
    * 学习用户偏好
    */
-  public learnPreference(pref: Partial<UserPreference>): void {
-    this.preferences = { ...this.preferences, ...pref };
+  public learnPreference(pref: Partial<UserPreference> | { type: string; data: any }): void {
+    // 处理两种格式:
+    // 1. Partial<UserPreference> - 直接合并
+    // 2. { type: 'explicit', data: { ... } } - 从 data 中提取
+    if ('type' in pref && pref.type === 'explicit' && 'data' in pref) {
+      this.preferences = { ...this.preferences, ...pref.data };
+    } else {
+      this.preferences = { ...this.preferences, ...(pref as Partial<UserPreference>) };
+    }
   }
 
   /**
@@ -737,11 +845,17 @@ export class AIScheduler {
 
 export function calculateUrgencyScore(task: Task): number {
   const now = new Date();
-  const deadline = task.endDate ? new Date(task.endDate) : null;
+  // 支持 dueDate 和 endDate 两种字段
+  const deadline = task.dueDate
+    ? new Date(task.dueDate)
+    : task.endDate
+    ? new Date(task.endDate)
+    : null;
   if (!deadline) return 0;
-  
+
   const hoursUntil = (deadline.getTime() - now.getTime()) / (1000 * 60 * 60);
-  if (hoursUntil < 0) return 100;
+  // < 12小时算最紧急，返回100；12-24小时返回80
+  if (hoursUntil < 12) return 100;
   if (hoursUntil < 24) return 80;
   if (hoursUntil < 72) return 50;
   return 20;
@@ -764,15 +878,15 @@ export function getDefaultPreferences(): UserPreference {
     bufferMinutes: 15,
     workingHours: { start: 9, end: 18 },
     workDays: [1, 2, 3, 4, 5],
+    maxDailyTasks: 8,
   };
 }
 
 /**
  * 初始化 AI 调度器并注入到 TaskManager
  */
-export function initializeAIScheduler(taskManager: any): AIScheduler {
-  const scheduler = new AIScheduler();
-  // 注入逻辑
+export function initializeAIScheduler(taskManager: any, eventManager?: any): AIScheduler {
+  const scheduler = new AIScheduler(taskManager, eventManager);
   return scheduler;
 }
 

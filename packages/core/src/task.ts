@@ -60,9 +60,10 @@ export interface Task {
 }
 
 /** 创建任务的输入类型（不含系统自动生成字段） */
-export type CreateTaskInput = Omit<Task, 'id' | 'createdAt' | 'updatedAt' | 'status' | 'tags'> & {
+export type CreateTaskInput = Omit<Task, 'id' | 'createdAt' | 'updatedAt' | 'status' | 'tags' | 'priority'> & {
   status?: TaskStatus;
   tags?: string[];
+  priority?: TaskPriority;
 };
 
 /** 更新任务的输入类型 */
