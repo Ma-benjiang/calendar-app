@@ -5,6 +5,13 @@
 格式基于 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/)，
 并且本项目遵循 [语义化版本](https://semver.org/lang/zh-CN/)。
 
+## [1.2.2] - 2026-02-28
+
+### 修复
+- 修复 CI/CD desktop 构建依赖问题
+  - Desktop 构建依赖 web/dist，添加 build-web 依赖
+  - 在 apps/desktop 目录安装依赖
+
 ## [1.2.1] - 2026-02-28
 
 ### 修复
