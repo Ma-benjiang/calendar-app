@@ -79,12 +79,12 @@ export interface ScheduleOptions {
   maxDays?: number;
 }
 
-/** 优先级权重映射 */
+/** 优先级权重映射 - 与 task.ts 保持一致 */
 const PRIORITY_WEIGHTS: Record<TaskPriority, number> = {
-  high: 100,
-  medium: 50,
-  low: 25,
-  none: 10,
+  high: 3,
+  medium: 2,
+  low: 1,
+  none: 0,
 };
 
 /** 默认用户偏好 */
@@ -379,7 +379,7 @@ export class AIScheduler {
 
       if (this.hasOverlapWithUsedSlots(proposedSlot, usedSlots)) continue;
 
-      // 计算评分
+      // 计算评分 (已包含截止时间匹配，无需额外计算)
       const score = this.calculateSlotScore(
         slot.start,
         duration,
@@ -388,12 +388,8 @@ export class AIScheduler {
         this.preferences
       );
 
-      // 考虑截止时间紧迫度
-      const urgencyBonus = this.calculateUrgencyBonus(task, slot.start);
-      const finalScore = score + urgencyBonus;
-
-      if (finalScore > bestScore) {
-        bestScore = finalScore;
+      if (score > bestScore) {
+        bestScore = score;
         bestSlot = proposedSlot;
       }
     }
@@ -477,26 +473,8 @@ export class AIScheduler {
   }
 
   /**
-   * 计算截止时间紧迫度奖励
-   */
-  private calculateUrgencyBonus(task: Task, slotStart: Date): number {
-    if (!task.dueDate) return 0;
-
-    const slotEnd = new Date(slotStart);
-    slotEnd.setMinutes(slotEnd.getMinutes() + (task.estimatedMinutes || 30));
-    
-    const timeToDue = task.dueDate.getTime() - slotEnd.getTime();
-    const hoursToDue = timeToDue / (1000 * 60 * 60);
-
-    if (hoursToDue < 0) return -100;  // 逾期
-    if (hoursToDue < 24) return 20;   // 24小时内
-    if (hoursToDue < 72) return 10;   // 3天内
-    return 0;
-  }
-
-  /**
    * 查找空闲时间槽
-   * 
+   *
    * 在工作时段内查找未被事件占用的连续时间
    */
   private findFreeSlots(

@@ -1,1004 +1,659 @@
 /**
- * 用户偏好学习模块
- * 实现用户高效时段学习和任务偏好推荐
+ * 用户偏好存储模块
+ * 实现用户偏好管理、学习、导入导出和订阅机制
  */
-import { Task, TaskPriority } from './task';
 
 // ============== 类型定义 ==============
 
 /** 任务类型 */
 export type TaskType = 'deep-work' | 'admin' | 'creative' | 'meeting' | 'routine';
 
-/** 时间段等级 */
-export type ProductivityLevel = 'high' | 'medium' | 'low';
+/** 用户作息类型 */
+export type Chronotype = 'early-bird' | 'night-owl' | 'neutral';
 
-/** 高效时段定义 */
-export interface ProductiveHour {
-  start: number;  // 小时 (0-23)
-  end: number;    // 小时 (0-23)
-  level: ProductivityLevel;
-}
-
-/** 时间偏好 */
-export interface TimePreference {
-  preferredHours: number[];  // 偏好小时列表 [0-23]
-  avoidedHours: number[];    // 避免小时列表 [0-23]
-  confidence: number;        // 置信度 (0-1)
-}
-
-/** 学习数据 */
-export interface LearningData {
-  // 冷启动阶段
-  coldStartComplete: boolean;
-  surveyCompletedAt?: Date;
+/** 用户偏好主接口 - 匹配 TECH-SPEC 和测试期望 */
+export interface UserPreferences {
+  // 基础偏好
+  chronotype: Chronotype;
+  bufferMinutes: number;
+  maxDailyTasks: number;
   
-  // 学习进度
-  totalTasksAnalyzed: number;
-  totalFeedbackReceived: number;
-  learningDays: number;
-  firstTaskDate?: Date;
-  lastLearningDate?: Date;
-  
-  // 统计信息
-  hourlyCompletionRate: number[];  // 24小时完成率
-  dailyTaskCount: number[];        // 每天任务数统计
-  feedbackHistory: FeedbackRecord[];
-}
-
-/** 反馈记录 */
-export interface FeedbackRecord {
-  timestamp: Date;
-  taskType: TaskType;
-  scheduledHour: number;
-  actualHour: number;
-  feedback: 'good' | 'bad';
-  reason?: string;
-}
-
-/** 推荐时段 */
-export interface TimeSlot {
-  start: Date;
-  end: Date;
-  confidence: number;
-  reason: string;
-}
-
-/** 用户偏好主接口 */
-export interface UserPreference {
-  // 高效时段 (24小时制)
-  productiveHours: ProductiveHour[];
-  
-  // 各任务类型的时间偏好
-  taskTypePreferences: Record<TaskType, TimePreference>;
-  
-  // 工作时段偏好
-  sessionLength: {
-    min: number;  // 最短专注时长 (分钟)
-    max: number;  // 最长专注时长 (分钟)
+  // 高效时段分数 (0-1)
+  productiveHours: {
+    morning: number;
+    afternoon: number;
+    evening: number;
+    night: number;
   };
   
-  // 休息时长偏好
-  breakDuration: number;  // 分钟
+  // 工作时段
+  workingHours: {
+    start: number;
+    end: number;
+  };
   
-  // 学习进度数据
-  learningProgress: LearningData;
+  // 任务类型偏好
+  taskTypePreferences: Record<TaskType, TaskTypePreference>;
   
   // 元数据
-  version: number;
-  updatedAt: Date;
-}
-
-/** 问卷答案 */
-export interface SurveyAnswers {
-  // 1. 作息类型
-  chronotype: 'early-bird' | 'night-owl' | 'neutral';
-  
-  // 2. 典型起床时间
-  typicalWakeTime: number;  // 小时 (0-23)
-  
-  // 3. 专注时长
-  focusDuration: 'short' | 'medium' | 'long';  // <45min, 45-90min, >90min
-  
-  // 4. 休息频率
-  breakFrequency: 'often' | 'normal' | 'rare';  // 每30min, 每60min, 每90min+
-  
-  // 5. 深度工作偏好
-  deepWorkPreference: 'morning' | 'afternoon' | 'evening';
-}
-
-/** 冷启动配置 */
-interface ColdStartConfig {
-  // 默认高效时段 (基于问卷类型)
-  defaultProductiveHours: Record<string, ProductiveHour[]>;
-  
-  // 默认专注时长
-  defaultSessionLength: Record<string, { min: number; max: number }>;
-  
-  // 默认休息时长
-  defaultBreakDuration: Record<string, number>;
-}
-
-// ============== 冷启动配置 ==============
-
-const COLD_START_CONFIG: ColdStartConfig = {
-  defaultProductiveHours: {
-    'early-bird': [
-      { start: 6, end: 9, level: 'high' },
-      { start: 9, end: 12, level: 'medium' },
-      { start: 14, end: 17, level: 'medium' },
-      { start: 20, end: 22, level: 'low' },
-    ],
-    'night-owl': [
-      { start: 10, end: 12, level: 'medium' },
-      { start: 14, end: 17, level: 'medium' },
-      { start: 20, end: 23, level: 'high' },
-      { start: 23, end: 2, level: 'high' },
-    ],
-    'neutral': [
-      { start: 9, end: 12, level: 'high' },
-      { start: 14, end: 17, level: 'medium' },
-      { start: 19, end: 21, level: 'medium' },
-    ],
-  },
-  defaultSessionLength: {
-    'short': { min: 25, max: 45 },
-    'medium': { min: 45, max: 90 },
-    'long': { min: 60, max: 120 },
-  },
-  defaultBreakDuration: {
-    'often': 5,
-    'normal': 10,
-    'rare': 15,
-  },
-};
-
-// ============== 偏好学习器 ==============
-
-export class PreferenceLearner {
-  private preference: UserPreference;
-  private storageKey: string;
-  private onPreferenceChange?: (pref: UserPreference) => void;
-
-  constructor(options?: { 
-    storageKey?: string;
-    onPreferenceChange?: (pref: UserPreference) => void;
-  }) {
-    this.storageKey = options?.storageKey || 'user-preference-v1';
-    this.onPreferenceChange = options?.onPreferenceChange;
-    
-    // 初始化空偏好结构
-    this.preference = this.createEmptyPreference();
-  }
-
-  // ---------- 1. 冷启动问卷初始化 ----------
-
-  /**
-   * 从问卷答案初始化偏好 (冷启动)
-   * 5问题快速初始化:
-   * 1. 早起型/夜猫子/中立
-   * 2. 典型起床时间
-   * 3. 专注时长
-   * 4. 休息频率
-   * 5. 深度工作偏好时段
-   */
-  initializeFromSurvey(answers: SurveyAnswers): UserPreference {
-    const now = new Date();
-    
-    // 基于作息类型设置高效时段
-    const productiveHours = COLD_START_CONFIG.defaultProductiveHours[answers.chronotype] || 
-      COLD_START_CONFIG.defaultProductiveHours['neutral'];
-
-    // 基于专注时长偏好设置
-    const sessionLength = COLD_START_CONFIG.defaultSessionLength[answers.focusDuration] ||
-      COLD_START_CONFIG.defaultSessionLength['medium'];
-
-    // 基于休息频率设置
-    const breakDuration = COLD_START_CONFIG.defaultBreakDuration[answers.breakFrequency] ||
-      COLD_START_CONFIG.defaultBreakDuration['normal'];
-
-    // 构建任务类型偏好
-    const taskTypePreferences = this.initializeTaskTypePreferences(answers);
-
-    this.preference = {
-      productiveHours,
-      taskTypePreferences,
-      sessionLength,
-      breakDuration,
-      learningProgress: {
-        coldStartComplete: true,
-        surveyCompletedAt: now,
-        totalTasksAnalyzed: 0,
-        totalFeedbackReceived: 0,
-        learningDays: 0,
-        hourlyCompletionRate: new Array(24).fill(0),
-        dailyTaskCount: new Array(7).fill(0),
-        feedbackHistory: [],
-      },
-      version: 1,
-      updatedAt: now,
-    };
-
-    this.notifyChange();
-    return this.preference;
-  }
-
-  /**
-   * 初始化任务类型偏好
-   */
-  private initializeTaskTypePreferences(answers: SurveyAnswers): Record<TaskType, TimePreference> {
-    const taskTypes: TaskType[] = ['deep-work', 'admin', 'creative', 'meeting', 'routine'];
-    const preferences: Partial<Record<TaskType, TimePreference>> = {};
-
-    for (const type of taskTypes) {
-      const preferredHours = this.getDefaultPreferredHoursForType(type, answers);
-      
-      preferences[type] = {
-        preferredHours,
-        avoidedHours: this.calculateAvoidedHours(preferredHours),
-        confidence: 0.3,  // 冷启动初始置信度较低
-      };
-    }
-
-    return preferences as Record<TaskType, TimePreference>;
-  }
-
-  /**
-   * 获取任务类型的默认偏好时段
-   */
-  private getDefaultPreferredHoursForType(type: TaskType, answers: SurveyAnswers): number[] {
-    const hours: number[] = [];
-    
-    switch (type) {
-      case 'deep-work':
-        // 深度工作偏好用户指定的高效时段
-        if (answers.deepWorkPreference === 'morning') {
-          hours.push(8, 9, 10, 11);
-        } else if (answers.deepWorkPreference === 'afternoon') {
-          hours.push(14, 15, 16, 17);
-        } else {
-          hours.push(20, 21, 22);
-        }
-        break;
-        
-      case 'admin':
-        // 行政事务适合中等效率时段
-        hours.push(10, 11, 14, 15, 16);
-        break;
-        
-      case 'creative':
-        // 创意工作偏好用户指定的时段
-        if (answers.deepWorkPreference === 'morning') {
-          hours.push(9, 10, 11);
-        } else if (answers.deepWorkPreference === 'afternoon') {
-          hours.push(15, 16, 17);
-        } else {
-          hours.push(20, 21, 22, 23);
-        }
-        break;
-        
-      case 'meeting':
-        // 会议适合标准工作时间
-        hours.push(9, 10, 11, 14, 15, 16, 17);
-        break;
-        
-      case 'routine':
-        // 常规任务适合碎片时间
-        hours.push(9, 10, 11, 14, 15, 16, 20, 21);
-        break;
-    }
-    
-    return hours;
-  }
-
-  /**
-   * 计算应避免的小时
-   */
-  private calculateAvoidedHours(preferredHours: number[]): number[] {
-    const avoided: number[] = [];
-    for (let i = 0; i < 24; i++) {
-      if (!preferredHours.includes(i)) {
-        // 避免深夜和凌晨
-        if (i < 6 || i > 23) {
-          avoided.push(i);
-        }
-      }
-    }
-    return avoided;
-  }
-
-  // ---------- 2. 从任务历史学习 ----------
-
-  /**
-   * 从已完成任务历史学习偏好
-   * 分析任务完成时间、时长等模式
-   */
-  learnFromHistory(completedTasks: Task[]): UserPreference {
-    if (completedTasks.length === 0) {
-      return this.preference;
-    }
-
-    const now = new Date();
-    const learningData = this.preference.learningProgress;
-    
-    // 更新首次任务日期
-    if (!learningData.firstTaskDate) {
-      learningData.firstTaskDate = completedTasks[0].createdAt;
-    }
-    
-    // 分析每小时完成率
-    this.analyzeHourlyCompletionRate(completedTasks);
-    
-    // 分析各类型任务的时间偏好
-    this.analyzeTaskTypePatterns(completedTasks);
-    
-    // 分析专注时长模式
-    this.analyzeSessionLengthPatterns(completedTasks);
-    
-    // 更新学习进度
-    learningData.totalTasksAnalyzed += completedTasks.length;
-    learningData.lastLearningDate = now;
-    
-    // 计算学习天数
-    if (learningData.firstTaskDate) {
-      const daysDiff = Math.floor(
-        (now.getTime() - learningData.firstTaskDate.getTime()) / (1000 * 60 * 60 * 24)
-      );
-      learningData.learningDays = daysDiff;
-    }
-    
-    // 更新高效时段 (基于学习数据)
-    this.updateProductiveHoursFromLearning();
-    
-    // 更新任务类型偏好置信度
-    this.updateTaskTypeConfidences();
-
-    this.preference.updatedAt = now;
-    this.notifyChange();
-    
-    return this.preference;
-  }
-
-  /**
-   * 分析每小时完成率
-   */
-  private analyzeHourlyCompletionRate(tasks: Task[]): void {
-    const hourlyCounts = new Array(24).fill(0);
-    
-    for (const task of tasks) {
-      if (task.completedAt) {
-        const hour = task.completedAt.getHours();
-        hourlyCounts[hour]++;
-      }
-    }
-    
-    // 归一化并平滑处理
-    const maxCount = Math.max(...hourlyCounts, 1);
-    this.preference.learningProgress.hourlyCompletionRate = hourlyCounts.map(
-      count => count / maxCount
-    );
-  }
-
-  /**
-   * 分析各类型任务的时间模式
-   */
-  private analyzeTaskTypePatterns(tasks: Task[]): void {
-    const typeHourlyData: Partial<Record<TaskType, number[]>> = {};
-    const taskTypes: TaskType[] = ['deep-work', 'admin', 'creative', 'meeting', 'routine'];
-    
-    // 初始化数据结构
-    for (const type of taskTypes) {
-      typeHourlyData[type] = new Array(24).fill(0);
-    }
-    
-    // 统计各类型任务的完成时间
-    for (const task of tasks) {
-      if (task.completedAt) {
-        const type = this.inferTaskType(task);
-        const hour = task.completedAt.getHours();
-        const hourlyData = typeHourlyData[type];
-        if (hourlyData) {
-          hourlyData[hour]++;
-        }
-      }
-    }
-    
-    // 更新各类型的时间偏好
-    for (const type of taskTypes) {
-      const hourlyData = typeHourlyData[type] || new Array(24).fill(0);
-      const maxCount = Math.max(...hourlyData, 1);
-      
-      // 找出高效时段 (完成率 > 0.5)
-      const preferredHours: number[] = [];
-      const avoidedHours: number[] = [];
-      
-      for (let i = 0; i < 24; i++) {
-        const rate = hourlyData[i] / maxCount;
-        if (rate > 0.5) {
-          preferredHours.push(i);
-        } else if (rate === 0 && (i < 6 || i > 23)) {
-          avoidedHours.push(i);
-        }
-      }
-      
-      // 合并学习结果与现有偏好
-      const existingPref = this.preference.taskTypePreferences[type];
-      this.preference.taskTypePreferences[type] = {
-        preferredHours: preferredHours.length > 0 
-          ? [...new Set([...existingPref.preferredHours, ...preferredHours])].sort((a, b) => a - b)
-          : existingPref.preferredHours,
-        avoidedHours: [...new Set([...existingPref.avoidedHours, ...avoidedHours])].sort((a, b) => a - b),
-        confidence: Math.min(existingPref.confidence + 0.1, 0.9),  // 每次学习增加置信度
-      };
-    }
-  }
-
-  /**
-   * 推断任务类型 (基于任务属性)
-   */
-  private inferTaskType(task: Task): TaskType {
-    const title = task.title.toLowerCase();
-    const tags = task.tags.map(t => t.toLowerCase());
-    const description = task.description?.toLowerCase() || '';
-    
-    // 基于关键词推断类型
-    if (tags.includes('meeting') || tags.includes('会议') || 
-        title.includes('meeting') || title.includes('会议')) {
-      return 'meeting';
-    }
-    
-    if (tags.includes('deep') || tags.includes('focus') || tags.includes('专注') ||
-        title.includes('review') || title.includes('design') || 
-        title.includes('规划') || title.includes('设计')) {
-      return 'deep-work';
-    }
-    
-    if (tags.includes('creative') || tags.includes('创意') ||
-        title.includes('brainstorm') || title.includes('write') ||
-        title.includes('brainstorm') || title.includes('创作')) {
-      return 'creative';
-    }
-    
-    if (tags.includes('admin') || tags.includes('行政') ||
-        title.includes('report') || title.includes('email') ||
-        title.includes('报告') || title.includes('邮件')) {
-      return 'admin';
-    }
-    
-    // 默认常规任务
-    return 'routine';
-  }
-
-  /**
-   * 分析专注时长模式
-   */
-  private analyzeSessionLengthPatterns(tasks: Task[]): void {
-    const durations: number[] = [];
-    
-    for (const task of tasks) {
-      if (task.scheduledStart && task.scheduledEnd) {
-        const duration = (task.scheduledEnd.getTime() - task.scheduledStart.getTime()) / (1000 * 60);
-        if (duration > 0 && duration < 480) {  // 过滤异常值 (>8小时)
-          durations.push(duration);
-        }
-      } else if (task.estimatedMinutes) {
-        durations.push(task.estimatedMinutes);
-      }
-    }
-    
-    if (durations.length === 0) return;
-    
-    // 计算统计值
-    durations.sort((a, b) => a - b);
-    const median = durations[Math.floor(durations.length / 2)];
-    const p25 = durations[Math.floor(durations.length * 0.25)];
-    const p75 = durations[Math.floor(durations.length * 0.75)];
-    
-    // 更新专注时长偏好
-    this.preference.sessionLength = {
-      min: Math.max(15, Math.round(p25 / 5) * 5),  // 取25分位，对齐到5分钟
-      max: Math.min(240, Math.round(p75 / 5) * 5), // 取75分位，最大4小时
-    };
-  }
-
-  /**
-   * 基于学习数据更新高效时段
-   */
-  private updateProductiveHoursFromLearning(): void {
-    const hourlyRates = this.preference.learningProgress.hourlyCompletionRate;
-    
-    // 找出高效时段 (完成率 > 0.6)
-    const productiveHours: ProductiveHour[] = [];
-    let currentStart = -1;
-    let currentLevel: ProductivityLevel = 'medium';
-    
-    for (let i = 0; i < 24; i++) {
-      const rate = hourlyRates[i];
-      let level: ProductivityLevel | null = null;
-      
-      if (rate > 0.7) level = 'high';
-      else if (rate > 0.4) level = 'medium';
-      else if (rate > 0.1) level = 'low';
-      
-      if (level !== null) {
-        if (currentStart === -1) {
-          currentStart = i;
-          currentLevel = level;
-        } else if (currentLevel !== level) {
-          // 保存上一个时段
-          productiveHours.push({
-            start: currentStart,
-            end: i,
-            level: currentLevel,
-          });
-          currentStart = i;
-          currentLevel = level;
-        }
-      } else if (currentStart !== -1) {
-        // 时段结束
-        productiveHours.push({
-          start: currentStart,
-          end: i,
-          level: currentLevel,
-        });
-        currentStart = -1;
-      }
-    }
-    
-    // 处理最后一个时段
-    if (currentStart !== -1) {
-      productiveHours.push({
-        start: currentStart,
-        end: 24,
-        level: currentLevel,
-      });
-    }
-    
-    if (productiveHours.length > 0) {
-      this.preference.productiveHours = productiveHours;
-    }
-  }
-
-  /**
-   * 更新任务类型置信度
-   */
-  private updateTaskTypeConfidences(): void {
-    const learningData = this.preference.learningProgress;
-    
-    // 基于数据量调整置信度
-    const dataPoints = learningData.totalTasksAnalyzed + learningData.totalFeedbackReceived;
-    
-    for (const type of Object.keys(this.preference.taskTypePreferences) as TaskType[]) {
-      const pref = this.preference.taskTypePreferences[type];
-      
-      // 置信度随数据量增加而提高
-      let targetConfidence = 0.3;
-      if (dataPoints > 100) targetConfidence = 0.9;
-      else if (dataPoints > 50) targetConfidence = 0.8;
-      else if (dataPoints > 20) targetConfidence = 0.7;
-      else if (dataPoints > 10) targetConfidence = 0.5;
-      
-      pref.confidence = Math.min(pref.confidence + 0.05, targetConfidence);
-    }
-  }
-
-  // ---------- 3. 实时调整 (用户反馈) ----------
-
-  /**
-   * 根据用户反馈实时更新偏好
-   * @param taskType 任务类型
-   * @param actualTime 实际执行时间
-   * @param feedback 用户反馈 'good' | 'bad'
-   */
-  updatePreference(
-    taskType: TaskType, 
-    actualTime: Date, 
-    feedback: 'good' | 'bad',
-    reason?: string
-  ): void {
-    const hour = actualTime.getHours();
-    const learningData = this.preference.learningProgress;
-    
-    // 记录反馈历史
-    const record: FeedbackRecord = {
-      timestamp: new Date(),
-      taskType,
-      scheduledHour: hour,
-      actualHour: hour,
-      feedback,
-      reason,
-    };
-    learningData.feedbackHistory.push(record);
-    learningData.totalFeedbackReceived++;
-    
-    // 获取该类型偏好
-    const typePref = this.preference.taskTypePreferences[taskType];
-    
-    if (feedback === 'good') {
-      // 正面反馈：强化该时段
-      if (!typePref.preferredHours.includes(hour)) {
-        typePref.preferredHours.push(hour);
-        typePref.preferredHours.sort((a, b) => a - b);
-      }
-      
-      // 从避免时段中移除
-      typePref.avoidedHours = typePref.avoidedHours.filter(h => h !== hour);
-      
-      // 提高置信度
-      typePref.confidence = Math.min(typePref.confidence + 0.05, 1.0);
-      
-    } else {
-      // 负面反馈：避免该时段
-      if (!typePref.avoidedHours.includes(hour)) {
-        typePref.avoidedHours.push(hour);
-        typePref.avoidedHours.sort((a, b) => a - b);
-      }
-      
-      // 从偏好时段中移除
-      typePref.preferredHours = typePref.preferredHours.filter(h => h !== hour);
-      
-      // 降低该时段权重但不降低太多置信度（可能是特定情况）
-      typePref.confidence = Math.max(typePref.confidence - 0.02, 0.1);
-    }
-    
-    // 更新全局高效时段
-    this.updateGlobalProductiveHours(taskType, hour, feedback);
-    
-    this.preference.updatedAt = new Date();
-    this.notifyChange();
-  }
-
-  /**
-   * 更新全局高效时段
-   */
-  private updateGlobalProductiveHours(
-    taskType: TaskType, 
-    hour: number, 
-    feedback: 'good' | 'bad'
-  ): void {
-    // 只考虑深度工作和创意工作（更能反映个人高效时段）
-    if (taskType !== 'deep-work' && taskType !== 'creative') return;
-    
-    // 找到包含该小时的时段
-    const hourSlot = this.preference.productiveHours.find(
-      slot => hour >= slot.start && hour < slot.end
-    );
-    
-    if (feedback === 'bad' && hourSlot && hourSlot.level === 'high') {
-      // 负面反馈可能意味着需要调整该时段等级
-      // 如果该时段收到多次负面反馈，降低等级
-      const recentBadFeedback = this.preference.learningProgress.feedbackHistory
-        .filter(r => 
-          r.feedback === 'bad' && 
-          r.taskType === taskType &&
-          r.actualHour >= hourSlot.start &&
-          r.actualHour < hourSlot.end
-        )
-        .length;
-      
-      if (recentBadFeedback >= 3) {
-        hourSlot.level = 'medium';
-      }
-    }
-  }
-
-  // ---------- 4. 获取推荐时段 ----------
-
-  /**
-   * 获取任务类型的推荐时段
-   * @param taskType 任务类型
-   * @param date 目标日期
-   * @param durationMinutes 任务预计时长 (可选)
-   * @returns 推荐时段列表
-   */
-  getRecommendedSlots(
-    taskType: TaskType, 
-    date: Date, 
-    durationMinutes?: number
-  ): TimeSlot[] {
-    const typePref = this.preference.taskTypePreferences[taskType];
-    const slots: TimeSlot[] = [];
-    const duration = durationMinutes || this.preference.sessionLength.max;
-    
-    // 基于偏好时段生成推荐
-    for (const hour of typePref.preferredHours) {
-      const start = new Date(date);
-      start.setHours(hour, 0, 0, 0);
-      
-      const end = new Date(start);
-      end.setMinutes(start.getMinutes() + duration);
-      
-      // 计算置信度
-      const confidence = this.calculateSlotConfidence(taskType, hour, typePref.confidence);
-      
-      // 生成推荐理由
-      const reason = this.generateSlotReason(taskType, hour, confidence);
-      
-      slots.push({
-        start,
-        end,
-        confidence,
-        reason,
-      });
-    }
-    
-    // 按置信度排序
-    slots.sort((a, b) => b.confidence - a.confidence);
-    
-    // 限制返回数量 (最多5个)
-    return slots.slice(0, 5);
-  }
-
-  /**
-   * 计算时段置信度
-   */
-  private calculateSlotConfidence(
-    taskType: TaskType, 
-    hour: number, 
-    baseConfidence: number
-  ): number {
-    let confidence = baseConfidence;
-    
-    // 检查是否在全局高效时段
-    const globalSlot = this.preference.productiveHours.find(
-      slot => hour >= slot.start && hour < slot.end
-    );
-    
-    if (globalSlot) {
-      switch (globalSlot.level) {
-        case 'high': confidence += 0.2; break;
-        case 'medium': confidence += 0.1; break;
-        case 'low': confidence -= 0.1; break;
-      }
-    }
-    
-    // 检查历史完成率
-    const completionRate = this.preference.learningProgress.hourlyCompletionRate[hour];
-    confidence += completionRate * 0.1;
-    
-    // 检查历史反馈
-    const hourFeedback = this.preference.learningProgress.feedbackHistory.filter(
-      r => r.taskType === taskType && r.scheduledHour === hour
-    );
-    
-    if (hourFeedback.length > 0) {
-      const goodCount = hourFeedback.filter(r => r.feedback === 'good').length;
-      const feedbackRatio = goodCount / hourFeedback.length;
-      confidence += feedbackRatio * 0.1 - 0.05;
-    }
-    
-    // 归一化到 0-1
-    return Math.max(0, Math.min(1, confidence));
-  }
-
-  /**
-   * 生成推荐理由
-   */
-  private generateSlotReason(taskType: TaskType, hour: number, confidence: number): string {
-    const reasons: string[] = [];
-    
-    // 基于置信度
-    if (confidence > 0.8) {
-      reasons.push('这是你处理此类任务的高效时段');
-    } else if (confidence > 0.6) {
-      reasons.push('根据你的历史数据，这个时段比较适合');
-    } else {
-      reasons.push('基于你的偏好设置推荐');
-    }
-    
-    // 基于任务类型
-    const timeOfDay = hour < 12 ? '上午' : hour < 18 ? '下午' : '晚上';
-    const typeLabels: Record<TaskType, string> = {
-      'deep-work': '深度工作',
-      'admin': '行政事务',
-      'creative': '创意工作',
-      'meeting': '会议',
-      'routine': '常规任务',
-    };
-    
-    if (confidence > 0.7) {
-      reasons.push(`你在${timeOfDay}完成${typeLabels[taskType]}的效率较高`);
-    }
-    
-    return reasons.join('；');
-  }
-
-  // ---------- 5. 保存/加载偏好 ----------
-
-  /**
-   * 保存偏好到存储
-   */
-  async savePreference(): Promise<void> {
-    const data = JSON.stringify(this.preference, (key, value) => {
-      // 处理 Date 对象
-      if (value instanceof Date) {
-        return { __type: 'Date', value: value.toISOString() };
-      }
-      return value;
-    });
-    
-    // 使用 localStorage 或提供的存储接口
-    if (typeof localStorage !== 'undefined') {
-      localStorage.setItem(this.storageKey, data);
-    } else {
-      // 服务器环境或测试环境
-      this.memoryStorage = data;
-    }
-  }
-
-  private memoryStorage?: string;
-
-  /**
-   * 从存储加载偏好
-   */
-  async loadPreference(): Promise<UserPreference> {
-    let data: string | null = null;
-    
-    if (typeof localStorage !== 'undefined') {
-      data = localStorage.getItem(this.storageKey);
-    } else {
-      data = this.memoryStorage || null;
-    }
-    
-    if (data) {
-      const parsed = JSON.parse(data, (key, value) => {
-        // 还原 Date 对象
-        if (value && value.__type === 'Date') {
-          return new Date(value.value);
-        }
-        return value;
-      });
-      
-      this.preference = parsed;
-      return this.preference;
-    }
-    
-    // 返回空偏好
-    return this.preference;
-  }
-
-  // ---------- 辅助方法 ----------
-
-  /**
-   * 创建空偏好结构
-   */
-  private createEmptyPreference(): UserPreference {
-    const now = new Date();
-    const taskTypes: TaskType[] = ['deep-work', 'admin', 'creative', 'meeting', 'routine'];
-    
-    return {
-      productiveHours: [],
-      taskTypePreferences: taskTypes.reduce((acc, type) => {
-        acc[type] = {
-          preferredHours: [],
-          avoidedHours: [],
-          confidence: 0,
-        };
-        return acc;
-      }, {} as Record<TaskType, TimePreference>),
-      sessionLength: { min: 25, max: 60 },
-      breakDuration: 10,
-      learningProgress: {
-        coldStartComplete: false,
-        totalTasksAnalyzed: 0,
-        totalFeedbackReceived: 0,
-        learningDays: 0,
-        hourlyCompletionRate: new Array(24).fill(0),
-        dailyTaskCount: new Array(7).fill(0),
-        feedbackHistory: [],
-      },
-      version: 1,
-      updatedAt: now,
-    };
-  }
-
-  /**
-   * 获取当前偏好
-   */
-  getPreference(): UserPreference {
-    return { ...this.preference };
-  }
-
-  /**
-   * 通知偏好变更
-   */
-  private notifyChange(): void {
-    this.onPreferenceChange?.(this.getPreference());
-  }
-
-  // ---------- 冷启动策略辅助方法 ----------
-
-  /**
-   * 检查是否处于冷启动阶段
-   */
-  isInColdStart(): boolean {
-    return !this.preference.learningProgress.coldStartComplete;
-  }
-
-  /**
-   * 获取学习阶段
-   * @returns 'cold-start' | 'fine-tuning' | 'full-learning'
-   */
-  getLearningPhase(): 'cold-start' | 'fine-tuning' | 'full-learning' {
-    const progress = this.preference.learningProgress;
-    
-    if (!progress.coldStartComplete) {
-      return 'cold-start';
-    }
-    
-    if (progress.learningDays < 7) {
-      return 'fine-tuning';
-    }
-    
-    return 'full-learning';
-  }
-
-  /**
-   * 获取学习统计
-   */
-  getLearningStats(): {
-    phase: string;
-    daysOfData: number;
-    tasksAnalyzed: number;
-    feedbackCount: number;
-    averageConfidence: number;
-  } {
-    const progress = this.preference.learningProgress;
-    const confidences = Object.values(this.preference.taskTypePreferences)
-      .map(p => p.confidence);
-    const avgConfidence = confidences.reduce((a, b) => a + b, 0) / confidences.length;
-    
-    return {
-      phase: this.getLearningPhase(),
-      daysOfData: progress.learningDays,
-      tasksAnalyzed: progress.totalTasksAnalyzed,
-      feedbackCount: progress.totalFeedbackReceived,
-      averageConfidence: Math.round(avgConfidence * 100) / 100,
-    };
-  }
-
-  /**
-   * 重置学习数据 (用户可主动重置)
-   */
-  resetLearning(): void {
-    this.preference = this.createEmptyPreference();
-    this.notifyChange();
-  }
-}
-
-// ============== 快捷函数 ==============
-
-/**
- * 创建默认问卷答案 (用于测试)
- */
-export function createDefaultSurveyAnswers(overrides?: Partial<SurveyAnswers>): SurveyAnswers {
-  return {
-    chronotype: 'neutral',
-    typicalWakeTime: 8,
-    focusDuration: 'medium',
-    breakFrequency: 'normal',
-    deepWorkPreference: 'morning',
-    ...overrides,
+  metadata: {
+    version: number;
+    lastUpdated: string;
+    learningIterations: number;
+    onboardingComplete: boolean;
   };
 }
 
-/**
- * 任务类型标签映射
- */
-export const TASK_TYPE_LABELS: Record<TaskType, string> = {
-  'deep-work': '深度工作',
-  'admin': '行政事务',
-  'creative': '创意工作',
-  'meeting': '会议',
-  'routine': '常规任务',
-};
+/** 任务类型偏好 */
+export interface TaskTypePreference {
+  taskType: TaskType;
+  preferredHours: number[];
+  avoidedHours: number[];
+  confidence: number;
+}
 
-/**
- * 任务类型图标 (emoji)
- */
-export const TASK_TYPE_ICONS: Record<TaskType, string> = {
-  'deep-work': '🎯',
-  'admin': '📋',
-  'creative': '💡',
-  'meeting': '👥',
-  'routine': '🔄',
-};
+/** 引导问卷答案 */
+export interface OnboardingAnswers {
+  chronotype?: Chronotype;
+  focusTime?: 'morning' | 'afternoon' | 'evening';
+  bufferTime?: number;
+  maxDailyTasks?: number;
+}
+
+/** 引导问题 */
+export interface OnboardingQuestion {
+  id: string;
+  question: string;
+  type: 'select' | 'number';
+  options?: Array<{ value: string; label: string }>;
+}
+
+/** 偏好输入 */
+export interface PreferenceInput {
+  type: 'explicit' | 'feedback' | 'behavior';
+  data: Record<string, any>;
+}
+
+/** 用户行为数据 */
+export interface UserBehavior {
+  completedTasks?: Array<{
+    taskId: string;
+    scheduledHour: number;
+    scheduledDayOfWeek: number;
+    estimatedMinutes: number;
+    actualMinutes: number;
+    completedAt: Date;
+  }>;
+  feedbackRecords?: Array<{
+    taskId: string;
+    action: 'accepted' | 'rejected' | 'modified';
+    originalSlot: { start: Date; end: Date };
+    timestamp: Date;
+  }>;
+}
+
+/** 工作时段评分 */
+export interface WorkingHourScore {
+  hour: number;
+  score: number;
+}
+
+/** 周报 */
+export interface WeeklyReport {
+  productiveHours: number[];
+  insights: string[];
+  recommendations: string[];
+}
+
+/** 验证结果 */
+export interface ValidationResult {
+  valid: boolean;
+  errors: string[];
+}
+
+/** 订阅监听器 */
+export type PreferenceListener = (prefs: UserPreferences) => void;
+
+/** 取消订阅函数 */
+export type UnsubscribeFn = () => void;
+
+// ============== 常量定义 ==============
+
+/** 引导问题配置 */
+export const ONBOARDING_QUESTIONS: OnboardingQuestion[] = [
+  {
+    id: 'chronotype',
+    question: '你的作息类型是？',
+    type: 'select',
+    options: [
+      { value: 'early-bird', label: '早起型 (Early Bird)' },
+      { value: 'night-owl', label: '夜猫子 (Night Owl)' },
+      { value: 'neutral', label: '中性 (Neutral)' },
+    ],
+  },
+  {
+    id: 'focusTime',
+    question: '你最高效的时段是？',
+    type: 'select',
+    options: [
+      { value: 'morning', label: '早晨 (6-12点)' },
+      { value: 'afternoon', label: '下午 (12-18点)' },
+      { value: 'evening', label: '晚上 (18-24点)' },
+    ],
+  },
+  {
+    id: 'bufferTime',
+    question: '任务之间需要多少分钟缓冲？',
+    type: 'number',
+  },
+  {
+    id: 'maxDailyTasks',
+    question: '每天最多安排多少任务？',
+    type: 'number',
+  },
+];
+
+// ============== UserPreferenceStore 类 ==============
+
+export class UserPreferenceStore {
+  private preferences: UserPreferences;
+  private listeners: Set<PreferenceListener> = new Set();
+  private storageKey: string;
+
+  constructor(options?: { storageKey?: string }) {
+    this.storageKey = options?.storageKey || 'user-preferences-v1';
+    this.preferences = getDefaultUserPreferences();
+    
+    // 尝试从存储加载
+    this.loadFromStorage();
+  }
+
+  // ---------- 基础方法 ----------
+
+  /** 获取当前偏好 */
+  getPreferences(): UserPreferences {
+    return JSON.parse(JSON.stringify(this.preferences));
+  }
+
+  /** 更新偏好 */
+  updatePreferences(updates: Partial<UserPreferences>): void {
+    this.preferences = {
+      ...this.preferences,
+      ...updates,
+      metadata: {
+        ...this.preferences.metadata,
+        lastUpdated: new Date().toISOString(),
+      },
+    };
+    this.notifyListeners();
+    this.saveToStorage();
+  }
+
+  /** 更新特定字段 */
+  updateField<K extends keyof UserPreferences>(key: K, value: UserPreferences[K]): void {
+    this.updatePreferences({ [key]: value } as Partial<UserPreferences>);
+  }
+
+  // ---------- 引导相关 ----------
+
+  /** 检查引导是否完成 */
+  isOnboardingComplete(): boolean {
+    return this.preferences.metadata.onboardingComplete;
+  }
+
+  /** 完成引导 */
+  completeOnboarding(): void {
+    this.preferences.metadata.onboardingComplete = true;
+    this.preferences.metadata.lastUpdated = new Date().toISOString();
+    this.notifyListeners();
+    this.saveToStorage();
+  }
+
+  /** 应用问卷答案 */
+  applyOnboardingAnswers(answers: OnboardingAnswers): void {
+    const updates: Partial<UserPreferences> = {};
+
+    if (answers.chronotype) {
+      updates.chronotype = answers.chronotype;
+      // 根据作息类型设置高效时段
+      updates.productiveHours = this.calculateProductiveHours(answers.chronotype);
+    }
+
+    if (answers.bufferTime !== undefined) {
+      updates.bufferMinutes = answers.bufferTime;
+    }
+
+    if (answers.maxDailyTasks !== undefined) {
+      updates.maxDailyTasks = answers.maxDailyTasks;
+    }
+
+    if (answers.focusTime) {
+      // 根据专注时段调整工作时段
+      updates.workingHours = this.calculateWorkingHours(answers.focusTime);
+    }
+
+    this.updatePreferences(updates);
+    this.completeOnboarding();
+  }
+
+  /** 根据作息类型计算高效时段 */
+  private calculateProductiveHours(chronotype: Chronotype): UserPreferences['productiveHours'] {
+    switch (chronotype) {
+      case 'early-bird':
+        return {
+          morning: 0.9,
+          afternoon: 0.7,
+          evening: 0.4,
+          night: 0.1,
+        };
+      case 'night-owl':
+        return {
+          morning: 0.3,
+          afternoon: 0.6,
+          evening: 0.9,
+          night: 0.8,
+        };
+      default:
+        return {
+          morning: 0.8,
+          afternoon: 0.8,
+          evening: 0.6,
+          night: 0.2,
+        };
+    }
+  }
+
+  /** 根据专注时段计算工作时段 */
+  private calculateWorkingHours(focusTime: string): { start: number; end: number } {
+    switch (focusTime) {
+      case 'morning':
+        return { start: 7, end: 15 };
+      case 'afternoon':
+        return { start: 11, end: 19 };
+      case 'evening':
+        return { start: 14, end: 22 };
+      default:
+        return { start: 9, end: 17 };
+    }
+  }
+
+  // ---------- 学习相关 ----------
+
+  /** 从显式偏好学习 */
+  learnPreference(input: PreferenceInput): void {
+    if (input.type === 'explicit' && input.data) {
+      this.updatePreferences(input.data);
+    }
+    
+    // 增加学习迭代计数
+    this.preferences.metadata.learningIterations++;
+    this.preferences.metadata.lastUpdated = new Date().toISOString();
+    this.notifyListeners();
+    this.saveToStorage();
+  }
+
+  /** 从用户行为学习 */
+  learnFromBehavior(behavior: UserBehavior): void {
+    if (behavior.completedTasks && behavior.completedTasks.length > 0) {
+      this.updateFromCompletedTasks(behavior.completedTasks);
+    }
+
+    if (behavior.feedbackRecords && behavior.feedbackRecords.length > 0) {
+      this.updateFromFeedback(behavior.feedbackRecords);
+    }
+
+    // 增加学习迭代计数
+    this.preferences.metadata.learningIterations++;
+    this.preferences.metadata.lastUpdated = new Date().toISOString();
+    this.notifyListeners();
+    this.saveToStorage();
+  }
+
+  /** 从完成任务更新 */
+  private updateFromCompletedTasks(tasks: UserBehavior['completedTasks']): void {
+    if (!tasks) return;
+
+    const hourlyStats = new Array(24).fill(0);
+    
+    for (const task of tasks) {
+      if (task.scheduledHour >= 0 && task.scheduledHour < 24) {
+        // 如果实际用时少于预估，说明效率高
+        const efficiency = task.estimatedMinutes / Math.max(task.actualMinutes, 1);
+        hourlyStats[task.scheduledHour] += efficiency;
+      }
+    }
+
+    // 归一化并更新productiveHours
+    const maxStat = Math.max(...hourlyStats, 1);
+    const productiveHours = { ...this.preferences.productiveHours };
+
+    // 计算各时段平均效率
+    const periods = ['morning', 'afternoon', 'evening', 'night'] as const;
+    const ranges = [
+      [6, 7, 8, 9, 10, 11],    // morning
+      [12, 13, 14, 15, 16, 17], // afternoon
+      [18, 19, 20, 21],         // evening
+      [22, 23, 0, 1, 2, 3, 4, 5], // night
+    ];
+
+    for (let i = 0; i < periods.length; i++) {
+      const period = periods[i];
+      const hours = ranges[i];
+      const avgScore = hours.reduce((sum, h) => sum + (hourlyStats[h] || 0), 0) / hours.length / maxStat;
+      
+      // 混合原有分数和新学习的分数
+      productiveHours[period] = productiveHours[period] * 0.7 + avgScore * 0.3;
+    }
+
+    this.preferences.productiveHours = productiveHours;
+  }
+
+  /** 从反馈更新 */
+  private updateFromFeedback(records: NonNullable<UserBehavior['feedbackRecords']>): void {
+    for (const record of records) {
+      const hour = record.originalSlot.start.getHours();
+      
+      if (record.action === 'accepted') {
+        // 接受的时段提高效率分数
+        this.updateProductivityScore(hour, 0.1);
+      } else if (record.action === 'rejected') {
+        // 拒绝的时段降低效率分数
+        this.updateProductivityScore(hour, -0.1);
+      }
+    }
+  }
+
+  /** 更新特定小时的效率分数 */
+  private updateProductivityScore(hour: number, delta: number): void {
+    const period = this.getPeriodForHour(hour);
+    const currentScore = this.preferences.productiveHours[period];
+    this.preferences.productiveHours[period] = Math.max(0, Math.min(1, currentScore + delta));
+  }
+
+  /** 获取小时对应的时段 */
+  private getPeriodForHour(hour: number): keyof UserPreferences['productiveHours'] {
+    if (hour >= 6 && hour < 12) return 'morning';
+    if (hour >= 12 && hour < 18) return 'afternoon';
+    if (hour >= 18 && hour < 22) return 'evening';
+    return 'night';
+  }
+
+  // ---------- 查询方法 ----------
+
+  /** 获取特定小时的效率分数 */
+  getProductivityScore(hour: number): number {
+    const period = this.getPeriodForHour(hour);
+    return this.preferences.productiveHours[period];
+  }
+
+  /** 获取任务类型偏好 */
+  getTaskTypePreference(type: TaskType): TaskTypePreference | null {
+    return this.preferences.taskTypePreferences[type] || null;
+  }
+
+  /** 获取最佳工作时段 */
+  getBestWorkingHours(): WorkingHourScore[] {
+    const scores: WorkingHourScore[] = [];
+    
+    for (let hour = 0; hour < 24; hour++) {
+      const period = this.getPeriodForHour(hour);
+      const baseScore = this.preferences.productiveHours[period];
+      
+      // 根据工作时段调整分数
+      const inWorkingHours = hour >= this.preferences.workingHours.start && 
+                            hour < this.preferences.workingHours.end;
+      const finalScore = inWorkingHours ? baseScore : baseScore * 0.5;
+      
+      scores.push({ hour, score: Math.round(finalScore * 100) / 100 });
+    }
+    
+    // 按分数排序
+    return scores.sort((a, b) => b.score - a.score);
+  }
+
+  /** 获取学习进度 (0-100) */
+  getLearningProgress(): number {
+    const iterations = this.preferences.metadata.learningIterations;
+    // 假设100次迭代为完全学习
+    return Math.min(100, Math.round((iterations / 100) * 100));
+  }
+
+  // ---------- 周报生成 ----------
+
+  /** 生成周报 */
+  generateWeeklyReport(): WeeklyReport {
+    const productiveHours = this.getBestWorkingHours()
+      .filter(h => h.score > 0.7)
+      .map(h => h.hour);
+
+    const insights: string[] = [];
+    const recommendations: string[] = [];
+
+    // 生成洞察
+    if (this.preferences.chronotype === 'early-bird') {
+      insights.push('你是早起型用户，早晨效率最高');
+      recommendations.push('建议将重要任务安排在上午');
+    } else if (this.preferences.chronotype === 'night-owl') {
+      insights.push('你是夜猫子型用户，晚上效率更高');
+      recommendations.push('建议将深度工作安排在晚上');
+    }
+
+    // 基于缓冲时间建议
+    if (this.preferences.bufferMinutes < 10) {
+      recommendations.push('建议增加任务间隔，给自己更多缓冲时间');
+    }
+
+    return {
+      productiveHours,
+      insights,
+      recommendations,
+    };
+  }
+
+  // ---------- 订阅机制 ----------
+
+  /** 订阅偏好变更 */
+  subscribe(listener: PreferenceListener): UnsubscribeFn {
+    this.listeners.add(listener);
+    
+    return () => {
+      this.listeners.delete(listener);
+    };
+  }
+
+  /** 通知所有监听器 */
+  private notifyListeners(): void {
+    const prefs = this.getPreferences();
+    for (const listener of this.listeners) {
+      try {
+        listener(prefs);
+      } catch (error) {
+        console.error('Preference listener error:', error);
+      }
+    }
+  }
+
+  // ---------- 导入导出 ----------
+
+  /** 导出为 JSON */
+  exportToJSON(): string {
+    return JSON.stringify(this.preferences, null, 2);
+  }
+
+  /** 从 JSON 导入 */
+  importFromJSON(json: string): boolean {
+    try {
+      const parsed = JSON.parse(json);
+      
+      // 验证基本结构
+      if (!parsed.metadata || !parsed.productiveHours) {
+        return false;
+      }
+
+      this.preferences = parsed;
+      this.preferences.metadata.lastUpdated = new Date().toISOString();
+      this.notifyListeners();
+      this.saveToStorage();
+      return true;
+    } catch (error) {
+      console.error('Failed to import preferences:', error);
+      return false;
+    }
+  }
+
+  // ---------- 存储管理 ----------
+
+  /** 保存到存储 */
+  private saveToStorage(): void {
+    try {
+      if (typeof localStorage !== 'undefined') {
+        localStorage.setItem(this.storageKey, JSON.stringify(this.preferences));
+      }
+    } catch (error) {
+      // 存储失败静默处理
+    }
+  }
+
+  /** 从存储加载 */
+  private loadFromStorage(): void {
+    try {
+      if (typeof localStorage !== 'undefined') {
+        const stored = localStorage.getItem(this.storageKey);
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          this.preferences = { ...this.preferences, ...parsed };
+        }
+      }
+    } catch (error) {
+      // 加载失败使用默认值
+    }
+  }
+
+  // ---------- 重置 ----------
+
+  /** 重置为默认值 */
+  resetToDefaults(): void {
+    this.preferences = getDefaultUserPreferences();
+    this.notifyListeners();
+    this.saveToStorage();
+  }
+}
+
+// ============== 便捷函数 ==============
+
+/** 创建 UserPreferenceStore 实例 */
+export function createUserPreferenceStore(options?: { storageKey?: string }): UserPreferenceStore {
+  return new UserPreferenceStore(options);
+}
+
+/** 获取默认用户偏好 */
+export function getDefaultUserPreferences(): UserPreferences {
+  return {
+    chronotype: 'neutral',
+    bufferMinutes: 15,
+    maxDailyTasks: 8,
+    productiveHours: {
+      morning: 0.8,
+      afternoon: 0.8,
+      evening: 0.6,
+      night: 0.2,
+    },
+    workingHours: {
+      start: 9,
+      end: 17,
+    },
+    taskTypePreferences: {
+      'deep-work': {
+        taskType: 'deep-work',
+        preferredHours: [9, 10, 11, 14, 15, 16],
+        avoidedHours: [0, 1, 2, 3, 4, 5, 6, 7, 8, 22, 23],
+        confidence: 0.5,
+      },
+      'admin': {
+        taskType: 'admin',
+        preferredHours: [10, 11, 14, 15, 16],
+        avoidedHours: [0, 1, 2, 3, 4, 5, 6, 7, 8],
+        confidence: 0.5,
+      },
+      'creative': {
+        taskType: 'creative',
+        preferredHours: [9, 10, 11, 15, 16, 17, 20, 21],
+        avoidedHours: [0, 1, 2, 3, 4, 5, 6, 7, 8],
+        confidence: 0.5,
+      },
+      'meeting': {
+        taskType: 'meeting',
+        preferredHours: [9, 10, 11, 14, 15, 16, 17],
+        avoidedHours: [0, 1, 2, 3, 4, 5, 6, 7, 8, 12, 13, 18, 19, 20, 21, 22, 23],
+        confidence: 0.5,
+      },
+      'routine': {
+        taskType: 'routine',
+        preferredHours: [9, 10, 11, 14, 15, 16, 20, 21],
+        avoidedHours: [0, 1, 2, 3, 4, 5, 6, 7, 8],
+        confidence: 0.5,
+      },
+    },
+    metadata: {
+      version: 1,
+      lastUpdated: new Date().toISOString(),
+      learningIterations: 0,
+      onboardingComplete: false,
+    },
+  };
+}
+
+/** 获取引导问题 */
+export function getOnboardingQuestions(): OnboardingQuestion[] {
+  return ONBOARDING_QUESTIONS;
+}
+
+/** 验证偏好 */
+export function validatePreferences(prefs: any): ValidationResult {
+  const errors: string[] = [];
+
+  // 验证 bufferMinutes
+  if (prefs.bufferMinutes !== undefined) {
+    if (typeof prefs.bufferMinutes !== 'number' || prefs.bufferMinutes < 0 || prefs.bufferMinutes > 120) {
+      errors.push('bufferMinutes must be a number between 0 and 120');
+    }
+  }
+
+  // 验证 maxDailyTasks
+  if (prefs.maxDailyTasks !== undefined) {
+    if (typeof prefs.maxDailyTasks !== 'number' || prefs.maxDailyTasks < 1 || prefs.maxDailyTasks > 50) {
+      errors.push('maxDailyTasks must be a number between 1 and 50');
+    }
+  }
+
+  // 验证 workingHours
+  if (prefs.workingHours) {
+    if (typeof prefs.workingHours.start !== 'number' || prefs.workingHours.start < 0 || prefs.workingHours.start > 23) {
+      errors.push('workingHours.start must be between 0 and 23');
+    }
+    if (typeof prefs.workingHours.end !== 'number' || prefs.workingHours.end < 1 || prefs.workingHours.end > 24) {
+      errors.push('workingHours.end must be between 1 and 24');
+    }
+    if (prefs.workingHours.start >= prefs.workingHours.end) {
+      errors.push('workingHours.start must be less than workingHours.end');
+    }
+  }
+
+  // 验证 chronotype
+  if (prefs.chronotype !== undefined) {
+    const validChronotypes: Chronotype[] = ['early-bird', 'night-owl', 'neutral'];
+    if (!validChronotypes.includes(prefs.chronotype)) {
+      errors.push('chronotype must be one of: early-bird, night-owl, neutral');
+    }
+  }
+
+  return {
+    valid: errors.length === 0,
+    errors,
+  };
+}
+
+// ============== 向后兼容导出 ==============
+
+// 保留旧的 PreferenceLearner 作为别名（可选）
+export { UserPreferenceStore as PreferenceLearner };

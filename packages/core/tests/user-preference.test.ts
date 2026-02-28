@@ -305,17 +305,32 @@ describe('便捷函数', () => {
 
 describe('validatePreferences', () => {
   it('应该验证有效偏好', () => {
-    // 跳过验证函数测试，因为它可能没有导出
-    expect(true).toBe(true);
+    const result = validatePreferences({
+      bufferMinutes: 15,
+      maxDailyTasks: 8,
+      chronotype: 'neutral',
+      workingHours: { start: 9, end: 17 },
+    });
+
+    expect(result.valid).toBe(true);
+    expect(result.errors).toHaveLength(0);
   });
 
   it('应该检测无效缓冲时间', () => {
-    // 跳过验证函数测试
-    expect(true).toBe(true);
+    const result = validatePreferences({
+      bufferMinutes: 150, // 超过 120
+    });
+
+    expect(result.valid).toBe(false);
+    expect(result.errors).toContain('bufferMinutes must be a number between 0 and 120');
   });
 
   it('应该检测无效工作时段', () => {
-    // 跳过验证函数测试
-    expect(true).toBe(true);
+    const result = validatePreferences({
+      workingHours: { start: 17, end: 9 }, // 开始大于结束
+    });
+
+    expect(result.valid).toBe(false);
+    expect(result.errors).toContain('workingHours.start must be less than workingHours.end');
   });
 });

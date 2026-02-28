@@ -18,7 +18,7 @@ import {
 } from '../src/conflict-resolver';
 import { Task, TaskPriority } from '../src/task';
 import { CalendarEvent } from '../src/calendar';
-import { UserPreference } from '../src/user-preference';
+import { UserPreferences } from '../src/user-preference';
 
 describe('ConflictResolver', () => {
   let resolver: ConflictResolver;
@@ -82,33 +82,35 @@ describe('ConflictResolver', () => {
     };
   }
 
-  function createUserPreference(overrides: Partial<UserPreference> = {}): UserPreference {
+  function createUserPreferences(overrides: Partial<UserPreferences> = {}): UserPreferences {
     return {
-      productiveHours: [
-        { start: 9, end: 12, level: 'high' },
-        { start: 14, end: 17, level: 'medium' },
-        { start: 20, end: 22, level: 'low' },
-      ],
+      chronotype: 'neutral',
+      bufferMinutes: 15,
+      maxDailyTasks: 8,
+      productiveHours: {
+        morning: 0.8,
+        afternoon: 0.6,
+        evening: 0.4,
+        night: 0.2,
+      },
+      workingHours: {
+        start: 9,
+        end: 18,
+      },
       taskTypePreferences: {
-        'deep-work': { preferredHours: [9, 10, 11], avoidedHours: [22, 23], confidence: 0.8 },
-        'admin': { preferredHours: [14, 15, 16], avoidedHours: [], confidence: 0.6 },
-        'creative': { preferredHours: [10, 11, 15, 16], avoidedHours: [], confidence: 0.7 },
-        'meeting': { preferredHours: [9, 10, 14, 15, 16], avoidedHours: [], confidence: 0.5 },
-        'routine': { preferredHours: [9, 10, 14, 15, 20, 21], avoidedHours: [], confidence: 0.4 },
+        'deep-work': { taskType: 'deep-work', preferredHours: [9, 10, 11], avoidedHours: [22, 23], confidence: 0.8 },
+        'admin': { taskType: 'admin', preferredHours: [14, 15, 16], avoidedHours: [], confidence: 0.6 },
+        'creative': { taskType: 'creative', preferredHours: [10, 11, 15, 16], avoidedHours: [], confidence: 0.7 },
+        'meeting': { taskType: 'meeting', preferredHours: [9, 10, 14, 15, 16], avoidedHours: [], confidence: 0.5 },
+        'routine': { taskType: 'routine', preferredHours: [9, 10, 14, 15, 20, 21], avoidedHours: [], confidence: 0.4 },
       },
-      sessionLength: { min: 25, max: 120 },
-      breakDuration: 10,
-      learningProgress: {
-        coldStartComplete: true,
-        totalTasksAnalyzed: 50,
-        totalFeedbackReceived: 20,
-        learningDays: 30,
-        hourlyCompletionRate: new Array(24).fill(0),
-        dailyTaskCount: new Array(7).fill(0),
-        feedbackHistory: [],
+      metadata: {
+        version: 1,
+        lastUpdated: new Date().toISOString(),
+        learningIterations: 50,
+        onboardingComplete: true,
       },
-      version: 1,
-      updatedAt: new Date(),
+      ...overrides,
     };
   }
 
@@ -208,18 +210,20 @@ describe('ConflictResolver', () => {
     });
 
     it('应该检测即将到期的高优先级任务（软冲突）', () => {
-      const nearFuture = new Date();
-      nearFuture.setHours(nearFuture.getHours() + 12);
-
       const tomorrow = getTomorrow();
+      
+      // 设置截止时间为任务结束后12小时（在24小时内）
+      const dueDate = new Date(tomorrow);
+      dueDate.setHours(23, 0, 0, 0); // 当天晚上11点
+
       const scheduledTask = createScheduledTask(
         {
           title: '紧急任务',
           priority: 'high',
-          dueDate: nearFuture,
+          dueDate,
         },
-        10,
-        11,
+        10, // 上午10点开始
+        11, // 上午11点结束
         tomorrow
       );
 
@@ -380,7 +384,7 @@ describe('ConflictResolver', () => {
         end: new Date(tomorrow.setHours(11, 0, 0, 0)),
       };
 
-      const preferences = createUserPreference();
+      const preferences = createUserPreferences();
 
       const alternatives = resolver.generateAlternatives(
         task,
@@ -413,7 +417,7 @@ describe('ConflictResolver', () => {
         end: new Date(tomorrow.setHours(11, 0, 0, 0)),
       };
 
-      const preferences = createUserPreference();
+      const preferences = createUserPreferences();
 
       const alternatives = resolver.generateAlternatives(
         task,
@@ -441,7 +445,7 @@ describe('ConflictResolver', () => {
         end: new Date(tomorrow.setHours(11, 0, 0, 0)),
       };
 
-      const preferences = createUserPreference();
+      const preferences = createUserPreferences();
 
       const alternatives = resolver.generateAlternatives(
         task,
@@ -473,7 +477,7 @@ describe('ConflictResolver', () => {
         end: new Date(tomorrow.setHours(11, 0, 0, 0)),
       };
 
-      const preferences = createUserPreference();
+      const preferences = createUserPreferences();
 
       const alternatives = resolver.generateAlternatives(
         task,
@@ -502,7 +506,7 @@ describe('ConflictResolver', () => {
         end: new Date(tomorrow.setHours(11, 0, 0, 0)),
       };
 
-      const preferences = createUserPreference();
+      const preferences = createUserPreferences();
 
       const alternatives = resolver.generateAlternatives(
         task,
@@ -526,7 +530,7 @@ describe('ConflictResolver', () => {
         end: new Date(tomorrow.setHours(11, 0, 0, 0)),
       };
 
-      const preferences = createUserPreference();
+      const preferences = createUserPreferences();
 
       const alternatives = resolver.generateAlternatives(
         task,
@@ -564,7 +568,7 @@ describe('ConflictResolver', () => {
         autoResolvable: true,
       };
 
-      const preferences = createUserPreference();
+      const preferences = createUserPreferences();
 
       const result = resolver.autoReschedule([conflict], [task], preferences);
 
@@ -593,7 +597,7 @@ describe('ConflictResolver', () => {
         autoResolvable: false,
       };
 
-      const preferences = createUserPreference();
+      const preferences = createUserPreferences();
 
       const result = resolver.autoReschedule([conflict], [task], preferences);
 
@@ -641,7 +645,7 @@ describe('ConflictResolver', () => {
         },
       ];
 
-      const preferences = createUserPreference();
+      const preferences = createUserPreferences();
 
       const result = resolver.autoReschedule(conflicts, [lowPriorityTask, highPriorityTask], preferences);
 
@@ -670,7 +674,7 @@ describe('ConflictResolver', () => {
         autoResolvable: true,
       };
 
-      const preferences = createUserPreference();
+      const preferences = createUserPreferences();
 
       const result = resolver.autoReschedule([conflict], [task], preferences);
 
@@ -880,7 +884,7 @@ describe('ConflictResolver', () => {
 
   describe('edge cases', () => {
     it('应该处理空冲突列表', () => {
-      const preferences = createUserPreference();
+      const preferences = createUserPreferences();
 
       const result = resolver.autoReschedule([], [], preferences);
 
@@ -901,7 +905,7 @@ describe('ConflictResolver', () => {
         end: new Date(tomorrow.setHours(11, 0, 0, 0)),
       };
 
-      const preferences = createUserPreference();
+      const preferences = createUserPreferences();
 
       const alternatives = resolver.generateAlternatives(
         task,
@@ -925,7 +929,7 @@ describe('ConflictResolver', () => {
         end: new Date(tomorrow.setHours(23, 30, 0, 0)),
       };
 
-      const preferences = createUserPreference();
+      const preferences = createUserPreferences();
 
       const alternatives = resolver.generateAlternatives(
         task,
@@ -954,7 +958,7 @@ describe('ConflictResolver', () => {
         end: new Date(tomorrow.setHours(11, 0, 0, 0)),
       };
 
-      const preferences = createUserPreference();
+      const preferences = createUserPreferences();
 
       const alternatives = resolver.generateAlternatives(
         task,
@@ -1005,7 +1009,7 @@ describe('ConflictResolver', () => {
       expect(impact.severity).toBeDefined();
 
       // 5. 生成替代方案
-      const preferences = createUserPreference();
+      const preferences = createUserPreferences();
       const alternatives = resolver.generateAlternatives(
         task,
         { start: scheduledTask.start, end: scheduledTask.end },

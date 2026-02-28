@@ -14,7 +14,7 @@
 
 import { Task, TaskPriority } from './task';
 import { CalendarEvent } from './calendar';
-import { UserPreference } from './user-preference';
+import { UserPreferences } from './user-preference';
 import { generateUUID } from './utils';
 
 // ============== 类型定义 ==============
@@ -46,7 +46,7 @@ export interface AlternativeOptions {
   maxResults?: number;        // 最大返回结果数
   maxDaysForward?: number;    // 最多向后查找天数
   minConfidence?: number;     // 最低置信度
-  respectUserPreference?: boolean; // 是否尊重用户偏好
+  respectUserPreferences?: boolean; // 是否尊重用户偏好
 }
 
 /** 重排策略 */
@@ -258,7 +258,7 @@ export class ConflictResolver {
     const deadlineTime = task.dueDate.getTime();
     const taskEndTime = scheduledTask.end.getTime();
 
-    // 任务安排在截止时间之后
+    // 任务安排在截止时间之后（硬冲突）
     if (taskEndTime > deadlineTime) {
       const hoursOver = Math.round((taskEndTime - deadlineTime) / (60 * 60 * 1000));
       
@@ -272,9 +272,12 @@ export class ConflictResolver {
       );
     }
 
-    // 任务即将到期
+    // 任务即将到期 - 检查任务结束时间是否在截止时间之前但在24小时内
     const hoursUntilDeadline = (deadlineTime - Date.now()) / (60 * 60 * 1000);
-    if (hoursUntilDeadline < 24 && task.priority === 'high') {
+    const hoursFromTaskEndToDeadline = (deadlineTime - taskEndTime) / (60 * 60 * 1000);
+    
+    // 如果任务结束时间离截止时间不到24小时，且是高优先级任务
+    if (hoursFromTaskEndToDeadline < 24 && hoursFromTaskEndToDeadline >= 0 && task.priority === 'high') {
       return this.createConflict(
         'soft',
         task,
@@ -410,14 +413,14 @@ export class ConflictResolver {
   generateAlternatives(
     task: Task,
     blockedSlot: TimeSlot,
-    preferences: UserPreference,
+    preferences: UserPreferences,
     options?: AlternativeOptions
   ): TimeSlot[] {
     const opts = {
       maxResults: 5,
       maxDaysForward: 7,
       minConfidence: 0.5,
-      respectUserPreference: true,
+      respectUserPreferences: true,
       ...options,
     };
 
@@ -429,6 +432,9 @@ export class ConflictResolver {
     const searchStart = new Date(blockedSlot.end);
     searchStart.setHours(0, 0, 0, 0);
     searchStart.setDate(searchStart.getDate() + 1); // 从次日开始
+
+    // 截止时间限制
+    const deadlineTime = task.dueDate?.getTime();
 
     // 搜索未来几天的可用时段
     for (let dayOffset = 0; dayOffset < opts.maxDaysForward; dayOffset++) {
@@ -442,11 +448,16 @@ export class ConflictResolver {
         checkDate,
         durationMs,
         preferences,
-        opts.respectUserPreference
+        opts.respectUserPreferences
       );
 
       for (const slot of candidateSlots) {
         if (alternatives.length >= opts.maxResults) break;
+
+        // 检查是否在截止时间之前
+        if (deadlineTime && slot.end.getTime() > deadlineTime) {
+          continue; // 跳过超过截止时间的时段
+        }
 
         // 计算置信度
         const confidence = this.calculateAlternativeConfidence(
@@ -476,34 +487,52 @@ export class ConflictResolver {
   private generateCandidateSlotsForDay(
     date: Date,
     durationMs: number,
-    preferences: UserPreference,
+    preferences: UserPreferences,
     respectPreference: boolean
   ): TimeSlot[] {
     const slots: TimeSlot[] = [];
     
-    // 工作时间：9:00 - 18:00
+    // 使用用户偏好中的工作时段
+    const workStartHour = preferences.workingHours.start;
+    const workEndHour = preferences.workingHours.end;
+    
     const workStart = new Date(date);
-    workStart.setHours(9, 0, 0, 0);
+    workStart.setHours(workStartHour, 0, 0, 0);
     
     const workEnd = new Date(date);
-    workEnd.setHours(18, 0, 0, 0);
+    workEnd.setHours(workEndHour, 0, 0, 0);
 
-    // 如果尊重用户偏好，使用偏好中的高效时段
-    if (respectPreference && preferences.productiveHours.length > 0) {
-      for (const productiveHour of preferences.productiveHours) {
-        if (productiveHour.level === 'high' || productiveHour.level === 'medium') {
-          const slotStart = new Date(date);
-          slotStart.setHours(productiveHour.start, 0, 0, 0);
-          
-          const slotEnd = new Date(slotStart.getTime() + durationMs);
-          
-          // 确保在高效时段内
-          const hourEnd = new Date(date);
-          hourEnd.setHours(productiveHour.end, 0, 0, 0);
-          
-          if (slotEnd <= hourEnd && slotStart >= workStart) {
-            slots.push({ start: slotStart, end: slotEnd });
-          }
+    if (respectPreference) {
+      // 基于高效时段分数生成候选时段
+      const productiveHours = preferences.productiveHours;
+      
+      // 找出最高效的时段
+      const hourScores: { hour: number; score: number }[] = [];
+      for (let h = workStartHour; h < workEndHour; h++) {
+        let score = 0;
+        if (h >= 6 && h < 12) score = productiveHours.morning;
+        else if (h >= 12 && h < 18) score = productiveHours.afternoon;
+        else if (h >= 18 && h < 22) score = productiveHours.evening;
+        else score = productiveHours.night;
+        
+        if (score > 0.5) { // 只考虑效率较高的时段
+          hourScores.push({ hour: h, score });
+        }
+      }
+      
+      // 按分数排序
+      hourScores.sort((a, b) => b.score - a.score);
+      
+      // 为高效时段生成时间槽
+      for (const { hour } of hourScores.slice(0, 3)) { // 取前3个高效时段
+        const slotStart = new Date(date);
+        slotStart.setHours(hour, 0, 0, 0);
+        
+        const slotEnd = new Date(slotStart.getTime() + durationMs);
+        
+        // 确保在工作时段内
+        if (slotEnd <= workEnd && slotStart >= workStart) {
+          slots.push({ start: slotStart, end: slotEnd });
         }
       }
     }
@@ -512,9 +541,9 @@ export class ConflictResolver {
     if (slots.length === 0) {
       // 上午时段
       const morningStart = new Date(date);
-      morningStart.setHours(9, 0, 0, 0);
+      morningStart.setHours(workStartHour, 0, 0, 0);
       const morningEnd = new Date(morningStart.getTime() + durationMs);
-      if (morningEnd.getHours() <= 12) {
+      if (morningEnd.getHours() <= workEndHour) {
         slots.push({ start: morningStart, end: morningEnd });
       }
 
@@ -522,7 +551,7 @@ export class ConflictResolver {
       const afternoonStart = new Date(date);
       afternoonStart.setHours(14, 0, 0, 0);
       const afternoonEnd = new Date(afternoonStart.getTime() + durationMs);
-      if (afternoonEnd.getHours() <= 18) {
+      if (afternoonEnd.getHours() <= workEndHour) {
         slots.push({ start: afternoonStart, end: afternoonEnd });
       }
     }
@@ -536,29 +565,23 @@ export class ConflictResolver {
   private calculateAlternativeConfidence(
     slot: TimeSlot,
     task: Task,
-    preferences: UserPreference
+    preferences: UserPreferences
   ): number {
     let confidence = 0.5; // 基础置信度
     const hour = slot.start.getHours();
 
-    // 1. 检查是否在高效时段
-    const productiveSlot = preferences.productiveHours.find(
-      ph => hour >= ph.start && hour < ph.end
-    );
-    
-    if (productiveSlot) {
-      switch (productiveSlot.level) {
-        case 'high':
-          confidence += 0.3;
-          break;
-        case 'medium':
-          confidence += 0.2;
-          break;
-        case 'low':
-          confidence += 0.1;
-          break;
-      }
+    // 1. 检查时段偏好分数 (0-1)
+    let timePreference = 0;
+    if (hour >= 6 && hour < 12) {
+      timePreference = preferences.productiveHours.morning;
+    } else if (hour >= 12 && hour < 18) {
+      timePreference = preferences.productiveHours.afternoon;
+    } else if (hour >= 18 && hour < 22) {
+      timePreference = preferences.productiveHours.evening;
+    } else {
+      timePreference = preferences.productiveHours.night;
     }
+    confidence += timePreference * 0.3;
 
     // 2. 检查任务类型匹配
     const taskType = this.inferTaskType(task);
@@ -580,7 +603,7 @@ export class ConflictResolver {
     }
 
     // 4. 工作时间奖励
-    if (hour >= 9 && hour < 18) {
+    if (hour >= preferences.workingHours.start && hour < preferences.workingHours.end) {
       confidence += 0.05;
     }
 
@@ -593,7 +616,7 @@ export class ConflictResolver {
   private generateAlternativeReason(
     slot: TimeSlot,
     task: Task,
-    preferences: UserPreference
+    preferences: UserPreferences
   ): string {
     const hour = slot.start.getHours();
     const taskType = this.inferTaskType(task);
@@ -603,11 +626,19 @@ export class ConflictResolver {
     const timeOfDay = hour < 12 ? '上午' : hour < 18 ? '下午' : '晚上';
     reasons.push(`${timeOfDay}时段`);
 
-    // 高效时段
-    const productiveSlot = preferences.productiveHours.find(
-      ph => hour >= ph.start && hour < ph.end
-    );
-    if (productiveSlot?.level === 'high') {
+    // 高效时段检查
+    let timePreference = 0;
+    if (hour >= 6 && hour < 12) {
+      timePreference = preferences.productiveHours.morning;
+    } else if (hour >= 12 && hour < 18) {
+      timePreference = preferences.productiveHours.afternoon;
+    } else if (hour >= 18 && hour < 22) {
+      timePreference = preferences.productiveHours.evening;
+    } else {
+      timePreference = preferences.productiveHours.night;
+    }
+    
+    if (timePreference > 0.7) {
       reasons.push('高效工作时段');
     }
 
@@ -633,7 +664,7 @@ export class ConflictResolver {
   autoReschedule(
     conflicts: Conflict[],
     tasks: Task[],
-    preferences: UserPreference
+    preferences: UserPreferences
   ): RescheduleResult {
     const rescheduledTasks: ScheduledTask[] = [];
     const resolvedConflicts: Conflict[] = [];
@@ -717,10 +748,10 @@ export class ConflictResolver {
     allTasks: Task[]
   ): RescheduleStrategy {
     const task = conflict.task;
-    const impact = this.assessImpact(conflict);
+    const impactSeverity = conflict.impact; // 使用冲突中已计算的影响程度
     
     // 基于影响程度确定策略
-    if (impact.severity === 'high') {
+    if (impactSeverity === 'high') {
       // 高影响：需要用户确认
       if (task.priority === 'high' && task.dueDate) {
         const hoursUntilDue = (task.dueDate.getTime() - Date.now()) / (60 * 60 * 1000);
@@ -751,27 +782,26 @@ export class ConflictResolver {
       };
     }
 
-    // 低影响：自动处理
-    if (conflict.type === 'soft') {
-      // 软冲突：可以尝试移动
-      return {
-        type: 'move',
-        priority: 6,
-        description: '自动移动到其他可用时段',
-        reason: '时间有冲突，可以自动调整到其他时段',
-        targetTaskId: task.id,
-        impact: 'low',
-        requiresConfirmation: false,
-      };
-    }
-
-    // 普通任务：拆分或延后
+    // 低影响：自动处理 - 优先检查是否可拆分
     if (task.estimatedMinutes && task.estimatedMinutes > 60) {
       return {
         type: 'split',
         priority: 5,
         description: '将任务拆分为多个小任务',
         reason: '任务较长，拆分后可以更灵活地安排',
+        targetTaskId: task.id,
+        impact: 'low',
+        requiresConfirmation: false,
+      };
+    }
+
+    // 软冲突：可以尝试移动
+    if (conflict.type === 'soft') {
+      return {
+        type: 'move',
+        priority: 6,
+        description: '自动移动到其他可用时段',
+        reason: '时间有冲突，可以自动调整到其他时段',
         targetTaskId: task.id,
         impact: 'low',
         requiresConfirmation: false,
