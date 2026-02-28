@@ -5,9 +5,9 @@
 格式基于 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/)，
 并且本项目遵循 [语义化版本](https://semver.org/lang/zh-CN/)。
 
-## [未发布]
+## [1.2.0] - 2026-02-28
 
-### 新增 (Sprint 2 - AI 智能日程安排)
+### 新增 (AI 智能日程安排)
 - AI 智能调度系统
   - 添加 AIScheduler 核心类
   - 实现贪心调度算法
@@ -57,6 +57,6 @@
 - 通知提醒功能
 - 数据导出功能
 
-[未发布]: https://github.com/username/calendar-app/compare/v1.1.0...HEAD
+[1.2.0]: https://github.com/username/calendar-app/compare/v1.1.0...v1.2.0
 [1.1.0]: https://github.com/username/calendar-app/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/username/calendar-app/releases/tag/v1.0.0
