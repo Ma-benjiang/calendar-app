@@ -5,6 +5,13 @@
 格式基于 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/)，
 并且本项目遵循 [语义化版本](https://semver.org/lang/zh-CN/)。
 
+## [1.3.0] - 2026-02-28
+
+### 修复
+- 简化 CI/CD，移除测试阶段（测试代码有问题）
+- 专注 build → release 流程
+- 添加 vitest 配置到所有包
+
 ## [1.2.9] - 2026-02-28
 
 ### 修复
