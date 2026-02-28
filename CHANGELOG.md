@@ -5,6 +5,15 @@
 格式基于 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/)，
 并且本项目遵循 [语义化版本](https://semver.org/lang/zh-CN/)。
 
+## [1.2.6] - 2026-02-28
+
+### 修复
+- 添加缺失的 eslint 配置到所有子项目
+  - apps/desktop: eslint + Node.js 配置
+  - apps/mobile: eslint + Node.js 配置
+- 创建 turbo.json 配置
+- 确保所有 package 都有 lint 脚本
+
 ## [1.2.5] - 2026-02-28
 
 ### 修复
