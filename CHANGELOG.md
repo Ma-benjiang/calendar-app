@@ -5,6 +5,14 @@
 格式基于 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/)，
 并且本项目遵循 [语义化版本](https://semver.org/lang/zh-CN/)。
 
+## [1.2.5] - 2026-02-28
+
+### 修复
+- 添加 `pnpm-workspace.yaml` 文件
+  - pnpm 不支持 package.json 中的 `workspaces` 字段
+  - 创建 pnpm-workspace.yaml 定义工作空间
+  - 修复 CI 中 `pnpm install` 失败问题
+
 ## [1.2.4] - 2026-02-28
 
 ### 修复
