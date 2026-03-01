@@ -1,8 +1,8 @@
 {
   "name": "@calendar/desktop",
   "version": "1.0.0",
-  "description": "智能日历桌面应用 - AI驱动的日程管理",
-  "author": "Calendar Team <team@calendar.app>",
+  "description": "Pie - AI驱动的智能日程管理桌面应用",
+  "author": "Pie Team <team@pie.app>",
   "main": "src/main.js",
   "scripts": {
     "start": "electron .",
@@ -18,8 +18,8 @@
     "eslint": "^8.0.0"
   },
   "build": {
-    "appId": "com.calendar.app",
-    "productName": "日历",
+    "appId": "com.pie.app",
+    "productName": "Pie",
     "directories": {
       "output": "dist"
     },

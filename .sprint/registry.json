@@ -75,7 +75,7 @@
       "templateFile": "templates/DevOps.md",
       "lastSprint": "sprint-3",
       "status": "active",
-      "currentTask": "监控 GitHub Actions 构建"
+      "currentTask": "CEO指令：清理GitHub版本 - 删除v1.2.1-1.2.9和v1.3.0-1.3.2，只保留v1.1.0/v1.2.0/v1.3.3"
     }
   },
   "sprints": [

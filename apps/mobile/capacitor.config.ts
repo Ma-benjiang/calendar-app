@@ -1,8 +1,8 @@
 import { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
-  appId: 'com.calendar.app',
-  appName: '日历',
+  appId: 'com.pie.app',
+  appName: 'Pie',
   webDir: '../web/dist',
   server: {
     androidScheme: 'https'
