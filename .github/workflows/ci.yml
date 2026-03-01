@@ -23,7 +23,6 @@ jobs:
           cache: 'pnpm'
       - run: pnpm install --no-frozen-lockfile
       - run: pnpm build:web
-      # Web 静态文件不发布，只用于 Desktop 构建
 
   build-desktop-macos:
     name: 🍎 Build macOS
@@ -41,12 +40,17 @@ jobs:
           cache: 'pnpm'
       - run: pnpm install --no-frozen-lockfile
       - run: pnpm build:web
+      - name: Clean dist folder
+        run: rm -rf apps/desktop/dist/*
       - run: cd apps/desktop && pnpm build:mac
+      - name: Verify output
+        run: ls -la apps/desktop/dist/
       - name: Upload macOS
         uses: actions/upload-artifact@v4
         with:
           name: macos-app
-          path: apps/desktop/dist/*.dmg
+          path: apps/desktop/dist/Pie-*.dmg
+          if-no-files-found: error
 
   build-desktop-windows:
     name: 🪟 Build Windows
@@ -64,13 +68,19 @@ jobs:
           cache: 'pnpm'
       - run: pnpm install --no-frozen-lockfile
       - run: pnpm build:web
+      - name: Clean dist folder
+        run: Remove-Item -Path "apps/desktop/dist/*" -Recurse -Force -ErrorAction SilentlyContinue
+        shell: pwsh
       - run: cd apps/desktop && pnpm build:win
         shell: cmd
+      - name: Verify output
+        run: ls apps/desktop/dist/
       - name: Upload Windows
         uses: actions/upload-artifact@v4
         with:
           name: windows-app
-          path: apps/desktop/dist/*.exe
+          path: apps/desktop/dist/Pie*.exe
+          if-no-files-found: error
 
   build-desktop-linux:
     name: 🐧 Build Linux
@@ -88,12 +98,17 @@ jobs:
           cache: 'pnpm'
       - run: pnpm install --no-frozen-lockfile
       - run: pnpm build:web
+      - name: Clean dist folder
+        run: rm -rf apps/desktop/dist/*
       - run: cd apps/desktop && pnpm build:linux
+      - name: Verify output
+        run: ls -la apps/desktop/dist/
       - name: Upload Linux
         uses: actions/upload-artifact@v4
         with:
           name: linux-app
-          path: apps/desktop/dist/*.AppImage
+          path: apps/desktop/dist/Pie-*.AppImage
+          if-no-files-found: error
 
   release:
     name: 🚀 Release
@@ -110,13 +125,34 @@ jobs:
           path: artifacts
           merge-multiple: true
       - name: List Artifacts
-        run: ls -la artifacts/
-      - name: Create Release
+        run: |
+          echo "=== Downloaded artifacts ==="
+          ls -la artifacts/
+          echo "=== File count ==="
+          find artifacts/ -type f | wc -l
+      - name: Delete existing release assets
+        run: |
+          TAG=${GITHUB_REF#refs/tags/}
+          echo "Checking for existing release: $TAG"
+          # Get release ID
+          RELEASE_ID=$(gh api repos/${{ github.repository }}/releases/tags/$TAG --jq '.id' 2>/dev/null || echo "")
+          if [ -n "$RELEASE_ID" ]; then
+            echo "Found release ID: $RELEASE_ID"
+            # Get and delete all assets
+            gh api repos/${{ github.repository }}/releases/$TAG/assets --jq '.[].id' | while read asset_id; do
+              echo "Deleting asset: $asset_id"
+              gh api --method DELETE repos/${{ github.repository }}/releases/assets/$asset_id
+            done
+          fi
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Create/Update Release
         uses: softprops/action-gh-release@v1
         with:
           files: |
             artifacts/**
           generate_release_notes: true
-          fail_on_unmatched_files: false
+          fail_on_unmatched_files: true
+          make_latest: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
