@@ -1,6 +1,8 @@
 {
   "name": "@calendar/desktop",
   "version": "1.0.0",
+  "description": "智能日历桌面应用 - AI驱动的日程管理",
+  "author": "Calendar Team <team@calendar.app>",
   "main": "src/main.js",
   "scripts": {
     "start": "electron .",
@@ -26,13 +28,15 @@
       "../web/dist/**/*"
     ],
     "mac": {
-      "category": "public.app-category.productivity"
+      "category": "public.app-category.productivity",
+      "target": ["dmg", "zip"]
     },
     "win": {
       "target": "nsis"
     },
     "linux": {
-      "target": "AppImage"
+      "target": "AppImage",
+      "category": "Office"
     }
   }
 }
