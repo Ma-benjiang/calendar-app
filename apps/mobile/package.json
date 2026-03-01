@@ -1,6 +1,6 @@
 {
   "name": "@calendar/mobile",
-  "version": "1.0.0",
+  "version": "1.3.3",
   "scripts": {
     "sync": "cap sync",
     "open:ios": "cap open ios",
