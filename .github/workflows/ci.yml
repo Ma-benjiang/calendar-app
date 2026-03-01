@@ -23,11 +23,7 @@ jobs:
           cache: 'pnpm'
       - run: pnpm install --no-frozen-lockfile
       - run: pnpm build:web
-      - name: Upload Web Dist
-        uses: actions/upload-artifact@v4
-        with:
-          name: web-dist
-          path: apps/web/dist
+      # Web 静态文件不发布，只用于 Desktop 构建
 
   build-desktop-macos:
     name: 🍎 Build macOS
