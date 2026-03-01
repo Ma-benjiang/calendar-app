@@ -1,0 +1,104 @@
+{
+  "registryVersion": "1.1.0",
+  "lastUpdated": "2026-03-01T08:50:00Z",
+  "activeAgents": ["Developer-A", "Developer-B", "Developer-C", "BugFixer", "QAEngineer", "CodeReviewer", "DevOps"],
+  "currentSprint": {
+    "sprintId": "sprint-3",
+    "feature": "CI/CD 完善与发布",
+    "version": "v1.3.3",
+    "status": "in-progress",
+    "startedAt": "2026-03-01T08:50:00Z"
+  },
+  "agentStates": {
+    "SprintMaster": {
+      "stateFile": "agents/SprintMaster-state.json",
+      "templateFile": "templates/SprintMaster.md",
+      "lastSprint": "sprint-3",
+      "status": "active"
+    },
+    "ProductOwner": {
+      "stateFile": "agents/ProductOwner-state.json",
+      "templateFile": "templates/ProductOwner.md",
+      "lastSprint": "sprint-2",
+      "status": "standby"
+    },
+    "TechLead": {
+      "stateFile": "agents/TechLead-state.json",
+      "templateFile": "templates/TechLead.md",
+      "lastSprint": "sprint-2",
+      "status": "standby"
+    },
+    "Developer-A": {
+      "stateFile": "agents/Developer-A-state.json",
+      "templateFile": "templates/Developer.md",
+      "lastSprint": "sprint-3",
+      "status": "active",
+      "currentTask": "监控 CI 构建状态"
+    },
+    "Developer-B": {
+      "stateFile": "agents/Developer-B-state.json",
+      "templateFile": "templates/Developer.md",
+      "lastSprint": "sprint-3",
+      "status": "active",
+      "currentTask": "验证 Desktop 图标配置"
+    },
+    "Developer-C": {
+      "stateFile": "agents/Developer-C-state.json",
+      "templateFile": "templates/Developer.md",
+      "lastSprint": "sprint-3",
+      "status": "active",
+      "currentTask": "检查多平台构建配置"
+    },
+    "QAEngineer": {
+      "stateFile": "agents/QAEngineer-state.json",
+      "templateFile": "templates/QAEngineer.md",
+      "lastSprint": "sprint-3",
+      "status": "active",
+      "currentTask": "验证安装包功能"
+    },
+    "BugFixer": {
+      "stateFile": "agents/BugFixer-state.json",
+      "templateFile": "templates/BugFixer.md",
+      "lastSprint": "sprint-3",
+      "status": "active",
+      "currentTask": "待命修复构建问题"
+    },
+    "CodeReviewer": {
+      "stateFile": "agents/CodeReviewer-state.json",
+      "templateFile": "templates/CodeReviewer.md",
+      "lastSprint": "sprint-3",
+      "status": "active",
+      "currentTask": "审查 CI 配置变更"
+    },
+    "DevOps": {
+      "stateFile": "agents/DevOps-state.json",
+      "templateFile": "templates/DevOps.md",
+      "lastSprint": "sprint-3",
+      "status": "active",
+      "currentTask": "监控 GitHub Actions 构建"
+    }
+  },
+  "sprints": [
+    {
+      "sprintId": "sprint-1",
+      "feature": "任务与待办集成",
+      "version": "v1.1.0",
+      "status": "completed",
+      "completedAt": "2026-02-28T19:20:00Z"
+    },
+    {
+      "sprintId": "sprint-2",
+      "feature": "AI智能日程安排",
+      "version": "v1.2.0",
+      "status": "completed",
+      "completedAt": "2026-02-28T19:55:00Z"
+    },
+    {
+      "sprintId": "sprint-3",
+      "feature": "CI/CD 完善与发布",
+      "version": "v1.3.3",
+      "status": "in-progress",
+      "startedAt": "2026-03-01T08:50:00Z"
+    }
+  ]
+}
