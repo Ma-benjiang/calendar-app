@@ -1,7 +1,7 @@
 # Developer-B 状态 - Sprint 3
 
 ## 当前任务
-- Desktop 应用开发
+- Desktop 应用功能开发
 - **审查 Developer-C 的代码**
 
 ## 负责区域
@@ -9,13 +9,10 @@
 - Storage 存储 (packages/storage)
 
 ## 职责
-- 开发 Desktop 功能
-- 配置构建
-- 修复自己的 Bug
-- **Code Review: Developer-C 的提交**
-
-## 审查对象
-Developer-C (CI/CD/Core)
+- Desktop 功能开发
+- electron-builder 配置（应用层面）
+- Bug 修复
+- **Code Review: Developer-C**
 
 ## 状态
 active

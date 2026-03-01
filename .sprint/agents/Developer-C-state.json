@@ -1,21 +1,18 @@
 # Developer-C 状态 - Sprint 3
 
 ## 当前任务
-- CI/CD 配置
+- Core 核心模块开发
 - **审查 Developer-A 的代码**
 
 ## 负责区域
-- CI/CD (.github/workflows)
 - Core 核心 (packages/core)
+- 任务/日历/AI 调度
 
 ## 职责
-- 配置 GitHub Actions
-- 维护核心模块
-- 修复自己的 Bug
-- **Code Review: Developer-A 的提交**
-
-## 审查对象
-Developer-A (Web/UI)
+- 核心功能开发
+- 单元测试
+- Bug 修复
+- **Code Review: Developer-A**
 
 ## 状态
 active
