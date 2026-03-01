@@ -1,16 +1,17 @@
 # Developer-C 状态 - Sprint 3
 
 ## 当前任务
-检查多平台构建配置
+- 多平台构建配置检查
+- CI/CD 相关 Bug 修复（自己开发的代码）
 
 ## 负责区域
-- CI/CD workflow
-- 多平台构建配置
+- CI/CD 配置 (.github/workflows)
+- 核心模块 (packages/core)
 
-## 任务清单
-- [ ] 检查 .github/workflows/ci.yml
-- [ ] 验证 macOS/Windows/Linux 构建配置
-- [ ] 确保 artifact 上传正确
+## 职责
+- 配置 GitHub Actions
+- 维护构建脚本
+- **修复自己引入的 Bug**
 
 ## 状态
 active

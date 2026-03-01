@@ -1,16 +1,17 @@
 # Developer-B 状态 - Sprint 3
 
 ## 当前任务
-验证 Desktop 图标配置
+- Desktop 图标配置验证
+- Desktop 相关 Bug 修复（自己开发的代码）
 
 ## 负责区域
-- Desktop 应用图标
-- electron-builder 配置
+- Desktop 应用 (apps/desktop)
+- Storage 存储 (packages/storage)
 
-## 任务清单
-- [ ] 验证 icon.png 存在
-- [ ] 检查 electron-builder 图标配置
-- [ ] 测试本地构建
+## 职责
+- 开发 Desktop 功能
+- 配置 electron-builder
+- **修复自己引入的 Bug**
 
 ## 状态
 active

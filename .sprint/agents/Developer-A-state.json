@@ -1,16 +1,17 @@
 # Developer-A 状态 - Sprint 3
 
 ## 当前任务
-监控 CI 构建状态
+- Web 应用构建监控
+- Web 相关 Bug 修复（自己开发的代码）
 
 ## 负责区域
-- Web 应用构建
-- 构建产物验证
+- Web 应用 (apps/web)
+- UI 组件 (packages/ui)
 
-## 任务清单
-- [ ] 监控 GitHub Actions 运行状态
-- [ ] 验证 Web 构建产物
-- [ ] 检查构建日志
+## 职责
+- 开发 Web 功能
+- 编写 Web 相关测试
+- **修复自己引入的 Bug**
 
 ## 状态
 active
