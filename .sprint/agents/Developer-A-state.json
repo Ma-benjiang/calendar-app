@@ -1,8 +1,8 @@
 # Developer-A 状态 - Sprint 3
 
 ## 当前任务
-- Web 应用构建监控
-- Web 相关 Bug 修复（自己开发的代码）
+- Web 应用开发
+- **审查 Developer-B 的代码**
 
 ## 负责区域
 - Web 应用 (apps/web)
@@ -10,8 +10,12 @@
 
 ## 职责
 - 开发 Web 功能
-- 编写 Web 相关测试
-- **修复自己引入的 Bug**
+- 编写测试
+- 修复自己的 Bug
+- **Code Review: Developer-B 的提交**
+
+## 审查对象
+Developer-B (Desktop/Storage)
 
 ## 状态
 active

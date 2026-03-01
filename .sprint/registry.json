@@ -1,7 +1,7 @@
 {
   "registryVersion": "1.1.0",
   "lastUpdated": "2026-03-01T08:50:00Z",
-  "activeAgents": ["Developer-A", "Developer-B", "Developer-C", "QAEngineer", "CodeReviewer", "DevOps"],
+  "activeAgents": ["Developer-A", "Developer-B", "Developer-C", "QAEngineer", "DevOps"],
   "currentSprint": {
     "sprintId": "sprint-3",
     "feature": "CI/CD 完善与发布",
