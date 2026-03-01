@@ -5,6 +5,17 @@
 格式基于 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/)，
 并且本项目遵循 [语义化版本](https://semver.org/lang/zh-CN/)。
 
+## [1.3.3] - 2026-03-01
+
+### 修复
+- 修复所有 ESLint 错误，CI 完全通过
+  - 添加缺失的 eslint 插件 (react-hooks, react-refresh, typescript)
+  - 修复未使用变量/参数警告
+  - 修复类型定义问题
+- 修复所有测试 (146/146 通过)
+- 修复 Web 构建 TypeScript 声明生成问题
+- 修复 storage 包类型错误
+
 ## [1.3.0] - 2026-02-28
 
 ### 修复
