@@ -737,7 +737,7 @@ export class AIScheduler {
   /**
    * 计算冲突严重程度
    */
-  private calculateConflictSeverity(task: Task, event: CalendarEvent): 'low' | 'medium' | 'high' {
+  private calculateConflictSeverity(task: Task, _event: CalendarEvent): 'low' | 'medium' | 'high' {
     if (task.priority === 'high') return 'high';
     if (task.priority === 'medium') return 'medium';
     return 'low';

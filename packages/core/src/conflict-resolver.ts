@@ -84,7 +84,7 @@ export interface ConflictDetectionOptions {
 }
 
 /** 优先级权重映射 */
-const PRIORITY_WEIGHTS: Record<TaskPriority, number> = {
+const _PRIORITY_WEIGHTS: Record<TaskPriority, number> = {
   high: 100,
   medium: 50,
   low: 25,
@@ -123,7 +123,7 @@ export class ConflictResolver {
     const {
       checkBuffer = true,
       bufferMinutes = 15,
-      respectFixedEvents = true,
+      respectFixedEvents: _respectFixedEvents = true,
     } = options;
 
     const conflicts: Conflict[] = [];
@@ -296,7 +296,7 @@ export class ConflictResolver {
     conflictingEvents: CalendarEvent[],
     suggestedAlternatives: TimeSlot[],
     impact: ImpactLevel,
-    description?: string
+    _description?: string
   ): Conflict {
     return {
       id: generateUUID(),
@@ -743,7 +743,7 @@ export class ConflictResolver {
    */
   suggestRescheduleStrategy(
     conflict: Conflict,
-    allTasks: Task[]
+    _allTasks: Task[]
   ): RescheduleStrategy {
     const task = conflict.task;
     const impactSeverity = conflict.impact; // 使用冲突中已计算的影响程度

@@ -3,7 +3,6 @@
  * 遵循 PRD v1.0 规范
  */
 import { generateUUID } from './utils';
-import { CalendarEvent } from './calendar';
 import { RecurrenceFrequency } from './recurrence';
 
 // ============== 类型定义 ==============

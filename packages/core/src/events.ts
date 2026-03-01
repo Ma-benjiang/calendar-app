@@ -204,7 +204,7 @@ export class EventManager {
     const workStartHour = 9;
     const workEndHour = 18;
     
-    let currentCheck = new Date(startFrom);
+    const currentCheck = new Date(startFrom);
     currentCheck.setMinutes(0, 0, 0);
     
     // 如果当前时间已经过了工作时间，从明天开始

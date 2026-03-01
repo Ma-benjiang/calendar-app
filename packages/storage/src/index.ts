@@ -38,12 +38,12 @@ export class StorageManager {
     if (!data) return [];
     
     try {
-      const events = JSON.parse(data);
-      return events.map((e: any) => ({
+      const events = JSON.parse(data) as Array<{startDate: string; endDate: string; [key: string]: unknown}>;
+      return events.map((e) => ({
         ...e,
         startDate: new Date(e.startDate),
         endDate: new Date(e.endDate),
-      }));
+      })) as CalendarEvent[];
     } catch {
       return [];
     }

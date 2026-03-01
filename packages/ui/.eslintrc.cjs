@@ -8,4 +8,11 @@ module.exports = {
     es2020: true,
   },
   ignorePatterns: ['dist', '.eslintrc.cjs'],
+  rules: {
+    '@typescript-eslint/no-unused-vars': ['error', { 
+      'argsIgnorePattern': '^_',
+      'varsIgnorePattern': '^_',
+      'caughtErrorsIgnorePattern': '^_'
+    }],
+  },
 }

@@ -1,4 +1,4 @@
-const { ipcMain } = require('electron');
+const { ipcMain, app } = require('electron');
 const sqlite3 = require('sqlite3').verbose();
 const path = require('path');
 

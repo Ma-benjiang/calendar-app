@@ -29,7 +29,7 @@ export class TimeZoneManager {
   static formatWithTimeZone(
     date: Date,
     timeZone: TimeZone,
-    format: string
+    _format: string
   ): string {
     const options: Intl.DateTimeFormatOptions = {
       timeZone,

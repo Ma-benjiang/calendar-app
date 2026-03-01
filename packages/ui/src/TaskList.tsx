@@ -322,7 +322,7 @@ export const TaskList: React.FC<TaskListProps> = ({
   onUpdateTask,
   onDeleteTask,
   onToggleComplete,
-  onScheduleTask,
+  onScheduleTask: _onScheduleTask,
   onTaskClick,
   onTaskDragStart,
   filter = {},
