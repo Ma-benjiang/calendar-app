@@ -48,6 +48,23 @@
   background: #f3f4f6;
 }
 
+.smart-schedule-btn {
+  padding: 8px 16px;
+  border: 1px solid #8b5cf6;
+  background: #fff;
+  color: #8b5cf6;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.2s;
+}
+
+.smart-schedule-btn:hover {
+  background: #8b5cf6;
+  color: #fff;
+}
+
 .view-btn.active {
   background: #3b82f6;
   color: #fff;

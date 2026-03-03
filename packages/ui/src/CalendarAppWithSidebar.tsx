@@ -6,6 +6,7 @@ import { DayView } from './DayView';
 import { EventForm } from './EventForm';
 import { Sidebar } from './Sidebar';
 import { TaskList } from './TaskList';
+import { SmartSchedule } from './SmartSchedule';
 import { useTaskCalendar } from './useTaskCalendar';
 import { useSidebar, TreeNode } from './useSidebar';
 import './CalendarApp.css';
@@ -53,6 +54,7 @@ export const CalendarAppWithSidebar: React.FC = () => {
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [showTaskDetail, setShowTaskDetail] = useState(false);
+  const [showSmartSchedule, setShowSmartSchedule] = useState(false);
 
   // Sidebar state
   const [isSidebarExpanded, setIsSidebarExpanded] = useState(true);
@@ -166,6 +168,13 @@ export const CalendarAppWithSidebar: React.FC = () => {
             <span className="current-date">{formatTitle()}</span>
             <button className="nav-btn" onClick={goToNext}>▶</button>
             <button className="today-btn" onClick={goToToday}>今天</button>
+            <button
+              className="smart-schedule-btn"
+              onClick={() => setShowSmartSchedule(true)}
+              title="智能安排"
+            >
+              🤖 智能安排
+            </button>
           </div>
           <div className="view-switcher">
             {(['month', 'week', 'day', 'tasks'] as ViewType[]).map((v) => (
@@ -298,6 +307,15 @@ export const CalendarAppWithSidebar: React.FC = () => {
             </div>
           </div>
         )}
+
+        {/* Smart Schedule Modal */}
+        <SmartSchedule
+          isOpen={showSmartSchedule}
+          unscheduledTasks={unscheduledTasks}
+          events={events}
+          onScheduleTask={scheduleTask}
+          onClose={() => setShowSmartSchedule(false)}
+        />
       </div>
     </div>
   );

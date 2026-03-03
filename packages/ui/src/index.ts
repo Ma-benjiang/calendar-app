@@ -51,6 +51,7 @@ export { DayView } from './DayView';
 export { EventForm } from './EventForm';
 export { TaskList } from './TaskList';
 export { TaskView } from './TaskView';
+export { SmartSchedule } from './SmartSchedule';
 export { useCalendar } from './useCalendar';
 export { useNotifications } from './useNotifications';
 export { ExportImport } from './ExportImport';
