@@ -98,7 +98,7 @@ CEO: 怎么样了
 | **ProductOwner** | PRD 编写、需求澄清 | Phase 1 |
 | **QAEngineer** | 测试计划、测试执行 | Phase 2, 4 |
 | **Developer** | 编码实现、单元测试 | Phase 3 |
-| **CodeReviewer** | 代码审查、质量把控 | Phase 3 (并行) |
+| **CodeReviewer** | 代码审查、质量把控 | Phase 4 |
 | **BugFixer** | Bug 修复、问题修复 | Phase 4 (按需) |
 | **DevOps** | 版本管理、发布部署 | Phase 5 |
 
@@ -135,7 +135,7 @@ CEO: 做个新功能
 │    Task 2: Phase 1 - PRD (blockedBy: 1)         │
 │    Task 3: Phase 2 - 测试计划 (blockedBy: 2)     │
 │    Task 4: Phase 3 - 编码 (blockedBy: 3)         │
-│    Task 5: Phase 3 - 审查 (blockedBy: 4)         │
+│    Task 5: Phase 4 - 代码审查 (blockedBy: 4)     │
 │    Task 6: Phase 4 - 集成测试 (blockedBy: 4,5)   │
 │    Task 7: Phase 5 - 发布 (blockedBy: 6)         │
 └────────────────────┬───────────────────────────┘
