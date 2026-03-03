@@ -440,7 +440,9 @@ Agent 系统仅在以下情况主动请示 CEO：
    git commit -m "feat: xxx"
    git push origin feature/xxx
 
-4. 创建 PR → Code Review → 合并到 master
+4. 创建 Pull Request
+   → CodeReviewer 自动审查
+   → 审查通过 → 合并到 master
 
 5. 发布时打 tag
    git tag v1.x.x
