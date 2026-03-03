@@ -12,7 +12,6 @@
 | 🍎 macOS (Apple Silicon) | [Pie-1.4.0-arm64.dmg](https://github.com/Ma-benjiang/calendar-app/releases/latest/download/Pie-1.4.0-arm64.dmg) |
 | 🪟 Windows | [Pie.Setup.1.4.0.exe](https://github.com/Ma-benjiang/calendar-app/releases/latest/download/Pie.Setup.1.4.0.exe) |
 | 🐧 Linux | [Pie-1.4.0.AppImage](https://github.com/Ma-benjiang/calendar-app/releases/latest/download/Pie-1.4.0.AppImage) |
-| 🌐 Web | [在线预览](https://pie-calendar.vercel.app) |
 
 ## 技术栈
 
