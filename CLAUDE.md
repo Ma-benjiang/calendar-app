@@ -421,6 +421,40 @@ Agent 系统仅在以下情况主动请示 CEO：
 - **函数** - 单一职责
 - **命名** - 组件 PascalCase，函数 camelCase，常量 UPPER_SNAKE_CASE
 
+### Git 工作流
+
+**禁止直接 push master**，所有代码必须通过 PR 合并。
+
+#### 工作流程
+
+```
+1. 创建功能分支
+   git checkout -b feature/xxx
+
+2. 开发 + 本地验证
+   pnpm lint
+   pnpm test
+   pnpm build:web
+
+3. 提交到分支
+   git commit -m "feat: xxx"
+   git push origin feature/xxx
+
+4. 创建 PR → Code Review → 合并到 master
+
+5. 发布时打 tag
+   git tag v1.x.x
+   git push origin v1.x.x
+```
+
+#### 分支命名规范
+
+| 类型 | 命名格式 | 示例 |
+|------|----------|------|
+| 功能 | `feature/{name}` | `feature/week-view` |
+| 修复 | `fix/{issue}` | `fix/ci-warning` |
+| 文档 | `docs/{topic}` | `docs/api-guide` |
+
 ### Git 提交规范
 
 ```
