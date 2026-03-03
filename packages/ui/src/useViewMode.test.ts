@@ -40,7 +40,9 @@ describe('useViewMode', () => {
       });
 
       const sorted = result.current.sortedItems;
-      expect(sorted[0].startTime).toBeLessThanOrEqual(sorted[1]?.startTime || '');
+      // Check that events with startTime come before tasks without startTime
+      expect(sorted[0].startTime).toBeDefined();
+      expect(sorted[0].startTime <= (sorted[1]?.startTime || '')).toBe(true);
     });
   });
 

@@ -90,7 +90,7 @@ export const CommandMenu: React.FC<CommandMenuProps> = ({
 
   if (!isOpen) return null;
 
-  const hasResults = commands.length > 0;
+  const hasResults = Object.values(groupedCommands).some(arr => arr.length > 0);
 
   return (
     <div
@@ -109,7 +109,7 @@ export const CommandMenu: React.FC<CommandMenuProps> = ({
             ref={inputRef}
             type="text"
             className="command-menu-input"
-            placeholder="输入命令或搜索..."
+            placeholder="Type a command or search..."
             value={filter}
             onChange={(e) => onFilterChange(e.target.value)}
             onKeyDown={handleKeyDown}
@@ -127,7 +127,7 @@ export const CommandMenu: React.FC<CommandMenuProps> = ({
         </div>
 
         <div ref={listRef} className="command-menu-list" role="listbox">
-          {hasResults ? (
+          {hasResults && groupedCommands ? (
             Object.entries(groupedCommands).map(([category, categoryCommands]) => {
               if (categoryCommands.length === 0) return null;
 

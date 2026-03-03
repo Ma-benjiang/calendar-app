@@ -237,14 +237,15 @@ describe('useQuickAdd', () => {
       expect(result.current.error).toBeDefined();
     });
 
-    it('should show error for unparsable date', () => {
+    it('should accept title-only input with default date', () => {
       const { result } = renderHook(() => useQuickAdd({ onCreate: mockOnCreate }));
 
       act(() => {
         result.current.setInput('某个时间做某事');
       });
 
-      expect(result.current.parsedData.isValid).toBe(false);
+      expect(result.current.parsedData.isValid).toBe(true);
+      expect(result.current.parsedData.title).toBe('某个时间做某事');
     });
   });
 

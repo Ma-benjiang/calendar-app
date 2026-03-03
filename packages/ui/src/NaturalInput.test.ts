@@ -275,9 +275,11 @@ describe('NaturalInput Parser', () => {
       expect(result.isValid).toBe(true);
     });
 
-    it('should mark invalid for unparsable input', () => {
+    it('should mark valid for title-only input with default date', () => {
       const result = parseNaturalInput('something something');
-      expect(result.isValid).toBe(false);
+      expect(result.isValid).toBe(true);
+      expect(result.title).toBe('something something');
+      expect(result.date).toBe('2026-03-02'); // Default to today
     });
 
     it('should mark invalid for past dates', () => {

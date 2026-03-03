@@ -182,9 +182,24 @@ export function useViewMode(options: UseViewModeOptions): UseViewModeReturn {
     sorted.sort((a, b) => {
       switch (sortBy) {
         case 'time': {
-          const timeA = a.startTime || a.dueDate || '';
-          const timeB = b.startTime || b.dueDate || '';
-          return timeA.localeCompare(timeB);
+          // Prefer startTime over dueDate for sorting
+          // Items with startTime should come before items with only dueDate
+          const timeA = a.startTime || '';
+          const timeB = b.startTime || '';
+          const dueA = a.dueDate || '';
+          const dueB = b.dueDate || '';
+
+          // If both have startTime, compare startTime
+          if (timeA && timeB) return timeA.localeCompare(timeB);
+          // If only A has startTime, A comes first
+          if (timeA) return -1;
+          // If only B has startTime, B comes first
+          if (timeB) return 1;
+          // Neither has startTime, compare dueDate
+          if (dueA && dueB) return dueA.localeCompare(dueB);
+          if (dueA) return -1;
+          if (dueB) return 1;
+          return 0;
         }
         case 'priority': {
           const priorityOrder = { high: 0, medium: 1, low: 2 };

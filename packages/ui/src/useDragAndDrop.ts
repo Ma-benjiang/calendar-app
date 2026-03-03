@@ -150,11 +150,25 @@ export function useDragAndDrop(options: UseDragAndDropOptions): UseDragAndDropRe
     onDurationChange?.(params);
   }, [onDurationChange]);
 
+  const calculateNewOrder = useCallback(({ activeId, overId }: { activeId: string; overId: string }): string[] => {
+    const oldIndex = items.findIndex(item => item.id === activeId);
+    const newIndex = items.findIndex(item => item.id === overId);
+
+    if (oldIndex === -1 || newIndex === -1) {
+      return items.map(item => item.id);
+    }
+
+    const newOrder = items.map(item => item.id);
+    const [movedId] = newOrder.splice(oldIndex, 1);
+    newOrder.splice(newIndex, 0, movedId);
+
+    return newOrder;
+  }, [items]);
+
   const handleSortEnd = useCallback((event: { active: { id: string }; over: { id: string } | null }) => {
     const { active, over } = event;
     if (!over || active.id === over.id) return;
 
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     const newOrder = calculateNewOrder({ activeId: active.id, overId: over.id });
     onReorder?.({
       activeId: active.id,
@@ -180,13 +194,13 @@ export function useDragAndDrop(options: UseDragAndDropOptions): UseDragAndDropRe
   }, [isMobile]);
 
   const handleTouchMove = useCallback((params: { x: number; y: number }) => {
-    if (isMobile && dragState.isDragging) {
+    if (isMobile) {
       setDragState(prev => ({
         ...prev,
         currentPosition: { x: params.x, y: params.y },
       }));
     }
-  }, [isMobile, dragState.isDragging]);
+  }, [isMobile]);
 
   const handleTouchEnd = useCallback(() => {
     if (isMobile) {
@@ -203,21 +217,6 @@ export function useDragAndDrop(options: UseDragAndDropOptions): UseDragAndDropRe
     setAriaLiveText(`Dragging item ${params.direction}`);
   }, []);
 
-  const calculateNewOrder = useCallback(({ activeId, overId }: { activeId: string; overId: string }): string[] => {
-    const oldIndex = items.findIndex(item => item.id === activeId);
-    const newIndex = items.findIndex(item => item.id === overId);
-
-    if (oldIndex === -1 || newIndex === -1) {
-      return items.map(item => item.id);
-    }
-
-    const newOrder = items.map(item => item.id);
-    const [movedId] = newOrder.splice(oldIndex, 1);
-    newOrder.splice(newIndex, 0, movedId);
-
-    return newOrder;
-  }, [items]);
-
   const getItemStyle = useCallback((id: string): React.CSSProperties => {
     const isDragged = dragState.draggedId === id;
     return {
@@ -230,7 +229,7 @@ export function useDragAndDrop(options: UseDragAndDropOptions): UseDragAndDropRe
 
   const getDropIndicatorStyle = useCallback((): React.CSSProperties => {
     return {
-      borderColor: isValidDrop ? '#3b82f6' : '#ef4444',
+      borderColor: isValidDrop ? 'blue' : 'red',
       borderWidth: '2px',
       borderStyle: 'dashed',
     };
