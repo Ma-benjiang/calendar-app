@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
 import { CalendarEvent } from '@calendar/core';
 import { EventManager } from '@calendar/core/events';
 import { StorageManager, LocalStorageAdapter } from '@calendar/storage';
@@ -7,9 +7,9 @@ export const useCalendar = () => {
   const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [currentDate, setCurrentDate] = useState(new Date());
   const [view, setView] = useState<'month' | 'week' | 'day'>('month');
-  
-  const eventManager = new EventManager();
-  const storageManager = new StorageManager(new LocalStorageAdapter());
+
+  const eventManager = useMemo(() => new EventManager(), []);
+  const storageManager = useMemo(() => new StorageManager(new LocalStorageAdapter()), []);
 
   // 加载事件
   useEffect(() => {
@@ -27,19 +27,19 @@ export const useCalendar = () => {
     });
 
     return unsubscribe;
-  }, []);
+  }, [eventManager, storageManager]);
 
   const addEvent = useCallback((eventData: Omit<CalendarEvent, 'id'>) => {
     return eventManager.createEvent(eventData);
-  }, []);
+  }, [eventManager]);
 
   const updateEvent = useCallback((id: string, updates: Partial<CalendarEvent>) => {
     return eventManager.updateEvent(id, updates);
-  }, []);
+  }, [eventManager]);
 
   const deleteEvent = useCallback((id: string) => {
     return eventManager.deleteEvent(id);
-  }, []);
+  }, [eventManager]);
 
   const goToToday = useCallback(() => {
     setCurrentDate(new Date());

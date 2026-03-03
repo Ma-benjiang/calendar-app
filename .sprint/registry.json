@@ -1,84 +1,175 @@
 {
-  "registryVersion": "1.1.0",
-  "lastUpdated": "2026-03-01T08:50:00Z",
-  "activeAgents": ["Developer-A", "Developer-B", "Developer-C", "QAEngineer", "DevOps"],
-  "currentSprint": {
-    "sprintId": "sprint-3",
-    "feature": "CI/CD 完善与发布",
-    "version": "v1.3.3",
-    "status": "in-progress",
-    "startedAt": "2026-03-01T08:50:00Z"
+  "registryVersion": "2.1.0",
+  "lastUpdated": "2026-03-02T10:00:00Z",
+  "subagentConfig": {
+    "type": "claude-code-native",
+    "location": ".claude/agents/",
+    "agents": [
+      "sprint-master",
+      "product-owner",
+      "developer",
+      "qa-engineer",
+      "code-reviewer",
+      "bug-fixer",
+      "devops"
+    ]
   },
-  "agentStates": {
-    "SprintMaster": {
-      "stateFile": "agents/SprintMaster-state.json",
-      "templateFile": "templates/SprintMaster.md",
-      "lastSprint": "sprint-3",
-      "status": "active"
+  "sprintMaster": {
+    "description": "SprintMaster 负责流程协调、阶段调度和目标对齐验证",
+    "phaseValidation": {
+      "phase1_to_2": {
+        "checkpoint": "PRD 是否包含可测试的验收标准",
+        "validationRules": [
+          "PRD 文档存在且非空",
+          "包含功能描述章节",
+          "包含验收标准章节",
+          "验收标准可转化为测试用例"
+        ],
+        "failAction": "退回 ProductOwner 补充 PRD"
+      },
+      "phase2_to_3": {
+        "checkpoint": "测试用例是否覆盖 PRD 所有功能点",
+        "validationRules": [
+          "TEST-PLAN 文档存在且非空",
+          "每个功能点至少有一个测试用例",
+          "测试用例包含预期结果"
+        ],
+        "failAction": "退回 QAEngineer 补充测试用例"
+      },
+      "phase3_to_4": {
+        "checkpoint": "代码审查是否通过且覆盖率≥80%",
+        "validationRules": [
+          "CODE-REVIEW 文档存在",
+          "审查结论为通过",
+          "单元测试覆盖率≥80%",
+          "无严重代码质量问题"
+        ],
+        "failAction": "退回 Developer 修复代码"
+      },
+      "phase4_to_5": {
+        "checkpoint": "所有测试通过且无阻塞性Bug",
+        "validationRules": [
+          "TEST-REPORT 文档存在",
+          "所有测试用例通过",
+          "无 P0/P1 级别 Bug",
+          "P2 Bug 有明确修复计划"
+        ],
+        "failAction": "启动 BugFixer 修复循环"
+      },
+      "phase5_to_end": {
+        "checkpoint": "CEO 确认发布时机",
+        "validationRules": [
+          "RELEASE 文档已生成",
+          "质量指标达标（覆盖率≥80%，无P0/P1 Bug）",
+          "向 CEO 发送发布就绪通知",
+          "CEO 明确指示 '确认发布' 后才继续"
+        ],
+        "notificationTemplate": "Sprint {sprintId} 已就绪发布：{feature}，质量指标：覆盖率{coverage}%，Bug：P0={p0}, P1={p1}。回复'确认发布'以继续。",
+        "failAction": "暂停等待 CEO 指令"
+      }
     },
-    "ProductOwner": {
-      "stateFile": "agents/ProductOwner-state.json",
-      "templateFile": "templates/ProductOwner.md",
-      "lastSprint": "sprint-2",
-      "status": "standby"
-    },
-    "TechLead": {
-      "stateFile": "agents/TechLead-state.json",
-      "templateFile": "templates/TechLead.md",
-      "lastSprint": "sprint-2",
-      "status": "standby"
-    },
-    "Developer-A": {
-      "stateFile": "agents/Developer-A-state.json",
-      "templateFile": "templates/Developer.md",
-      "lastSprint": "sprint-3",
-      "status": "active",
-      "currentTask": "监控 CI 构建状态"
-    },
-    "Developer-B": {
-      "stateFile": "agents/Developer-B-state.json",
-      "templateFile": "templates/Developer.md",
-      "lastSprint": "sprint-3",
-      "status": "active",
-      "currentTask": "验证 Desktop 图标配置"
-    },
-    "Developer-C": {
-      "stateFile": "agents/Developer-C-state.json",
-      "templateFile": "templates/Developer.md",
-      "lastSprint": "sprint-3",
-      "status": "active",
-      "currentTask": "检查多平台构建配置"
-    },
-    "QAEngineer": {
-      "stateFile": "agents/QAEngineer-state.json",
-      "templateFile": "templates/QAEngineer.md",
-      "lastSprint": "sprint-3",
-      "status": "active",
-      "currentTask": "验证安装包功能"
-    },
-    "BugFixer": {
-      "stateFile": "agents/BugFixer-state.json",
-      "templateFile": "templates/BugFixer.md",
-      "lastSprint": "sprint-3",
-      "status": "active",
-      "currentTask": "待命修复构建问题"
-    },
-    "CodeReviewer": {
-      "stateFile": "agents/CodeReviewer-state.json",
-      "templateFile": "templates/CodeReviewer.md",
-      "lastSprint": "sprint-3",
-      "status": "active",
-      "currentTask": "审查 CI 配置变更"
-    },
-    "DevOps": {
-      "stateFile": "agents/DevOps-state.json",
-      "templateFile": "templates/DevOps.md",
-      "lastSprint": "sprint-3",
-      "status": "active",
-      "currentTask": "CEO指令：清理GitHub版本 - 删除v1.2.1-1.2.9和v1.3.0-1.3.2，只保留v1.1.0/v1.2.0/v1.3.3"
+    "conflictResolution": {
+      "timeoutMinutes": 15,
+      "escalationPath": [
+        "Agent间协商 (5分钟)",
+        "SprintMaster 仲裁 (10分钟)",
+        "CEO 决策"
+      ],
+      "triggers": [
+        "Developer 与 CodeReviewer 意见不一致超过15分钟",
+        "涉及架构重大变更",
+        "技术债务 vs 进度权衡影响 > 1个Sprint",
+        "连续 2 次 SprintMaster 仲裁无法解决"
+      ],
+      "ceoNotification": {
+        "format": "[Sprint {sprintId}] 需要决策：{conflictSummary}",
+        "content": [
+          "冲突背景：{background}",
+          "方案A（{agentA}）：{proposalA}",
+          "方案B（{agentB}）：{proposalB}",
+          "SprintMaster 建议：{recommendation}",
+          "影响评估：{impact}"
+        ],
+        "responseOptions": ["同意方案A", "同意方案B", "提出新方案"]
+      }
     }
   },
-  "sprints": [
+  "ceoNotifications": {
+    "enabled": true,
+    "channels": ["cli", "report"],
+    "notificationTypes": {
+      "sprintStarted": {
+        "enabled": true,
+        "message": "Sprint {sprintId} 已启动：{feature}"
+      },
+      "milestoneCompleted": {
+        "enabled": true,
+        "message": "里程碑完成：{phase} - {feature}"
+      },
+      "releaseReady": {
+        "enabled": true,
+        "requireConfirmation": true,
+        "message": "发布就绪：{feature} v{version}，质量指标：{metrics}"
+      },
+      "blockerIssue": {
+        "enabled": true,
+        "urgency": "high",
+        "message": "[需关注] {sprintId} 遇到阻塞：{issue}"
+      },
+      "sprintCompleted": {
+        "enabled": true,
+        "message": "Sprint {sprintId} 已完成：{feature}",
+        "attachment": "SPRINT-REPORT.md"
+      }
+    }
+  },
+  "agentMetrics": {
+    "product-owner": {
+      "trustScore": 85,
+      "tasksCompleted": 3,
+      "successRate": 100,
+      "avgQualityScore": 88
+    },
+    "qa-engineer": {
+      "trustScore": 90,
+      "tasksCompleted": 6,
+      "successRate": 100,
+      "avgQualityScore": 92
+    },
+    "developer": {
+      "trustScore": 88,
+      "tasksCompleted": 6,
+      "successRate": 95,
+      "avgQualityScore": 85
+    },
+    "code-reviewer": {
+      "trustScore": 92,
+      "tasksCompleted": 5,
+      "successRate": 100,
+      "avgQualityScore": 90
+    },
+    "bug-fixer": {
+      "trustScore": 80,
+      "tasksCompleted": 2,
+      "successRate": 90,
+      "avgQualityScore": 82
+    },
+    "devops": {
+      "trustScore": 85,
+      "tasksCompleted": 3,
+      "successRate": 95,
+      "avgQualityScore": 87
+    }
+  },
+  "outputDirectories": {
+    "prd": "docs/prd/",
+    "test": "docs/test/",
+    "review": "docs/review/",
+    "bugfix": "docs/bugfix/",
+    "release": "docs/release/",
+    "sprint": ".sprint/"
+  },
+  "sprintHistory": [
     {
       "sprintId": "sprint-1",
       "feature": "任务与待办集成",
@@ -97,8 +188,8 @@
       "sprintId": "sprint-3",
       "feature": "CI/CD 完善与发布",
       "version": "v1.3.3",
-      "status": "in-progress",
-      "startedAt": "2026-03-01T08:50:00Z"
+      "status": "completed",
+      "completedAt": "2026-03-01T10:00:00Z"
     }
   ]
 }

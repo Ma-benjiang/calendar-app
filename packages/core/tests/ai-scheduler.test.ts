@@ -180,12 +180,13 @@ describe('AIScheduler', () => {
 
   describe('工具函数', () => {
     it('calculateUrgencyScore 应该正确计算紧急度', () => {
+      // 测试12-24小时范围内的任务返回80分
       const urgentTask: Partial<Task> = {
-        dueDate: new Date(Date.now() + 12 * 60 * 60 * 1000), // 12小时后
+        dueDate: new Date(Date.now() + 18 * 60 * 60 * 1000), // 18小时后（12-24小时之间）
       };
 
       const score = calculateUrgencyScore(urgentTask as Task);
-      expect(score).toBe(80); // 12小时 = 80分
+      expect(score).toBe(80); // 12-24小时 = 80分
     });
 
     it('getDefaultPreferences 应该返回默认值', () => {
