@@ -6,6 +6,7 @@ import './notion-theme.css';
 // Export hooks
 export { useSidebar, type TreeNode } from './useSidebar';
 export { useCommand, type Command } from './useCommand';
+export { useTasks } from './useTasks';
 export {
   useViewMode,
   type ViewMode,
@@ -39,11 +40,13 @@ export { NotionButton } from './NotionButton';
 
 // Export legacy components (for backward compatibility)
 export { CalendarApp } from './CalendarApp';
+export { CalendarAppWithSidebar } from './CalendarAppWithSidebar';
 export { MonthView } from './MonthView';
 export { WeekView } from './WeekView';
 export { DayView } from './DayView';
 export { EventForm } from './EventForm';
 export { TaskList } from './TaskList';
+export { TaskView } from './TaskView';
 export { useCalendar } from './useCalendar';
 export { useNotifications } from './useNotifications';
 export { ExportImport } from './ExportImport';
