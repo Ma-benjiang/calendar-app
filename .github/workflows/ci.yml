@@ -164,6 +164,28 @@ jobs:
           fi
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Update README version
+        run: |
+          TAG=${GITHUB_REF#refs/tags/}
+          VERSION=${TAG#v}
+          echo "Updating README to version $VERSION"
+
+          # 更新下载链接中的版本号
+          sed -i "s/Pie-[0-9]\+\.[0-9]\+\.[0-9]\+-arm64\.dmg/Pie-${VERSION}-arm64.dmg/g" README.md
+          sed -i "s/Pie\.Setup\.[0-9]\+\.[0-9]\+\.[0-9]\.exe/Pie.Setup.${VERSION}.exe/g" README.md
+          sed -i "s/Pie-[0-9]\+\.[0-9]\+\.[0-9]\+\.AppImage/Pie-${VERSION}.AppImage/g" README.md
+
+          # 配置 git
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          # 提交更改
+          git add README.md
+          git diff --staged --quiet || git commit -m "docs: update README download links to $VERSION [skip ci]"
+          git push origin master
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Create/Update Release
         uses: softprops/action-gh-release@v2
         with:
