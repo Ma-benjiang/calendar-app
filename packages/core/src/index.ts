@@ -16,8 +16,7 @@ export * from './export';
 
 // AI 智能调度模块 (Sprint 2)
 // 注意：ai-scheduler 和 conflict-resolver 有同名类型，单独导出避免冲突
-export {
-  AIScheduler,
+export type {
   ScheduleOptions,
   ScheduleResult,
   UserPreference,
@@ -26,6 +25,9 @@ export {
   ScheduledTask as SchedulerScheduledTask,
   Conflict as SchedulerConflict,
   RescheduleResult as SchedulerRescheduleResult,
+} from './ai-scheduler';
+export {
+  AIScheduler,
   initializeAIScheduler,
   calculateUrgencyScore,
   getDefaultPreferences,

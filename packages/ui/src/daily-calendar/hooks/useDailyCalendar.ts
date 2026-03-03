@@ -288,6 +288,15 @@ export function useDailyCalendar(): UseDailyCalendarReturn {
       setProgress(100);
     } catch (err) {
       const error = err instanceof Error ? err : new Error(String(err));
+      // 如果是用户主动取消（快速点击重新生成），不显示错误
+      if (error.message === '生成已取消') {
+        console.log('Generation cancelled by user');
+        // 重置状态但不显示错误
+        setIsLoading(false);
+        setIsGenerating(false);
+        setProgress(0);
+        return;
+      }
       setError(error);
       console.error('Failed to regenerate calendar:', error);
     } finally {

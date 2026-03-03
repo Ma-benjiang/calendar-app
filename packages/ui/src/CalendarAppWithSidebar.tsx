@@ -9,9 +9,10 @@ import { TaskList } from './TaskList';
 import { SmartSchedule } from './SmartSchedule';
 import { useTaskCalendar } from './useTaskCalendar';
 import type { TreeNode } from './useSidebar';
+import { DailyCalendarPage } from './daily-calendar';
 import './CalendarApp.css';
 
-type ViewType = 'month' | 'week' | 'day' | 'tasks';
+type ViewType = 'month' | 'week' | 'day' | 'tasks' | 'daily-calendar';
 
 // 侧边栏示例数据
 const sidebarItems = [
@@ -19,6 +20,7 @@ const sidebarItems = [
   { id: 'view-week', name: '周视图', type: 'calendar' as const, parentId: null, icon: '📊', color: '#ef4444' },
   { id: 'view-day', name: '日视图', type: 'calendar' as const, parentId: null, icon: '📆', color: '#10b981' },
   { id: 'view-tasks', name: '任务管理', type: 'calendar' as const, parentId: null, icon: '✓', color: '#f59e0b' },
+  { id: 'view-daily-calendar', name: '每日台历', type: 'calendar' as const, parentId: null, icon: '🖼️', color: '#ec4899' },
   { id: 'folder-projects', name: '项目', type: 'folder' as const, parentId: null, icon: '📁' },
   { id: 'cal-project-a', name: '项目A', type: 'calendar' as const, parentId: 'folder-projects', icon: '📈', color: '#8b5cf6' },
 ];
@@ -145,6 +147,7 @@ export const CalendarAppWithSidebar: React.FC = () => {
           else if (id === 'view-week') setView('week');
           else if (id === 'view-day') setView('day');
           else if (id === 'view-tasks') setView('tasks');
+          else if (id === 'view-daily-calendar') setView('daily-calendar');
         }}
         onFolderToggle={(id) => {
           setExpandedFolders(prev =>
@@ -237,10 +240,13 @@ export const CalendarAppWithSidebar: React.FC = () => {
                 onTaskClick={handleTaskClick}
               />
             )}
+            {view === 'daily-calendar' && (
+              <DailyCalendarPage />
+            )}
           </div>
 
           {/* Task Sidebar - show in calendar views */}
-          {view !== 'tasks' && (
+          {view !== 'tasks' && view !== 'daily-calendar' && (
             <div style={{ width: '320px', flexShrink: 0, borderLeft: '1px solid #e5e7eb', paddingLeft: '16px' }}>
               <TaskList
                 tasks={unscheduledTasks}

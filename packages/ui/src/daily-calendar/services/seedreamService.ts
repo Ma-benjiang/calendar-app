@@ -140,9 +140,13 @@ export class SeedreamService {
   /**
    * 生成图片
    * @param params 生成参数
+   * @param options 可选配置
    * @returns 生成的图片信息
    */
-  async generateImage(params: ImageGenerationParams): Promise<GeneratedImage> {
+  async generateImage(
+    params: ImageGenerationParams,
+    options?: { cancelPrevious?: boolean }
+  ): Promise<GeneratedImage> {
     const validation = this.validateConfig();
     if (!validation.valid) {
       throw new Error(validation.error);
@@ -159,8 +163,10 @@ export class SeedreamService {
       response_format: 'url',
     };
 
-    // 取消之前的请求
-    this.cancelGeneration();
+    // 取消之前的请求（默认行为，可通过 options.cancelPrevious: false 禁用）
+    if (options?.cancelPrevious !== false) {
+      this.cancelGeneration();
+    }
     this.abortController = new AbortController();
 
     let lastError: Error | null = null;

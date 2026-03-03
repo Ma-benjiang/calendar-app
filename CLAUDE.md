@@ -59,7 +59,9 @@ CEO: 怎么样了
         ▼             │             ▼             ▼
    ┌─────────┐        │        ┌─────────┐   ┌─────────┐
    │Researcher│        │        │Researcher│   │TaskList │
-   │分析+推荐│        │        │仅调研    │   │查询状态 │
+   │subagent │        │        │subagent  │   │查询状态 │
+   │(agent-  │        │        │(agent-   │   │         │
+   │ reach)  │        │        │ reach)   │   │         │
    └────┬────┘        │        └─────────┘   └─────────┘
         │             │
         │             ▼
@@ -83,14 +85,32 @@ CEO: 怎么样了
 
 | Agent | 职责 | 触发条件 |
 |-------|------|----------|
-| **主对话 Claude Code** | 意图识别、**SprintMaster**（Task 创建、阶段调度、进度跟踪） | CEO 每次输入 |
-| **Researcher** | 产品调研、竞品分析、功能推荐 | 自主模式启动时 |
+| **主对话 Claude Code** | 意图识别、Task 管理、阶段调度、子 Agent 调度 | CEO 每次输入 |
+| **Researcher** | 产品调研、竞品分析、功能推荐（使用 agent-reach 工具） | 自主模式启动时 |
 | **ProductOwner** | PRD 编写、需求澄清 | Phase 1 |
 | **QAEngineer** | 测试计划、测试执行 | Phase 2, 4 |
 | **Developer** | 编码实现、单元测试 | Phase 3 |
 | **CodeReviewer** | 代码审查、质量把控 | Phase 4 |
 | **BugFixer** | Bug 修复、问题修复 | Phase 4 (按需) |
 | **DevOps** | 版本管理、发布部署 | Phase 5 |
+
+### 主对话的职责
+
+作为主 Agent，我直接承担所有协调工作：
+
+| 职责 | 具体工作 |
+|------|----------|
+| **意图识别** | 理解 CEO 指令，判断是自主模式/指定功能/调研/查看状态 |
+| **Task 管理** | 使用 TaskCreate/TaskList/TaskGet 创建和跟踪 Sprint 任务链 |
+| **阶段推进** | 检查阶段完成条件，推进到下一阶段 |
+| **子 Agent 调度** | 按需 spawn 子 agent 执行具体阶段工作 |
+| **检查点验证** | 验证交付物是否符合准入标准 |
+| **发布通知** | Phase 5 完成后通知 CEO "发布就绪" |
+
+**执行规则：**
+- 检查前置依赖（blockedBy）后再推进
+- 阶段交付物符合标准才进入下一阶段
+- 测试失败时 spawn bug-fixer 修复循环
 
 ---
 
@@ -142,7 +162,7 @@ CEO: 做个新功能
 │             → 检查点：测试用例覆盖 PRD           │
 │                                                │
 │    Phase 3 → Developer                          │
-│             → 编码 + 单元测试（覆盖率≥80%）      │
+│             → 编码 + 单元测试（覆盖率=100%）      │
 │             → 本地验证通过后创建 PR              │
 │             → 检查点：PR 创建，代码在功能分支    │
 │                                                │
@@ -260,7 +280,7 @@ CEO: 进度怎么样
 |--------|-----------|-----------|
 | Phase 1 → 2 | PRD 包含明确的功能描述和可测试的验收标准 | 退回 ProductOwner 补充 |
 | Phase 2 → 3 | 测试用例与 PRD 需求一一对应 | 退回 QAEngineer 补充 |
-| Phase 3 → 4 | 编码完成，单元测试覆盖率≥80%，PR 已创建 | 退回 Developer 补充 |
+| Phase 3 → 4 | 编码完成，单元测试覆盖率=100%，PR 已创建 | 退回 Developer 补充 |
 | Phase 4 → 5 | Code Review 通过，集成测试通过，无 P0/P1 Bug，已合并到 master | 启动 BugFixer 修复循环 |
 | Phase 5 → 结束 | **通知 CEO 确认发布** | 等待 CEO: 确认/暂缓 |
 
@@ -463,17 +483,17 @@ body
 
 **示例:**
 ```
-feat(task): 添加任务优先级排序
+feat(task): add task priority sorting
 
-- 实现 sortByPriority 方法
-- 添加单元测试
-- 更新类型定义
+- implement sortByPriority method
+- add unit tests
+- update type definitions
 ```
 
 ### 质量标准
 
 - TypeScript 严格类型
-- 单元测试覆盖率 > 80%
+- 单元测试覆盖率 = 100%
 - 代码审查必须通过才能合并
 - 所有测试通过才能发布
 

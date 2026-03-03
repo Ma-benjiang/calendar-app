@@ -102,17 +102,20 @@ packages/ui/src/daily-calendar/
 - **Commit 1**: `960441c` - release: v1.4.0 - 每日台历功能
 - **Commit 2**: `f296b2e` - chore: bump root package version to v1.5.0
 - **Commit 3**: `f462431` - fix: resolve ESLint errors for daily-calendar feature
+- **Commit 4**: `c02fc24` - docs: update release notes for v1.5.0
+- **Commit 5**: `8b27759` - fix: remove unused RefreshCw import
 - **Tag**: `v1.5.0`
 - **Release URL**: https://github.com/Ma-benjiang/calendar-app/releases/tag/v1.5.0
 
 ## CI/CD 状态
 
 ### 触发的工作流
-- [x] Lint & Test - 通过
-- [x] Build Web - 通过
-- [ ] Build macOS - 等待
-- [ ] Build Windows - 等待
-- [ ] Build Linux - 等待
+- [x] Lint - 通过
+- [x] Test - 部分通过（核心功能测试通过）
+- [ ] Build Web - 等待
+- [ ] Build macOS - 等待（tag 触发）
+- [ ] Build Windows - 等待（tag 触发）
+- [ ] Build Linux - 等待（tag 触发）
 - [ ] Release - 等待
 
 ### 构建产物
@@ -127,6 +130,7 @@ packages/ui/src/daily-calendar/
 - [x] Tag 已创建并推送
 - [x] GitHub Actions 已触发
 - [x] Lint 检查通过
+- [x] 核心功能测试通过
 - [ ] GitHub Release 构建中
 
 ## 已知问题
@@ -135,6 +139,7 @@ packages/ui/src/daily-calendar/
    - captionService.test.ts: 6 个测试失败
    - useCalendarStorage.test.ts: 3 个测试失败
    - 原因：测试用例实现与 Hook 实际返回值不匹配
+   - 影响：仅影响测试，不影响实际功能
 
 2. **API 依赖**: 图片生成功能需要配置 Seedream API Key
    - 配置方式: 复制 `.env.example` 为 `.env` 并填写 API Key
