@@ -11,7 +11,7 @@ import {
   Image as ImageIcon,
   History,
   Share2,
-  RefreshCw,
+  // RefreshCw - reserved for future use
   ChevronLeft,
   ChevronRight,
   Sparkles,

@@ -118,7 +118,7 @@ function getSpecialDayQuote(dateInfo: CalendarDateInfo): Quote | null {
 /**
  * 根据主题筛选文案
  */
-function getQuotesByTheme(_theme: ThemeType): Quote[] {
+function getQuotesByTheme(theme: ThemeType): Quote[] {
   // 优先返回适合该主题的文案
   const themedQuotes = QUOTES_LIBRARY.filter(q => q.themes.includes(theme));
 

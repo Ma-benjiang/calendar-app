@@ -141,7 +141,7 @@ export function useDailyCalendar(): UseDailyCalendarReturn {
   }, [getRecord]);
 
   // 生成台历
-  const _generateCalendar = useCallback(async (
+  const generateCalendar = useCallback(async (
     date: Date = currentDate,
     theme?: ThemeType
   ) => {
@@ -251,7 +251,6 @@ export function useDailyCalendar(): UseDailyCalendarReturn {
       preferences.themeStrategy.preferences,
       currentDate
     );
-    const dateInfo = getCalendarDateInfo(currentDate);
     const quote = selectDailyQuote(currentDate, selectedTheme, dateInfo);
 
     setIsLoading(true);
@@ -343,17 +342,17 @@ export function useDailyCalendar(): UseDailyCalendarReturn {
   }, [updateThemeStrategy]);
 
   // 设置手动主题
-  const _setManualTheme = useCallback((theme: ThemeType) => {
+  const setManualTheme = useCallback((theme: ThemeType) => {
     updateThemeStrategy('manual', theme);
   }, [updateThemeStrategy]);
 
   // 检查指定日期是否有记录
-  const _hasRecordForDate = useCallback((date: Date): boolean => {
+  const hasRecordForDate = useCallback((date: Date): boolean => {
     return hasRecord(formatDateKey(date));
   }, [hasRecord]);
 
   // 获取指定日期的记录
-  const _getRecordForDate = useCallback((date: Date): DailyCalendarRecord | null => {
+  const getRecordForDate = useCallback((date: Date): DailyCalendarRecord | null => {
     return getRecord(formatDateKey(date));
   }, [getRecord]);
 
