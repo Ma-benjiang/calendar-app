@@ -57,3 +57,6 @@ export { RecurrencePicker } from './RecurrencePicker';
 export { useCalendar } from './useCalendar';
 export { useNotifications } from './useNotifications';
 export { ExportImport } from './ExportImport';
+
+// Daily Calendar Feature
+export * from './daily-calendar';
