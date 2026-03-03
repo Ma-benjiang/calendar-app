@@ -153,12 +153,14 @@ CEO: 做个新功能
 │                                                │
 │    Phase 3 → Developer                          │
 │             → 编码 + 单元测试（覆盖率≥80%）      │
-│             → 创建 PR → CodeReviewer 审查        │
-│             → 检查点：审查通过，无阻塞性问题      │
+│             → 本地验证通过后创建 PR              │
+│             → 检查点：PR 创建，代码在功能分支    │
 │                                                │
-│    Phase 4 → QAEngineer + BugFixer              │
+│    Phase 4 → CodeReviewer + QAEngineer          │
+│             → Code Review（基于 PR）             │
 │             → 集成测试 + Bug 修复循环            │
-│             → 检查点：无 P0/P1 Bug              │
+│             → 审查通过 → 合并到 master           │
+│             → 检查点：无 P0/P1 Bug，已合并       │
 │                                                │
 │    Phase 5 → DevOps                             │
 │             → 发布部署                          │
@@ -268,8 +270,8 @@ SprintMaster 自动验证检查点，无需 CEO 介入：
 |--------|-----------|-----------|
 | Phase 1 → 2 | PRD 包含明确的功能描述和可测试的验收标准 | 退回 ProductOwner 补充 |
 | Phase 2 → 3 | 测试用例与 PRD 需求一一对应 | 退回 QAEngineer 补充 |
-| Phase 3 → 4 | 代码审查通过且覆盖率≥80% | 退回 Developer 修复 |
-| Phase 4 → 5 | 所有测试通过，无 P0/P1 Bug | 启动 BugFixer 修复循环 |
+| Phase 3 → 4 | 编码完成，单元测试覆盖率≥80%，PR 已创建 | 退回 Developer 补充 |
+| Phase 4 → 5 | Code Review 通过，集成测试通过，无 P0/P1 Bug，已合并到 master | 启动 BugFixer 修复循环 |
 | Phase 5 → 结束 | **通知 CEO 确认发布** | 等待 CEO: 确认/暂缓 |
 
 ---
@@ -298,7 +300,8 @@ Task 1: [Sprint] 周视图功能 (in_progress)
 ├── Task 4: Phase 3 - 编码实现 (in_progress)
 │       owner: developer
 │       blockedBy: Task 3
-├── Task 5: Phase 3 - 代码审查 (pending)
+│       output: PR 已创建
+├── Task 5: Phase 4 - 代码审查 (pending)
 │       owner: code-reviewer
 │       blockedBy: Task 4
 ├── Task 6: Phase 4 - 集成测试 (pending)
