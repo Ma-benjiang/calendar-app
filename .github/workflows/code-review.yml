@@ -19,52 +19,80 @@ jobs:
           fetch-depth: 0
 
       - name: Get PR diff
-        id: get-diff
         run: |
           git diff origin/${{ github.base_ref }}..HEAD > /tmp/pr.diff
-          echo "diff<<EOF" >> $GITHUB_OUTPUT
-          cat /tmp/pr.diff >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
+          echo "Diff size: $(wc -c < /tmp/pr.diff) bytes"
 
       - name: AI Code Review
-        id: ai-review
         env:
           KIMI_API_KEY: ${{ secrets.KIMI_API_KEY }}
         run: |
-          DIFF=$(cat /tmp/pr.diff | sed 's/"/\\"/g' | sed 's/\n/\\n/g')
+          python3 << 'PYTHON_SCRIPT'
+          import os
+          import json
+          import urllib.request
 
-          # 调用 Kimi API 进行审查 (Anthropic 格式)
-          echo "Calling Kimi API..."
-          curl -s https://api.kimi.com/coding/v1/messages \
-            -H "Content-Type: application/json" \
-            -H "x-api-key: $KIMI_API_KEY" \
-            -H "anthropic-version: 2023-06-01" \
-            -d "{
-              \"model\": \"kimi-for-coding\",
-              \"max_tokens\": 4000,
-              \"system\": \"你是代码审查员，负责审查代码变更。输出格式：\\n1. 审查结果：APPROVED / NEEDS_FIX\\n2. 发现的问题（位置、严重程度、建议）\\n3. 总结\",
-              \"messages\": [{
-                \"role\": \"user\",
-                \"content\": \"请审查以下代码变更：\\n\\n$DIFF\"
-              }]
-            }" > /tmp/api_response.json
+          # Read diff
+          with open('/tmp/pr.diff', 'r') as f:
+              diff_content = f.read()
 
-          echo "API Response:"
-          cat /tmp/api_response.json
+          if not diff_content.strip():
+              print("No diff found")
+              exit(1)
 
-          # 解析响应 (尝试多种可能的格式)
-          if jq -e '.content[0].text' /tmp/api_response.json > /dev/null 2>&1; then
-            jq -r '.content[0].text' /tmp/api_response.json > /tmp/review.md
-          elif jq -e '.choices[0].message.content' /tmp/api_response.json > /dev/null 2>&1; then
-            jq -r '.choices[0].message.content' /tmp/api_response.json > /tmp/review.md
-          else
-            echo "无法解析 API 响应，原始响应：" > /tmp/review.md
-            cat /tmp/api_response.json >> /tmp/review.md
-          fi
+          print(f"Diff length: {len(diff_content)} chars")
 
-          echo "result<<EOF" >> $GITHUB_OUTPUT
-          cat /tmp/review.md >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
+          # Prepare API request
+          api_key = os.environ['KIMI_API_KEY']
+          headers = {
+              'Content-Type': 'application/json',
+              'x-api-key': api_key,
+              'anthropic-version': '2023-06-01'
+          }
+
+          # Truncate diff if too long
+          max_diff = 6000
+          truncated_diff = diff_content[:max_diff]
+          if len(diff_content) > max_diff:
+              truncated_diff += "\n... (diff truncated)"
+
+          data = {
+              "model": "kimi-for-coding",
+              "max_tokens": 4000,
+              "system": "你是代码审查员，负责审查代码变更。输出格式：\n1. 审查结果：APPROVED / NEEDS_FIX\n2. 发现的问题（位置、严重程度、建议）\n3. 总结",
+              "messages": [
+                  {
+                      "role": "user",
+                      "content": f"请审查以下代码变更：\n\n```diff\n{truncated_diff}\n```"
+                  }
+              ]
+          }
+
+          print("Calling Kimi API...")
+
+          # Call API
+          req = urllib.request.Request(
+              'https://api.kimi.com/coding/v1/messages',
+              data=json.dumps(data).encode('utf-8'),
+              headers=headers,
+              method='POST'
+          )
+
+          try:
+              with urllib.request.urlopen(req) as response:
+                  result = json.loads(response.read().decode())
+                  review_text = result['content'][0]['text']
+                  print("Review generated successfully")
+          except Exception as e:
+              print(f"API Error: {e}")
+              review_text = f"Code review failed: {e}"
+
+          # Save review
+          with open('/tmp/review.md', 'w') as f:
+              f.write(review_text)
+
+          print("Review saved to /tmp/review.md")
+          PYTHON_SCRIPT
 
       - name: Post review comment
         uses: actions/github-script@v7
@@ -73,16 +101,12 @@ jobs:
             const fs = require('fs');
             const review = fs.readFileSync('/tmp/review.md', 'utf8');
 
-            // 判断审查结果
-            const isApproved = review.includes('APPROVED');
-
-            // 创建审查
-            await github.rest.pulls.createReview({
+            // Post comment only (GitHub Actions cannot approve)
+            await github.rest.issues.createComment({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              pull_number: context.issue.number,
-              body: review,
-              event: isApproved ? 'APPROVE' : 'REQUEST_CHANGES'
+              issue_number: context.issue.number,
+              body: `## 🤖 AI Code Review\n\n${review}`
             });
 
-            console.log(`Review posted: ${isApproved ? 'APPROVED' : 'NEEDS_FIX'}`);
+            console.log('Review comment posted');
