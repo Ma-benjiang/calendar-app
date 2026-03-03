@@ -34,6 +34,7 @@ jobs:
           DIFF=$(cat /tmp/pr.diff | sed 's/"/\\"/g' | sed 's/\n/\\n/g')
 
           # 调用 Kimi API 进行审查 (Anthropic 格式)
+          echo "Calling Kimi API..."
           curl -s https://api.kimi.com/coding/v1/messages \
             -H "Content-Type: application/json" \
             -H "x-api-key: $KIMI_API_KEY" \
@@ -46,7 +47,20 @@ jobs:
                 \"role\": \"user\",
                 \"content\": \"请审查以下代码变更：\\n\\n$DIFF\"
               }]
-            }" | jq -r '.content[0].text' > /tmp/review.md
+            }" > /tmp/api_response.json
+
+          echo "API Response:"
+          cat /tmp/api_response.json
+
+          # 解析响应 (尝试多种可能的格式)
+          if jq -e '.content[0].text' /tmp/api_response.json > /dev/null 2>&1; then
+            jq -r '.content[0].text' /tmp/api_response.json > /tmp/review.md
+          elif jq -e '.choices[0].message.content' /tmp/api_response.json > /dev/null 2>&1; then
+            jq -r '.choices[0].message.content' /tmp/api_response.json > /tmp/review.md
+          else
+            echo "无法解析 API 响应，原始响应：" > /tmp/review.md
+            cat /tmp/api_response.json >> /tmp/review.md
+          fi
 
           echo "result<<EOF" >> $GITHUB_OUTPUT
           cat /tmp/review.md >> $GITHUB_OUTPUT
