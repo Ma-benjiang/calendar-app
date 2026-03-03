@@ -14,6 +14,7 @@ import {
 } from '@calendar/core';
 import { useTasks } from './useTasks';
 import { TaskList } from './TaskList';
+import { TaskStatsBoard } from './TaskStatsBoard';
 import './TaskView.css';
 
 // ============== 类型定义 ==============
@@ -123,7 +124,7 @@ export const TaskView: React.FC<TaskViewProps> = ({
   });
 
   // 本地状态
-  const [viewMode, setViewMode] = useState<'list' | 'grouped'>('list');
+  const [viewMode, setViewMode] = useState<'list' | 'grouped' | 'stats'>('list');
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
 
   // 处理创建任务
@@ -236,6 +237,13 @@ export const TaskView: React.FC<TaskViewProps> = ({
               >
                 ▦ 分组
               </button>
+              <button
+                className={`view-mode-btn ${viewMode === 'stats' ? 'active' : ''}`}
+                onClick={() => setViewMode('stats')}
+                title="统计看板"
+              >
+                📊 统计
+              </button>
             </div>
 
             {/* 排序选择 */}
@@ -280,21 +288,25 @@ export const TaskView: React.FC<TaskViewProps> = ({
         </button>
       </div>
 
-      {/* 任务列表 */}
+      {/* 任务列表或统计看板 */}
       <div className="task-view-content">
-        <TaskList
-          tasks={tasks}
-          onCreateTask={handleCreateTask}
-          onUpdateTask={handleUpdateTask}
-          onDeleteTask={handleDeleteTask}
-          onToggleComplete={toggleTaskCompletion}
-          onTaskClick={handleTaskClick}
-          onTaskDragStart={handleTaskDragStart}
-          filter={filter}
-          sortBy={sortBy}
-          viewMode={viewMode}
-          showAddInput={true}
-        />
+        {viewMode === 'stats' ? (
+          <TaskStatsBoard tasks={allTasks} days={7} />
+        ) : (
+          <TaskList
+            tasks={tasks}
+            onCreateTask={handleCreateTask}
+            onUpdateTask={handleUpdateTask}
+            onDeleteTask={handleDeleteTask}
+            onToggleComplete={toggleTaskCompletion}
+            onTaskClick={handleTaskClick}
+            onTaskDragStart={handleTaskDragStart}
+            filter={filter}
+            sortBy={sortBy}
+            viewMode={viewMode}
+            showAddInput={true}
+          />
+        )}
       </div>
 
       {/* 选中任务详情面板（可选） */}
