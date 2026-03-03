@@ -117,6 +117,9 @@ export const TaskView: React.FC<TaskViewProps> = ({
     scheduleTask,
     unscheduleTask,
     getTasksForDate,
+    createSubTask,
+    getSubTasks,
+    getTaskProgress,
     stats,
   } = useTasks({
     initialFilter,
@@ -301,6 +304,9 @@ export const TaskView: React.FC<TaskViewProps> = ({
             onToggleComplete={toggleTaskCompletion}
             onTaskClick={handleTaskClick}
             onTaskDragStart={handleTaskDragStart}
+            onCreateSubTask={createSubTask}
+            getSubTasks={getSubTasks}
+            getTaskProgress={getTaskProgress}
             filter={filter}
             sortBy={sortBy}
             viewMode={viewMode}

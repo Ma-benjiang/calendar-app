@@ -22,6 +22,10 @@ interface TaskListProps {
   onScheduleTask?: (id: string, start: Date, end?: Date) => void;
   onTaskClick?: (task: Task) => void;
   onTaskDragStart?: (task: Task) => void;
+  // 子任务相关
+  onCreateSubTask?: (parentId: string, input: CreateTaskInput) => void;
+  getSubTasks?: (parentId: string) => Task[];
+  getTaskProgress?: (taskId: string) => { completed: number; total: number; percentage: number };
   filter?: TaskFilter;
   sortBy?: TaskSortOption;
   viewMode?: 'list' | 'grouped';
@@ -37,6 +41,11 @@ interface TaskItemProps {
   onClick?: (task: Task) => void;
   onDragStart?: (task: Task) => void;
   isDragging?: boolean;
+  isSubTask?: boolean;
+  // 子任务相关
+  onCreateSubTask?: (parentId: string, input: CreateTaskInput) => void;
+  getSubTasks?: (parentId: string) => Task[];
+  getTaskProgress?: (taskId: string) => { completed: number; total: number; percentage: number };
 }
 
 interface QuickAddProps {
@@ -129,6 +138,206 @@ const QuickAdd: React.FC<QuickAddProps> = ({ onAdd, placeholder = '添加新任�
   );
 };
 
+// ============== SubTaskItem 子任务项组件 ==============
+
+interface SubTaskItemProps {
+  task: Task;
+  onToggleComplete?: (id: string) => void;
+  onUpdateTask?: (id: string, updates: Partial<Task>) => void;
+  onDeleteTask?: (id: string) => void;
+}
+
+const SubTaskItem: React.FC<SubTaskItemProps> = ({
+  task,
+  onToggleComplete,
+  onUpdateTask,
+  onDeleteTask,
+}) => {
+  const [isEditing, setIsEditing] = useState(false);
+  const [editTitle, setEditTitle] = useState(task.title);
+
+  const isCompleted = task.status === 'completed';
+
+  const handleToggle = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation();
+    onToggleComplete?.(task.id);
+  }, [task.id, onToggleComplete]);
+
+  const handleSaveEdit = useCallback(() => {
+    if (editTitle.trim() && editTitle !== task.title) {
+      onUpdateTask?.(task.id, { title: editTitle.trim() });
+    }
+    setIsEditing(false);
+  }, [editTitle, task.id, task.title, onUpdateTask]);
+
+  const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      handleSaveEdit();
+    } else if (e.key === 'Escape') {
+      setEditTitle(task.title);
+      setIsEditing(false);
+    }
+  }, [handleSaveEdit, task.title]);
+
+  return (
+    <div className={`subtask-item ${isCompleted ? 'completed' : ''}`}>
+      <button
+        className={`subtask-checkbox ${isCompleted ? 'checked' : ''}`}
+        onClick={handleToggle}
+      >
+        {isCompleted ? '✓' : '○'}
+      </button>
+
+      {isEditing ? (
+        <input
+          type="text"
+          value={editTitle}
+          onChange={(e) => setEditTitle(e.target.value)}
+          onBlur={handleSaveEdit}
+          onKeyDown={handleKeyDown}
+          autoFocus
+          className="subtask-edit-input"
+        />
+      ) : (
+        <span
+          className="subtask-title"
+          onDoubleClick={() => !isCompleted && setIsEditing(true)}
+        >
+          {task.title}
+        </span>
+      )}
+
+      {!isEditing && (
+        <div className="subtask-actions">
+          <button
+            className="subtask-action-btn"
+            onClick={(e) => {
+              e.stopPropagation();
+              setIsEditing(true);
+            }}
+            title="编辑"
+          >
+            ✏️
+          </button>
+          <button
+            className="subtask-action-btn"
+            onClick={(e) => {
+              e.stopPropagation();
+              if (confirm('确定删除此子任务？')) {
+                onDeleteTask?.(task.id);
+              }
+            }}
+            title="删除"
+          >
+            🗑️
+          </button>
+        </div>
+      )}
+    </div>
+  );
+};
+
+// ============== SubTaskList 子任务列表组件 ==============
+
+interface SubTaskListProps {
+  parentId: string;
+  subTasks: Task[];
+  onCreateSubTask?: (parentId: string, input: CreateTaskInput) => void;
+  onToggleComplete?: (id: string) => void;
+  onUpdateTask?: (id: string, updates: Partial<Task>) => void;
+  onDeleteTask?: (id: string) => void;
+}
+
+const SubTaskList: React.FC<SubTaskListProps> = ({
+  parentId,
+  subTasks,
+  onCreateSubTask,
+  onToggleComplete,
+  onUpdateTask,
+  onDeleteTask,
+}) => {
+  const [isAdding, setIsAdding] = useState(false);
+  const [newTitle, setNewTitle] = useState('');
+
+  const handleSubmit = useCallback((e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newTitle.trim()) return;
+
+    onCreateSubTask?.(parentId, {
+      title: newTitle.trim(),
+      priority: 'none',
+    });
+
+    setNewTitle('');
+    setIsAdding(false);
+  }, [newTitle, parentId, onCreateSubTask]);
+
+  const completedCount = subTasks.filter(t => t.status === 'completed').length;
+  const progress = subTasks.length > 0 ? Math.round((completedCount / subTasks.length) * 100) : 0;
+
+  return (
+    <div className="subtask-list">
+      {/* 进度条 */}
+      {subTasks.length > 0 && (
+        <div className="subtask-progress">
+          <div className="subtask-progress-bar">
+            <div
+              className="subtask-progress-fill"
+              style={{ width: `${progress}%` }}
+            />
+          </div>
+          <span className="subtask-progress-text">
+            {completedCount}/{subTasks.length} ({progress}%)
+          </span>
+        </div>
+      )}
+
+      {/* 子任务列表 */}
+      <div className="subtask-items">
+        {subTasks.map((subTask) => (
+          <SubTaskItem
+            key={subTask.id}
+            task={subTask}
+            onToggleComplete={onToggleComplete}
+            onUpdateTask={onUpdateTask}
+            onDeleteTask={onDeleteTask}
+          />
+        ))}
+      </div>
+
+      {/* 添加子任务 */}
+      {isAdding ? (
+        <form className="subtask-add-form" onSubmit={handleSubmit}>
+          <input
+            type="text"
+            value={newTitle}
+            onChange={(e) => setNewTitle(e.target.value)}
+            placeholder="输入子任务标题..."
+            autoFocus
+            className="subtask-add-input"
+            onKeyDown={(e) => {
+              if (e.key === 'Escape') {
+                setIsAdding(false);
+                setNewTitle('');
+              }
+            }}
+          />
+          <div className="subtask-add-hints">
+            <span>Enter 添加 · Esc 取消</span>
+          </div>
+        </form>
+      ) : (
+        <button
+          className="subtask-add-btn"
+          onClick={() => setIsAdding(true)}
+        >
+          + 添加子任务
+        </button>
+      )}
+    </div>
+  );
+};
+
 // ============== TaskItem 组件 ==============
 
 const TaskItem: React.FC<TaskItemProps> = ({
@@ -139,12 +348,29 @@ const TaskItem: React.FC<TaskItemProps> = ({
   onClick,
   onDragStart,
   isDragging,
+  isSubTask,
+  onCreateSubTask,
+  getSubTasks,
+  getTaskProgress,
 }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [editTitle, setEditTitle] = useState(task.title);
+  const [isExpanded, setIsExpanded] = useState(false);
 
   const isCompleted = task.status === 'completed';
   const isCancelled = task.status === 'cancelled';
+
+  // 获取子任务
+  const subTasks = useMemo(() => {
+    return getSubTasks?.(task.id) || [];
+  }, [task.id, getSubTasks]);
+
+  const hasSubTasks = subTasks.length > 0;
+
+  // 获取进度
+  const progress = useMemo(() => {
+    return getTaskProgress?.(task.id) || { completed: 0, total: 0, percentage: 0 };
+  }, [task.id, getTaskProgress]);
 
   const handleToggle = useCallback((e: React.MouseEvent) => {
     e.stopPropagation();
@@ -178,14 +404,14 @@ const TaskItem: React.FC<TaskItemProps> = ({
     today.setHours(0, 0, 0, 0);
     const due = new Date(date);
     due.setHours(0, 0, 0, 0);
-    
+
     const diffDays = Math.floor((due.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-    
+
     if (diffDays === 0) return '今天';
     if (diffDays === 1) return '明天';
     if (diffDays === -1) return '昨天';
     if (diffDays > 0 && diffDays <= 7) return `${diffDays}天后`;
-    
+
     return `${due.getMonth() + 1}/${due.getDate()}`;
   };
 
@@ -196,120 +422,165 @@ const TaskItem: React.FC<TaskItemProps> = ({
   };
 
   return (
-    <div
-      className={`task-item ${isCompleted ? 'completed' : ''} ${isCancelled ? 'cancelled' : ''} ${isDragging ? 'dragging' : ''}`}
-      draggable={!isEditing}
-      onDragStart={handleDragStart}
-      onClick={() => !isEditing && onClick?.(task)}
-    >
-      {/* 优先级指示条 */}
+    <div className={`task-item-wrapper ${isSubTask ? 'is-subtask' : ''}`}>
       <div
-        className="task-priority-indicator"
-        style={{ backgroundColor: getPriorityColor(task.priority) }}
-      />
-
-      {/* 完成状态复选框 */}
-      <button
-        className={`task-checkbox ${isCompleted ? 'checked' : ''}`}
-        onClick={handleToggle}
-        title={isCompleted ? '标记为未完成' : '标记为完成'}
+        className={`task-item ${isCompleted ? 'completed' : ''} ${isCancelled ? 'cancelled' : ''} ${isDragging ? 'dragging' : ''}`}
+        draggable={!isEditing && !isSubTask}
+        onDragStart={handleDragStart}
+        onClick={() => !isEditing && onClick?.(task)}
       >
-        {isCompleted ? '✓' : '○'}
-      </button>
-
-      {/* 任务内容 */}
-      <div className="task-content">
-        {isEditing ? (
-          <input
-            type="text"
-            value={editTitle}
-            onChange={(e) => setEditTitle(e.target.value)}
-            onBlur={handleSaveEdit}
-            onKeyDown={handleKeyDown}
-            autoFocus
-            className="task-edit-input"
-          />
-        ) : (
-          <>
-            <span
-              className="task-title"
-              onDoubleClick={() => !isCompleted && setIsEditing(true)}
-            >
-              {task.title}
-            </span>
-            
-            {/* 标签和元信息 */}
-            <div className="task-meta">
-              {task.tags.length > 0 && (
-                <span className="task-tags">
-                  {task.tags.map((tag) => (
-                    <span key={tag} className="task-tag">#{tag}</span>
-                  ))}
-                </span>
-              )}
-              
-              {task.project && (
-                <span className="task-project">
-                  📁 {task.project}
-                </span>
-              )}
-            </div>
-          </>
-        )}
-      </div>
-
-      {/* 右侧信息 */}
-      <div className="task-right">
-        {task.scheduledStart && (
-          <span className="task-scheduled" title="已安排时间">
-            🕐 {getScheduledTimeText()}
-          </span>
-        )}
-        
-        {task.dueDate && (
-          <span
-            className={`task-due-date ${
-              new Date(task.dueDate) < new Date() && !isCompleted ? 'overdue' : ''
-            }`}
+        {/* 展开/折叠按钮（有子任务时显示） */}
+        {hasSubTasks && (
+          <button
+            className={`task-expand-btn ${isExpanded ? 'expanded' : ''}`}
+            onClick={(e) => {
+              e.stopPropagation();
+              setIsExpanded(!isExpanded);
+            }}
+            title={isExpanded ? '折叠子任务' : '展开子任务'}
           >
-            📅 {formatDueDate(new Date(task.dueDate))}
-          </span>
+            ▶
+          </button>
         )}
-        
-        {task.estimatedMinutes && (
-          <span className="task-estimated" title="预计耗时">
-            ⏱️ {task.estimatedMinutes}分钟
-          </span>
-        )}
-        
-        {/* 操作按钮 */}
-        {!isEditing && (
-          <div className="task-actions">
-            <button
-              className="task-action-btn"
-              onClick={(e) => {
-                e.stopPropagation();
-                setIsEditing(true);
-              }}
-              title="编辑"
+
+        {/* 优先级指示条 */}
+        <div
+          className="task-priority-indicator"
+          style={{ backgroundColor: getPriorityColor(task.priority) }}
+        />
+
+        {/* 完成状态复选框 */}
+        <button
+          className={`task-checkbox ${isCompleted ? 'checked' : ''}`}
+          onClick={handleToggle}
+          title={isCompleted ? '标记为未完成' : '标记为完成'}
+        >
+          {isCompleted ? '✓' : '○'}
+        </button>
+
+        {/* 任务内容 */}
+        <div className="task-content">
+          {isEditing ? (
+            <input
+              type="text"
+              value={editTitle}
+              onChange={(e) => setEditTitle(e.target.value)}
+              onBlur={handleSaveEdit}
+              onKeyDown={handleKeyDown}
+              autoFocus
+              className="task-edit-input"
+            />
+          ) : (
+            <>
+              <span
+                className="task-title"
+                onDoubleClick={() => !isCompleted && setIsEditing(true)}
+              >
+                {task.title}
+              </span>
+
+              {/* 标签和元信息 */}
+              <div className="task-meta">
+                {task.tags.length > 0 && (
+                  <span className="task-tags">
+                    {task.tags.map((tag) => (
+                      <span key={tag} className="task-tag">#{tag}</span>
+                    ))}
+                  </span>
+                )}
+
+                {task.project && (
+                  <span className="task-project">
+                    📁 {task.project}
+                  </span>
+                )}
+
+                {/* 子任务数量指示 */}
+                {hasSubTasks && (
+                  <span className="task-subtask-count" title="子任务">
+                    📋 {progress.completed}/{progress.total}
+                  </span>
+                )}
+              </div>
+            </>
+          )}
+        </div>
+
+        {/* 右侧信息 */}
+        <div className="task-right">
+          {task.scheduledStart && (
+            <span className="task-scheduled" title="已安排时间">
+              🕐 {getScheduledTimeText()}
+            </span>
+          )}
+
+          {task.dueDate && (
+            <span
+              className={`task-due-date ${
+                new Date(task.dueDate) < new Date() && !isCompleted ? 'overdue' : ''
+              }`}
             >
-              ✏️
-            </button>
-            <button
-              className="task-action-btn"
-              onClick={(e) => {
-                e.stopPropagation();
-                if (confirm('确定删除此任务？')) {
-                  onDeleteTask?.(task.id);
-                }
-              }}
-              title="删除"
-            >
-              🗑️
-            </button>
-          </div>
-        )}
+              📅 {formatDueDate(new Date(task.dueDate))}
+            </span>
+          )}
+
+          {task.estimatedMinutes && (
+            <span className="task-estimated" title="预计耗时">
+              ⏱️ {task.estimatedMinutes}分钟
+            </span>
+          )}
+
+          {/* 操作按钮 */}
+          {!isEditing && (
+            <div className="task-actions">
+              <button
+                className="task-action-btn"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setIsExpanded(!isExpanded);
+                }}
+                title="添加/查看子任务"
+              >
+                📋
+              </button>
+              <button
+                className="task-action-btn"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setIsEditing(true);
+                }}
+                title="编辑"
+              >
+                ✏️
+              </button>
+              <button
+                className="task-action-btn"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (confirm('确定删除此任务？')) {
+                    onDeleteTask?.(task.id);
+                  }
+                }}
+                title="删除"
+              >
+                🗑️
+              </button>
+            </div>
+          )}
+        </div>
       </div>
+
+      {/* 子任务列表 */}
+      {(isExpanded || (hasSubTasks && isExpanded)) && (
+        <SubTaskList
+          parentId={task.id}
+          subTasks={subTasks}
+          onCreateSubTask={onCreateSubTask}
+          onToggleComplete={onToggleComplete}
+          onUpdateTask={onUpdateTask}
+          onDeleteTask={onDeleteTask}
+        />
+      )}
     </div>
   );
 };
@@ -325,6 +596,9 @@ export const TaskList: React.FC<TaskListProps> = ({
   onScheduleTask: _onScheduleTask,
   onTaskClick,
   onTaskDragStart,
+  onCreateSubTask,
+  getSubTasks,
+  getTaskProgress,
   filter = {},
   sortBy = 'dueDate-asc',
   viewMode = 'list',
@@ -558,6 +832,9 @@ export const TaskList: React.FC<TaskListProps> = ({
                           onDeleteTask={onDeleteTask}
                           onClick={onTaskClick}
                           onDragStart={onTaskDragStart}
+                          onCreateSubTask={onCreateSubTask}
+                          getSubTasks={getSubTasks}
+                          getTaskProgress={getTaskProgress}
                         />
                       ))}
                     </div>
@@ -577,6 +854,9 @@ export const TaskList: React.FC<TaskListProps> = ({
                 onDeleteTask={onDeleteTask}
                 onClick={onTaskClick}
                 onDragStart={onTaskDragStart}
+                onCreateSubTask={onCreateSubTask}
+                getSubTasks={getSubTasks}
+                getTaskProgress={getTaskProgress}
               />
             ))}
           </div>
@@ -589,5 +869,5 @@ export const TaskList: React.FC<TaskListProps> = ({
 // ============== 导出 ==============
 
 export default TaskList;
-export { QuickAdd, TaskItem };
-export type { TaskListProps, TaskItemProps, QuickAddProps };
+export { QuickAdd, TaskItem, SubTaskItem, SubTaskList };
+export type { TaskListProps, TaskItemProps, QuickAddProps, SubTaskItemProps, SubTaskListProps };

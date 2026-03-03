@@ -110,6 +110,43 @@ export function useTasks(options: UseTasksOptions = {}) {
     [taskManager]
   );
 
+  // ---------- 子任务操作 ----------
+
+  const createSubTask = useCallback(
+    (parentId: string, input: CreateTaskInput) => {
+      return taskManager.createSubTask(parentId, input);
+    },
+    [taskManager]
+  );
+
+  const getSubTasks = useCallback(
+    (parentId: string) => {
+      return taskManager.getSubTasks(parentId);
+    },
+    [taskManager]
+  );
+
+  const getTaskProgress = useCallback(
+    (taskId: string): { completed: number; total: number; percentage: number } => {
+      const subTasks = taskManager.getSubTasks(taskId);
+      if (subTasks.length === 0) {
+        const task = taskManager.getTaskById(taskId);
+        return {
+          completed: task?.status === 'completed' ? 1 : 0,
+          total: 1,
+          percentage: task?.status === 'completed' ? 100 : 0,
+        };
+      }
+      const completed = subTasks.filter((t) => t.status === 'completed').length;
+      return {
+        completed,
+        total: subTasks.length,
+        percentage: Math.round((completed / subTasks.length) * 100),
+      };
+    },
+    [taskManager]
+  );
+
   // Get tasks for calendar display
   const getTasksForDate = useCallback(
     (date: Date) => {
@@ -181,6 +218,11 @@ export function useTasks(options: UseTasksOptions = {}) {
     scheduleTask,
     unscheduleTask,
     getTasksForDate,
+
+    // Sub-task Actions
+    createSubTask,
+    getSubTasks,
+    getTaskProgress,
 
     // Stats
     stats,
