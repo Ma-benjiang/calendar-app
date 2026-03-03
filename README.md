@@ -3,7 +3,8 @@
 [![Version](https://img.shields.io/github/v/release/Ma-benjiang/calendar-app?label=version)](https://github.com/Ma-benjiang/calendar-app/releases)
 [![CI](https://github.com/Ma-benjiang/calendar-app/actions/workflows/ci.yml/badge.svg)](https://github.com/Ma-benjiang/calendar-app/actions)
 
-> 🥧 一款 Notion 风格的智能日历应用，支持自然语言输入和 AI 智能调度
+> 🥧 A Notion-style smart calendar app with natural language input and AI scheduling
+> 一款 Notion 风格的智能日历应用，支持自然语言输入和 AI 智能调度
 
 ## 下载
 
