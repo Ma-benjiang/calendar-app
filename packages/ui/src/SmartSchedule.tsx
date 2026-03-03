@@ -144,18 +144,18 @@ export const SmartSchedule: React.FC<SmartScheduleProps> = ({
       <div className="smart-schedule-modal" onClick={(e) => e.stopPropagation()}>
         {/* 头部 */}
         <div className="smart-schedule-header">
-          <h2>🤖 智能安排</h2>
-          <button className="close-btn" onClick={onClose}>×</button>
+          <h2><span>✨</span> 智能安排建议</h2>
+          <button className="close-btn" onClick={onClose}>&times;</button>
         </div>
 
         {/* 内容 */}
         <div className="smart-schedule-content">
           {suggestions.length === 0 && !isAnalyzing && (
             <div className="empty-state">
-              <div className="empty-icon">🤖</div>
-              <p>系统将为您的任务推荐最佳时间安排</p>
+              <div className="empty-icon">✨</div>
+              <p>分析您的日程安排，为您推荐最佳的任务处理时段</p>
               <button className="analyze-btn" onClick={analyzeTasks}>
-                开始分析 ({unscheduledTasks.length} 个未安排任务)
+                开始智能分析
               </button>
 
               <button

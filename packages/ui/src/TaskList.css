@@ -1,0 +1,383 @@
+/* TaskList 样式 - Notion 风格 */
+
+.task-list-container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  color: var(--color-text-primary);
+  font-family: var(--font-family);
+}
+
+/* 头部工具栏 */
+.task-list-header {
+  padding: 16px 4px;
+  margin-bottom: 8px;
+}
+
+.task-list-title {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.task-list-title h3 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.task-count {
+  font-size: 12px;
+  color: var(--color-text-tertiary);
+  font-weight: 500;
+}
+
+.task-list-filters {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.task-search {
+  position: relative;
+  width: 100%;
+}
+
+.task-search-input {
+  width: 100%;
+  padding: 6px 10px;
+  background: var(--color-bg-secondary);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  font-size: 13px;
+  color: var(--color-text-primary);
+  transition: all 0.2s;
+}
+
+.task-search-input:focus {
+  background: var(--color-bg-primary);
+  border-color: var(--color-border-hover);
+  outline: none;
+}
+
+.filter-tabs {
+  display: flex;
+  gap: 4px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+}
+
+.filter-tab {
+  padding: 4px 8px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--color-text-secondary);
+  background: transparent;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  transition: all 0.2s;
+}
+
+.filter-tab:hover {
+  background: var(--color-bg-hover);
+}
+
+.filter-tab.active {
+  background: var(--color-bg-tertiary);
+  color: var(--color-text-primary);
+}
+
+.tab-count {
+  font-size: 10px;
+  opacity: 0.6;
+}
+
+/* 快速添加 */
+.task-quick-add {
+  margin-bottom: 16px;
+}
+
+.quick-add-input-wrapper {
+  padding: 4px;
+  border-radius: var(--radius-md);
+  transition: all 0.2s;
+}
+
+.quick-add-input-wrapper.expanded {
+  background: var(--color-bg-secondary);
+  border: 1px solid var(--color-border);
+}
+
+.quick-add-input {
+  width: 100%;
+  padding: 6px 8px;
+  background: transparent;
+  border: none;
+  font-size: 14px;
+  color: var(--color-text-primary);
+  outline: none;
+}
+
+.quick-add-input::placeholder {
+  color: var(--color-text-tertiary);
+}
+
+.quick-add-options {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px;
+  margin-top: 4px;
+  border-top: 1px solid var(--color-border);
+}
+
+.priority-selector {
+  display: flex;
+  gap: 6px;
+}
+
+.priority-btn {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  cursor: pointer;
+  padding: 0;
+  transition: transform 0.2s;
+}
+
+.priority-btn.active {
+  transform: scale(1.2);
+  border-color: rgba(0, 0, 0, 0.1);
+}
+
+.quick-add-hints {
+  font-size: 10px;
+  color: var(--color-text-tertiary);
+}
+
+/* 任务列表内容 */
+.task-list-content {
+  flex: 1;
+  overflow-y: auto;
+}
+
+.task-items {
+  display: flex;
+  flex-direction: column;
+}
+
+.task-item-wrapper {
+  border-bottom: 1px solid var(--color-border);
+}
+
+.task-item {
+  display: flex;
+  align-items: flex-start;
+  padding: 10px 8px;
+  gap: 10px;
+  cursor: pointer;
+  transition: background 0.2s;
+  position: relative;
+}
+
+.task-item:hover {
+  background: var(--color-bg-hover);
+}
+
+.task-item.completed {
+  opacity: 0.6;
+}
+
+.task-priority-indicator {
+  position: absolute;
+  left: 0;
+  top: 10px;
+  bottom: 10px;
+  width: 3px;
+  border-radius: 0 2px 2px 0;
+}
+
+.task-checkbox {
+  width: 16px;
+  height: 16px;
+  border: 1.5px solid var(--color-text-tertiary);
+  border-radius: 3px;
+  background: transparent;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 2px;
+  color: transparent;
+  font-size: 12px;
+  transition: all 0.2s;
+  padding: 0;
+}
+
+.task-checkbox:hover {
+  border-color: var(--color-text-secondary);
+  background: var(--color-bg-tertiary);
+}
+
+.task-checkbox.checked {
+  background: var(--color-accent-blue);
+  border-color: var(--color-accent-blue);
+  color: white;
+}
+
+.task-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.task-title {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--color-text-primary);
+  display: block;
+  margin-bottom: 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.task-item.completed .task-title {
+  text-decoration: line-through;
+  color: var(--color-text-tertiary);
+}
+
+.task-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.task-tag {
+  font-size: 11px;
+  color: var(--color-text-tertiary);
+  background: var(--color-bg-tertiary);
+  padding: 1px 4px;
+  border-radius: 3px;
+}
+
+.task-project {
+  font-size: 11px;
+  color: var(--color-text-tertiary);
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.task-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 12px;
+  color: var(--color-text-tertiary);
+}
+
+.task-due-date {
+  font-weight: 500;
+}
+
+.task-due-date.overdue {
+  color: var(--color-accent-red);
+}
+
+.task-actions {
+  display: flex;
+  gap: 4px;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.task-item:hover .task-actions {
+  opacity: 1;
+}
+
+.task-action-btn {
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: transparent;
+  border-radius: 4px;
+  cursor: pointer;
+  color: var(--color-text-tertiary);
+  font-size: 14px;
+}
+
+.task-action-btn:hover {
+  background: var(--color-bg-tertiary);
+  color: var(--color-text-primary);
+}
+
+/* 分组样式 */
+.task-group {
+  margin-bottom: 24px;
+}
+
+.task-group-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 8px;
+  margin-bottom: 8px;
+}
+
+.group-status-icon {
+  font-size: 14px;
+  color: var(--color-text-tertiary);
+}
+
+.group-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.group-count {
+  font-size: 11px;
+  color: var(--color-text-tertiary);
+}
+
+/* 空状态 */
+.task-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 48px 16px;
+  text-align: center;
+}
+
+.empty-icon {
+  font-size: 32px;
+  margin-bottom: 12px;
+  opacity: 0.5;
+}
+
+.empty-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  margin: 0 0 4px 0;
+}
+
+.empty-subtitle {
+  font-size: 12px;
+  color: var(--color-text-tertiary);
+  margin: 0;
+}

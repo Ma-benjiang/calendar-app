@@ -107,7 +107,11 @@ export const MonthView: React.FC<MonthViewProps> = ({
           return (
             <div
               key={index}
-              className={`day-cell ${!isCurrentMonth ? 'other-month' : ''} ${isDragOver ? 'drag-over' : ''}`}
+              className={`day-cell ${!isCurrentMonth ? 'other-month' : ''} ${isDragOver ? 'drag-over' : ''} ${
+                date.getDate() === new Date().getDate() && 
+                date.getMonth() === new Date().getMonth() && 
+                date.getFullYear() === new Date().getFullYear() ? 'today' : ''
+              }`}
               onClick={() => onDateClick?.(date)}
               onDragOver={(e) => handleDragOver(e, dateKey)}
               onDragLeave={handleDragLeave}

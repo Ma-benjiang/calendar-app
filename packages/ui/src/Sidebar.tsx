@@ -58,7 +58,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         isSelected={selectedId === node.id}
         isExpanded={expandedFolders.includes(node.id)}
         hasChildren={node.children.length > 0}
-        icon={node.icon}
+        icon={typeof node.icon === 'string' ? <span style={{ opacity: 0.6, fontSize: '14px' }}>{node.icon}</span> : node.icon}
         color={node.color}
         style={getItemStyle(node.id)}
         onClick={() => onItemClick(node.id)}
@@ -100,18 +100,21 @@ export const Sidebar: React.FC<SidebarProps> = ({
             top: 0,
             bottom: 0,
             width: 240,
-            backgroundColor: '#f7f6f3',
+            backgroundColor: 'var(--color-bg-secondary)',
             transform: isDrawerOpen ? 'translateX(0)' : 'translateX(-100%)',
             transition: `transform ${transitionDuration}ms ${transitionTiming}`,
             zIndex: 101,
             display: 'flex',
             flexDirection: 'column',
+            borderRight: '1px solid var(--color-border)',
           }}
         >
           <SidebarContent
             treeStructure={treeStructure}
             renderTree={renderTree}
             onToggle={onToggle}
+            onItemClick={onItemClick}
+            selectedId={selectedId}
             isExpanded={true}
           />
         </aside>
@@ -128,12 +131,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
         style={{
           width: isExpanded ? 240 : 0,
           minWidth: isExpanded ? 240 : 0,
-          backgroundColor: '#f7f6f3',
+          backgroundColor: 'var(--color-bg-secondary)',
           transition: `width ${transitionDuration}ms ${transitionTiming}, min-width ${transitionDuration}ms ${transitionTiming}`,
           overflow: 'hidden',
           display: 'flex',
           flexDirection: 'column',
           position: 'relative',
+          borderRight: isExpanded ? '1px solid var(--color-border)' : 'none',
         }}
         onMouseEnter={() => onHover(true)}
         onMouseLeave={() => onHover(false)}
@@ -142,6 +146,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
           treeStructure={treeStructure}
           renderTree={renderTree}
           onToggle={onToggle}
+          onItemClick={onItemClick}
+          selectedId={selectedId}
           isExpanded={isExpanded}
         />
       </aside>
@@ -156,11 +162,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
             top: 0,
             bottom: 0,
             width: 240,
-            backgroundColor: '#f7f6f3',
-            boxShadow: '2px 0 8px rgba(0,0,0,0.1)',
+            backgroundColor: 'var(--color-bg-secondary)',
+            boxShadow: 'var(--shadow-lg)',
             zIndex: 50,
             display: 'flex',
             flexDirection: 'column',
+            borderRight: '1px solid var(--color-border)',
           }}
           onMouseEnter={() => onHover(true)}
           onMouseLeave={() => onHover(false)}
@@ -169,6 +176,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
             treeStructure={treeStructure}
             renderTree={renderTree}
             onToggle={onToggle}
+            onItemClick={onItemClick}
+            selectedId={selectedId}
             isExpanded={true}
           />
         </aside>
@@ -180,21 +189,26 @@ export const Sidebar: React.FC<SidebarProps> = ({
         onClick={onToggle}
         style={{
           position: 'fixed',
-          left: isExpanded ? 240 : 0,
-          top: 16,
+          left: isExpanded ? 228 : -12,
+          top: 72,
           width: 24,
           height: 24,
           borderRadius: '50%',
-          border: '1px solid #e3e2e0',
-          backgroundColor: '#fff',
+          border: '1px solid var(--color-border)',
+          backgroundColor: 'var(--color-bg-primary)',
           cursor: 'pointer',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
           zIndex: 51,
-          transition: `left ${transitionDuration}ms ${transitionTiming}`,
-          boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+          transition: `left ${transitionDuration}ms ${transitionTiming}, opacity 0.2s`,
+          boxShadow: 'var(--shadow-sm)',
+          opacity: isExpanded ? 1 : 0.4,
+          fontSize: '10px',
+          color: 'var(--color-text-tertiary)',
         }}
+        onMouseEnter={(e) => (e.currentTarget.style.opacity = '1')}
+        onMouseLeave={(e) => !isExpanded && (e.currentTarget.style.opacity = '0.4')}
         aria-label={isExpanded ? '收起侧边栏' : '展开侧边栏'}
       >
         {isExpanded ? '◀' : '▶'}
@@ -208,6 +222,8 @@ interface SidebarContentProps {
   treeStructure: TreeNode[];
   renderTree: (nodes: TreeNode[], level?: number) => React.ReactNode;
   onToggle: () => void;
+  onItemClick: (id: string) => void;
+  selectedId: string | null;
   isExpanded: boolean;
 }
 
@@ -215,32 +231,35 @@ const SidebarContent: React.FC<SidebarContentProps> = ({
   treeStructure,
   renderTree,
 }) => {
+  // Split treeStructure into "Views" and "Calendars"
+  const viewItems = treeStructure.filter(node => node.id.startsWith('view-'));
+  const otherItems = treeStructure.filter(node => !node.id.startsWith('view-'));
+
   return (
     <>
       {/* Header */}
       <div
         className="sidebar-header"
         style={{
-          padding: '12px 16px',
-          borderBottom: '1px solid #e3e2e0',
+          padding: '16px',
           display: 'flex',
           alignItems: 'center',
-          gap: 8,
+          gap: 10,
         }}
       >
         <div
           className="sidebar-logo"
           style={{
-            width: 24,
-            height: 24,
+            width: 20,
+            height: 20,
             borderRadius: 4,
-            backgroundColor: '#37352f',
+            backgroundColor: 'var(--color-text-primary)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            color: '#fff',
-            fontSize: 14,
-            fontWeight: 600,
+            color: 'var(--color-bg-primary)',
+            fontSize: 12,
+            fontWeight: 700,
           }}
         >
           P
@@ -249,7 +268,8 @@ const SidebarContent: React.FC<SidebarContentProps> = ({
           style={{
             fontSize: 14,
             fontWeight: 600,
-            color: '#37352f',
+            color: 'var(--color-text-primary)',
+            letterSpacing: '-0.02em',
           }}
         >
           Pie Calendar
@@ -257,26 +277,28 @@ const SidebarContent: React.FC<SidebarContentProps> = ({
       </div>
 
       {/* Quick add button */}
-      <div style={{ padding: '8px 16px' }}>
+      <div style={{ padding: '4px 12px 12px' }}>
         <button
           className="sidebar-quick-add"
           style={{
             width: '100%',
-            padding: '8px 12px',
+            padding: '6px 10px',
             borderRadius: 6,
-            border: '1px solid #e3e2e0',
-            backgroundColor: '#fff',
-            color: '#37352f',
-            fontSize: 14,
+            border: '1px solid var(--color-border)',
+            backgroundColor: 'var(--color-bg-primary)',
+            color: 'var(--color-text-secondary)',
+            fontSize: 13,
+            fontWeight: 500,
             cursor: 'pointer',
             display: 'flex',
             alignItems: 'center',
             gap: 8,
-            transition: 'background-color 0.2s',
+            transition: 'all 0.2s',
+            boxShadow: 'var(--shadow-sm)',
           }}
         >
-          <span>+</span>
-          <span>新建</span>
+          <span style={{ fontSize: 16, color: 'var(--color-text-tertiary)' }}>+</span>
+          <span>新建事项</span>
         </button>
       </div>
 
@@ -286,85 +308,52 @@ const SidebarContent: React.FC<SidebarContentProps> = ({
         style={{
           flex: 1,
           overflowY: 'auto',
-          padding: '8px 0',
+          padding: '4px 0',
         }}
       >
         {/* Views section */}
-        <div className="sidebar-section" style={{ marginBottom: 16 }}>
-          <div
-            className="sidebar-section-header"
-            style={{
-              padding: '4px 16px',
-              fontSize: 12,
-              color: '#9a9a9a',
-              textTransform: 'uppercase',
-              letterSpacing: 0.5,
-            }}
-          >
-            视图
+        {viewItems.length > 0 && (
+          <div className="sidebar-section" style={{ marginBottom: 20 }}>
+            <div
+              className="sidebar-section-header"
+              style={{
+                padding: '8px 16px',
+                fontSize: 11,
+                fontWeight: 600,
+                color: 'var(--color-text-tertiary)',
+                textTransform: 'uppercase',
+                letterSpacing: '0.05em',
+              }}
+            >
+              视图
+            </div>
+            <div className="sidebar-section-content">
+              {renderTree(viewItems)}
+            </div>
           </div>
-          <div className="sidebar-section-content">
-            <SidebarItem
-              id="view-today"
-              name="今天"
-              type="view"
-              level={0}
-              isSelected={false}
-              isExpanded={false}
-              hasChildren={false}
-              icon="📅"
-            />
-            <SidebarItem
-              id="view-schedule"
-              name="日程"
-              type="view"
-              level={0}
-              isSelected={false}
-              isExpanded={false}
-              hasChildren={false}
-              icon="📋"
-            />
-            <SidebarItem
-              id="view-week"
-              name="周视图"
-              type="view"
-              level={0}
-              isSelected={false}
-              isExpanded={false}
-              hasChildren={false}
-              icon="📆"
-            />
-            <SidebarItem
-              id="view-month"
-              name="月视图"
-              type="view"
-              level={0}
-              isSelected={false}
-              isExpanded={false}
-              hasChildren={false}
-              icon="🗓"
-            />
-          </div>
-        </div>
+        )}
 
-        {/* Calendars section */}
-        <div className="sidebar-section">
-          <div
-            className="sidebar-section-header"
-            style={{
-              padding: '4px 16px',
-              fontSize: 12,
-              color: '#9a9a9a',
-              textTransform: 'uppercase',
-              letterSpacing: 0.5,
-            }}
-          >
-            日历
+        {/* Other section */}
+        {otherItems.length > 0 && (
+          <div className="sidebar-section">
+            <div
+              className="sidebar-section-header"
+              style={{
+                padding: '8px 16px',
+                fontSize: 11,
+                fontWeight: 600,
+                color: 'var(--color-text-tertiary)',
+                textTransform: 'uppercase',
+                letterSpacing: '0.05em',
+              }}
+            >
+              我的空间
+            </div>
+            <div className="sidebar-section-content">
+              {renderTree(otherItems)}
+            </div>
           </div>
-          <div className="sidebar-section-content">
-            {renderTree(treeStructure)}
-          </div>
-        </div>
+        )}
       </nav>
 
       {/* Footer */}
@@ -372,10 +361,10 @@ const SidebarContent: React.FC<SidebarContentProps> = ({
         className="sidebar-footer"
         style={{
           padding: '12px 16px',
-          borderTop: '1px solid #e3e2e0',
+          borderTop: '1px solid var(--color-border)',
           display: 'flex',
           alignItems: 'center',
-          gap: 8,
+          gap: 10,
         }}
       >
         <div
@@ -384,16 +373,18 @@ const SidebarContent: React.FC<SidebarContentProps> = ({
             width: 24,
             height: 24,
             borderRadius: '50%',
-            backgroundColor: '#e3e2e0',
+            backgroundColor: 'var(--color-bg-tertiary)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            fontSize: 12,
+            fontSize: 11,
+            fontWeight: 600,
+            color: 'var(--color-text-secondary)',
           }}
         >
-          U
+          B
         </div>
-        <span style={{ fontSize: 14, color: '#6b6b6b' }}>用户</span>
+        <span style={{ fontSize: 13, color: 'var(--color-text-secondary)', fontWeight: 500 }}>Ben Jiang</span>
       </div>
     </>
   );

@@ -46,7 +46,7 @@ export interface CalendarDateInfo {
 
 // ==================== 主题类型 ====================
 
-export type ThemeType = 'vintage' | 'minimal' | 'nature' | 'art' | 'zen' | 'cosmic';
+export type ThemeType = 'vintage' | 'minimal' | 'nature' | 'art' | 'zen' | 'cosmic' | 'clay' | 'sticker' | 'illustration' | 'cyberpunk' | 'ukiyoe' | 'ghibli';
 
 export interface ThemeConfig {
   id: ThemeType;

@@ -28,6 +28,15 @@ export default defineConfig({
       }
     })
   ],
+  server: {
+    proxy: {
+      '/volces-api': {
+        target: 'https://ark.cn-beijing.volces.com',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/volces-api/, '')
+      }
+    }
+  },
   resolve: {
     alias: {
       '@calendar/ui': '/../../packages/ui/src',

@@ -13,7 +13,7 @@ export interface SidebarItemProps {
   isSelected: boolean;
   isExpanded: boolean;
   hasChildren: boolean;
-  icon?: string;
+  icon?: React.ReactNode;
   color?: string;
   style?: React.CSSProperties;
   onClick?: () => void;

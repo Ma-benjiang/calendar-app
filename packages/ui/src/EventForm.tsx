@@ -31,7 +31,14 @@ export const EventForm: React.FC<EventFormProps> = ({
   const [allDay, setAllDay] = useState(event?.allDay || false);
   const [color, setColor] = useState(event?.color || '#3b82f6');
 
-  const colors = ['#3b82f6', '#ef4444', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899'];
+  const colors = [
+    { value: '#3b82f6', label: '蓝色' },
+    { value: '#ef4444', label: '红色' },
+    { value: '#10b981', label: '绿色' },
+    { value: '#f59e0b', label: '橙色' },
+    { value: '#8b5cf6', label: '紫色' },
+    { value: '#9ca3af', label: '灰色' }
+  ];
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -107,11 +114,12 @@ export const EventForm: React.FC<EventFormProps> = ({
         <div className="color-picker">
           {colors.map((c) => (
             <button
-              key={c}
+              key={c.value}
               type="button"
-              className={`color-btn ${color === c ? 'active' : ''}`}
-              style={{ backgroundColor: c }}
-              onClick={() => setColor(c)}
+              className={`color-btn ${color === c.value ? 'active' : ''}`}
+              style={{ backgroundColor: c.value }}
+              onClick={() => setColor(c.value)}
+              title={c.label}
             />
           ))}
         </div>
@@ -122,16 +130,21 @@ export const EventForm: React.FC<EventFormProps> = ({
           <button
             type="button"
             className="btn-danger"
-            onClick={() => onDelete(event.id)}
+            onClick={() => {
+              if (confirm('确定要删除这个事件吗？')) {
+                onDelete(event.id);
+              }
+            }}
           >
             删除
           </button>
         )}
+        <div style={{ flex: 1 }} />
         <button type="button" className="btn-secondary" onClick={onCancel}>
           取消
         </button>
         <button type="submit" className="btn-primary">
-          保存
+          保存事件
         </button>
       </div>
     </form>

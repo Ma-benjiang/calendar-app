@@ -2,412 +2,270 @@
   display: flex;
   flex-direction: column;
   height: 100vh;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family: var(--font-family);
+  background: var(--color-bg-primary);
+  color: var(--color-text-primary);
 }
 
 .calendar-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 16px 24px;
-  background: #fff;
-  border-bottom: 1px solid #e5e7eb;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  padding: 12px 24px;
+  background: var(--color-bg-primary);
+  border-bottom: 1px solid var(--color-border);
 }
 
 .calendar-header h1 {
   margin: 0;
-  font-size: 24px;
-  color: #1f2937;
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--color-text-primary);
 }
 
 .header-center {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 8px;
 }
 
 .current-date {
-  font-size: 20px;
+  font-size: 16px;
   font-weight: 600;
-  min-width: 120px;
+  min-width: 140px;
   text-align: center;
+  color: var(--color-text-primary);
 }
 
 .nav-btn, .today-btn, .view-btn {
-  padding: 8px 16px;
-  border: 1px solid #d1d5db;
-  background: #fff;
-  border-radius: 6px;
+  padding: 6px 12px;
+  border: 1px solid var(--color-border);
+  background: var(--color-bg-primary);
+  border-radius: var(--radius-md);
   cursor: pointer;
-  font-size: 14px;
-  transition: all 0.2s;
+  font-size: var(--text-sm);
+  color: var(--color-text-secondary);
+  transition: all var(--transition-fast);
 }
 
 .nav-btn:hover, .today-btn:hover, .view-btn:hover {
-  background: #f3f4f6;
+  background: var(--color-bg-hover);
+  border-color: var(--color-border-hover);
 }
 
 .smart-schedule-btn {
-  padding: 8px 16px;
-  border: 1px solid #8b5cf6;
-  background: #fff;
-  color: #8b5cf6;
-  border-radius: 6px;
+  padding: 6px 12px;
+  border: 1px solid var(--color-accent-purple);
+  background: transparent;
+  color: var(--color-accent-purple);
+  border-radius: var(--radius-md);
   cursor: pointer;
-  font-size: 14px;
+  font-size: var(--text-sm);
   font-weight: 500;
-  transition: all 0.2s;
+  transition: all var(--transition-fast);
+  display: flex;
+  align-items: center;
+  gap: 4px;
 }
 
 .smart-schedule-btn:hover {
-  background: #8b5cf6;
-  color: #fff;
+  background: rgba(139, 92, 246, 0.05);
 }
 
 .view-btn.active {
-  background: #3b82f6;
-  color: #fff;
-  border-color: #3b82f6;
+  background: var(--color-bg-tertiary);
+  color: var(--color-text-primary);
+  border-color: var(--color-border-hover);
+  font-weight: 600;
 }
 
 .view-switcher {
   display: flex;
-  gap: 4px;
+  background: var(--color-bg-secondary);
+  padding: 2px;
+  border-radius: var(--radius-lg);
+  gap: 2px;
+}
+
+.view-switcher .view-btn {
+  border: none;
+  background: transparent;
+}
+
+.view-switcher .view-btn.active {
+  background: var(--color-bg-primary);
+  box-shadow: var(--shadow-sm);
 }
 
 .calendar-main {
   flex: 1;
   overflow: auto;
-  padding: 20px;
+  padding: 0; /* Changed from 20px to 0 for a more integrated look */
 }
 
-/* 月视图样式 */
+/* Month View Styles Refined */
+.month-view {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
 .month-view .week-header {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
-  gap: 1px;
-  background: #e5e7eb;
-  border-radius: 8px 8px 0 0;
-  overflow: hidden;
+  border-bottom: 1px solid var(--color-border);
 }
 
 .week-day-header {
-  background: #f9fafb;
-  padding: 12px;
+  background: var(--color-bg-primary);
+  padding: 10px;
   text-align: center;
-  font-weight: 600;
-  color: #6b7280;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--color-text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
 }
 
 .days-grid {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
+  grid-auto-rows: 1fr;
+  flex: 1;
+  background: var(--color-border);
   gap: 1px;
-  background: #e5e7eb;
-  border-radius: 0 0 8px 8px;
-  overflow: hidden;
 }
 
 .day-cell {
-  background: #fff;
-  min-height: 100px;
+  background: var(--color-bg-primary);
+  min-height: 120px;
   padding: 8px;
   cursor: pointer;
-  transition: background 0.2s;
+  transition: background var(--transition-fast);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
 }
 
 .day-cell:hover {
-  background: #f3f4f6;
+  background: var(--color-bg-secondary);
 }
 
 .day-cell.other-month {
-  background: #f9fafb;
-  color: #9ca3af;
+  background: var(--color-bg-secondary);
+  color: var(--color-text-tertiary);
 }
 
 .day-number {
-  font-weight: 600;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--color-text-secondary);
   margin-bottom: 4px;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+}
+
+.day-cell.today .day-number {
+  background: var(--color-accent-blue);
+  color: #fff;
 }
 
 .day-events {
   display: flex;
-  flex-wrap: wrap;
+  flex-direction: column;
   gap: 2px;
 }
 
 .event-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: var(--radius-sm);
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--color-text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  border-left-width: 3px;
+  border-left-style: solid;
+  background: rgba(0, 0, 0, 0.03);
+}
+
+.event-dot:hover {
+  filter: brightness(0.95);
 }
 
 .more-events {
-  font-size: 10px;
-  color: #6b7280;
-}
-
-/* 周视图样式 */
-.week-view .week-header {
-  display: grid;
-  grid-template-columns: 60px repeat(7, 1fr);
-  gap: 1px;
-  background: #e5e7eb;
-}
-
-.week-day-header {
-  background: #f9fafb;
-  padding: 12px;
-  text-align: center;
-}
-
-.week-day-header .day-name {
-  font-size: 12px;
-  color: #6b7280;
-}
-
-.week-day-header .day-number {
-  font-size: 18px;
-  font-weight: 600;
-}
-
-.week-grid {
-  display: flex;
-  flex-direction: column;
-}
-
-.hour-row {
-  display: grid;
-  grid-template-columns: 60px repeat(7, 1fr);
-  gap: 1px;
-  background: #e5e7eb;
-  min-height: 50px;
-}
-
-.hour-label {
-  background: #f9fafb;
-  padding: 4px 8px;
-  font-size: 12px;
-  color: #6b7280;
-  text-align: right;
-}
-
-.hour-cell {
-  background: #fff;
-  padding: 4px;
-  cursor: pointer;
-}
-
-.hour-cell:hover {
-  background: #f3f4f6;
-}
-
-.week-event {
-  padding: 2px 6px;
-  border-radius: 4px;
-  color: #fff;
   font-size: 11px;
-  margin-bottom: 2px;
-  cursor: pointer;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  color: var(--color-text-tertiary);
+  padding-left: 4px;
 }
 
-/* 日视图样式 */
-.day-view {
-  max-width: 800px;
-  margin: 0 auto;
+/* Week/Day View Timeline Refined */
+.hour-row, .day-hour-row {
+  border-bottom: 1px solid var(--color-border);
 }
 
-.day-header {
-  text-align: center;
-  padding: 20px;
-  border-bottom: 1px solid #e5e7eb;
+.hour-label, .day-hour-label {
+  background: var(--color-bg-primary);
+  color: var(--color-text-tertiary);
+  font-size: 11px;
+  font-weight: 400;
 }
 
-.day-timeline {
-  display: flex;
-  flex-direction: column;
+.hour-cell, .day-hour-content {
+  background: var(--color-bg-primary);
+  transition: background var(--transition-fast);
 }
 
-.day-hour-row {
-  display: flex;
-  min-height: 60px;
-  border-bottom: 1px solid #e5e7eb;
+.hour-cell:hover, .day-hour-content:hover {
+  background: var(--color-bg-hover);
 }
 
-.day-hour-label {
-  width: 80px;
-  padding: 8px 12px;
-  color: #6b7280;
-  font-size: 14px;
-  text-align: right;
-  background: #f9fafb;
+/* Modal and Forms Refined */
+.modal-overlay {
+  background: rgba(15, 15, 15, 0.4);
+  backdrop-filter: blur(2px);
 }
 
-.day-hour-content {
-  flex: 1;
-  padding: 4px;
-  cursor: pointer;
+.modal-content {
+  background: var(--color-bg-primary);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  border: 1px solid var(--color-border);
 }
 
-.day-hour-content:hover {
-  background: #f3f4f6;
-}
-
-.day-event {
-  padding: 8px 12px;
-  border-radius: 6px;
-  color: #fff;
-  margin-bottom: 4px;
-  cursor: pointer;
-}
-
-.day-event .event-time {
-  font-size: 12px;
-  opacity: 0.9;
-}
-
-.day-event .event-title {
-  font-weight: 600;
-}
-
-.day-event .event-desc {
-  font-size: 12px;
-  opacity: 0.8;
-  margin-top: 4px;
-}
-
-/* 表单样式 */
 .event-form {
-  padding: 24px;
-  max-width: 500px;
-}
-
-.event-form h3 {
-  margin: 0 0 20px 0;
-  color: #1f2937;
-}
-
-.form-group {
-  margin-bottom: 16px;
+  padding: 32px;
 }
 
 .form-group label {
-  display: block;
-  margin-bottom: 6px;
-  font-weight: 500;
-  color: #374151;
+  font-size: 12px;
+  color: var(--color-text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 8px;
 }
 
 .form-group input,
 .form-group textarea {
-  width: 100%;
-  padding: 10px 12px;
-  border: 1px solid #d1d5db;
-  border-radius: 6px;
+  border: 1px solid var(--color-border);
+  background: var(--color-bg-secondary);
+  border-radius: var(--radius-md);
+  padding: 8px 12px;
   font-size: 14px;
+  color: var(--color-text-primary);
+  transition: all var(--transition-fast);
 }
 
 .form-group input:focus,
 .form-group textarea:focus {
-  outline: none;
-  border-color: #3b82f6;
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-}
-
-.form-row {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 16px;
-}
-
-.color-picker {
-  display: flex;
-  gap: 8px;
-}
-
-.color-btn {
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  border: 3px solid transparent;
-  cursor: pointer;
-}
-
-.color-btn.active {
-  border-color: #1f2937;
-}
-
-.form-actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 12px;
-  margin-top: 24px;
-}
-
-.btn-primary,
-.btn-secondary,
-.btn-danger {
-  padding: 10px 20px;
-  border-radius: 6px;
-  font-size: 14px;
-  font-weight: 500;
-  cursor: pointer;
-  border: none;
-}
-
-.btn-primary {
-  background: #3b82f6;
-  color: #fff;
-}
-
-.btn-primary:hover {
-  background: #2563eb;
-}
-
-.btn-secondary {
-  background: #f3f4f6;
-  color: #374151;
-}
-
-.btn-secondary:hover {
-  background: #e5e7eb;
-}
-
-.btn-danger {
-  background: #ef4444;
-  color: #fff;
-  margin-right: auto;
-}
-
-.btn-danger:hover {
-  background: #dc2626;
-}
-
-/* 模态框样式 */
-.modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-}
-
-.modal-content {
-  background: #fff;
-  border-radius: 12px;
-  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
-  max-height: 90vh;
-  overflow: auto;
+  background: var(--color-bg-primary);
+  border-color: var(--color-accent-blue);
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
 }
 
 /* ========== 拖放样式 ========== */

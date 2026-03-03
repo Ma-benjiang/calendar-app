@@ -127,7 +127,7 @@ export const CalendarAppWithSidebar: React.FC = () => {
   const treeStructure = buildTree(sidebarItems);
 
   return (
-    <div style={{ display: 'flex', height: '100vh' }}>
+    <div className="notion-theme" style={{ display: 'flex', height: '100vh', backgroundColor: 'var(--color-bg-primary)' }}>
       <Sidebar
         isExpanded={isSidebarExpanded}
         width={240}
@@ -163,7 +163,7 @@ export const CalendarAppWithSidebar: React.FC = () => {
 
       <div className="calendar-app" style={{ flex: 1, overflow: 'auto' }}>
         <header className="calendar-header">
-          <h1>📅 日历</h1>
+          <h1>Pie Calendar</h1>
           <div className="header-center">
             <button className="nav-btn" onClick={goToPrev}>◀</button>
             <span className="current-date">{formatTitle()}</span>
@@ -174,7 +174,8 @@ export const CalendarAppWithSidebar: React.FC = () => {
               onClick={() => setShowSmartSchedule(true)}
               title="智能安排"
             >
-              🤖 智能安排
+              <span style={{ fontSize: '14px' }}>✨</span>
+              <span>智能安排</span>
             </button>
           </div>
           <div className="view-switcher">
@@ -190,9 +191,9 @@ export const CalendarAppWithSidebar: React.FC = () => {
           </div>
         </header>
 
-        <main className="calendar-main" style={{ display: 'flex', gap: '16px', padding: '16px' }}>
+        <main className="calendar-main" style={{ display: 'flex', height: 'calc(100vh - 53px)' }}>
           {/* Calendar Views */}
-          <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ flex: 1, minWidth: 0, overflow: 'auto' }}>
             {view === 'month' && (
               <MonthView
                 year={currentDate.getFullYear()}
@@ -247,7 +248,14 @@ export const CalendarAppWithSidebar: React.FC = () => {
 
           {/* Task Sidebar - show in calendar views */}
           {view !== 'tasks' && view !== 'daily-calendar' && (
-            <div style={{ width: '320px', flexShrink: 0, borderLeft: '1px solid #e5e7eb', paddingLeft: '16px' }}>
+            <div style={{ 
+              width: '300px', 
+              flexShrink: 0, 
+              borderLeft: '1px solid var(--color-border)', 
+              padding: '16px',
+              backgroundColor: 'var(--color-bg-primary)',
+              overflow: 'auto'
+            }}>
               <TaskList
                 tasks={unscheduledTasks}
                 onCreateTask={createTask}
