@@ -29,24 +29,25 @@ jobs:
       - name: AI Code Review
         id: ai-review
         env:
-          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          KIMI_API_KEY: ${{ secrets.KIMI_API_KEY }}
         run: |
-          DIFF=$(cat /tmp/pr.diff)
+          DIFF=$(cat /tmp/pr.diff | sed 's/"/\\"/g' | sed 's/\n/\\n/g')
 
-          # 调用 Claude API 进行审查
-          curl -s https://api.anthropic.com/v1/messages \
+          # 调用 Kimi API 进行审查 (OpenAI 兼容格式)
+          curl -s https://api.kimi.com/coding/v1/chat/completions \
             -H "Content-Type: application/json" \
-            -H "x-api-key: $ANTHROPIC_API_KEY" \
-            -H "anthropic-version: 2023-06-01" \
+            -H "Authorization: Bearer $KIMI_API_KEY" \
             -d "{
-              \"model\": \"claude-3-5-sonnet-20241022\",
+              \"model\": \"kimi-latest\",
               \"max_tokens\": 4000,
-              \"system\": \"你是代码审查员，负责审查代码变更。输出格式：\\n1. 审查结果：APPROVED / NEEDS_FIX\\n2. 发现的问题（位置、严重程度、建议）\\n3. 总结\",
               \"messages\": [{
+                \"role\": \"system\",
+                \"content\": \"你是代码审查员，负责审查代码变更。输出格式：\\n1. 审查结果：APPROVED / NEEDS_FIX\\n2. 发现的问题（位置、严重程度、建议）\\n3. 总结\"
+              }, {
                 \"role\": \"user\",
                 \"content\": \"请审查以下代码变更：\\n\\n$DIFF\"
               }]
-            }" | jq -r '.content[0].text' > /tmp/review.md
+            }" | jq -r '.choices[0].message.content' > /tmp/review.md
 
           echo "result<<EOF" >> $GITHUB_OUTPUT
           cat /tmp/review.md >> $GITHUB_OUTPUT
