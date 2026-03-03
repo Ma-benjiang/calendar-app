@@ -33,21 +33,20 @@ jobs:
         run: |
           DIFF=$(cat /tmp/pr.diff | sed 's/"/\\"/g' | sed 's/\n/\\n/g')
 
-          # 调用 Kimi API 进行审查 (OpenAI 兼容格式)
-          curl -s https://api.kimi.com/coding/v1/chat/completions \
+          # 调用 Kimi API 进行审查 (Anthropic 格式)
+          curl -s https://api.kimi.com/coding/v1/messages \
             -H "Content-Type: application/json" \
-            -H "Authorization: Bearer $KIMI_API_KEY" \
+            -H "x-api-key: $KIMI_API_KEY" \
+            -H "anthropic-version: 2023-06-01" \
             -d "{
-              \"model\": \"kimi-latest\",
+              \"model\": \"kimi-for-coding\",
               \"max_tokens\": 4000,
+              \"system\": \"你是代码审查员，负责审查代码变更。输出格式：\\n1. 审查结果：APPROVED / NEEDS_FIX\\n2. 发现的问题（位置、严重程度、建议）\\n3. 总结\",
               \"messages\": [{
-                \"role\": \"system\",
-                \"content\": \"你是代码审查员，负责审查代码变更。输出格式：\\n1. 审查结果：APPROVED / NEEDS_FIX\\n2. 发现的问题（位置、严重程度、建议）\\n3. 总结\"
-              }, {
                 \"role\": \"user\",
                 \"content\": \"请审查以下代码变更：\\n\\n$DIFF\"
               }]
-            }" | jq -r '.choices[0].message.content' > /tmp/review.md
+            }" | jq -r '.content[0].text' > /tmp/review.md
 
           echo "result<<EOF" >> $GITHUB_OUTPUT
           cat /tmp/review.md >> $GITHUB_OUTPUT
