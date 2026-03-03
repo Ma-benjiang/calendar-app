@@ -151,9 +151,10 @@ CEO: 做个新功能
 │             → 输出 docs/test/TEST-PLAN-week-view.md │
 │             → 检查点：测试用例覆盖 PRD           │
 │                                                │
-│    Phase 3 → Developer + CodeReviewer 并行     │
-│             → 编码 + 代码审查                   │
-│             → 检查点：覆盖率≥80%，审查通过       │
+│    Phase 3 → Developer                          │
+│             → 编码 + 单元测试（覆盖率≥80%）      │
+│             → 创建 PR → CodeReviewer 审查        │
+│             → 检查点：审查通过，无阻塞性问题      │
 │                                                │
 │    Phase 4 → QAEngineer + BugFixer              │
 │             → 集成测试 + Bug 修复循环            │
