@@ -190,7 +190,7 @@ export function useSidebar(options: UseSidebarOptions): UseSidebarReturn {
 
   // Actions
   const toggle = useCallback(() => {
-    setIsExpanded(prev => !prev);
+    setIsExpanded((prev: boolean) => !prev);
   }, []);
 
   const expand = useCallback(() => {

@@ -150,6 +150,7 @@ export function parseNaturalInput(input: string): ParsedResult {
     if (match) {
       // Skip if this looks like part of an English date (e.g., "15" in "March 15")
       if (englishMonthMatch && match.index !== undefined &&
+          englishMonthMatch.index !== undefined &&
           match.index >= englishMonthMatch.index &&
           match.index < englishMonthMatch.index + englishMonthMatch[0].length) {
         continue;

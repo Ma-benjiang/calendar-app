@@ -5,7 +5,7 @@
  */
 import React from 'react';
 
-interface SidebarItemProps {
+export interface SidebarItemProps {
   id: string;
   name: string;
   type: 'calendar' | 'folder' | 'view' | 'tag';

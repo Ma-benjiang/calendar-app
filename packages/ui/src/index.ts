@@ -4,7 +4,7 @@
 import './notion-theme.css';
 
 // Export hooks
-export { useSidebar, type SidebarItem, type TreeNode } from './useSidebar';
+export { useSidebar, type TreeNode } from './useSidebar';
 export { useCommand, type Command } from './useCommand';
 export {
   useViewMode,
@@ -32,7 +32,7 @@ export { parseNaturalInput, type ParsedResult } from './NaturalInput';
 // Export components
 export { CommandMenu } from './CommandMenu';
 export { Sidebar } from './Sidebar';
-export { SidebarItem } from './SidebarItem';
+export { SidebarItem, type SidebarItemProps } from './SidebarItem';
 export { ContentBlock } from './ContentBlock';
 export { ViewToggle } from './ViewToggle';
 export { NotionButton } from './NotionButton';
