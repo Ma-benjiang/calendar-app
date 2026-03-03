@@ -17,7 +17,7 @@ interface CalendarImageProps {
 export const CalendarImage: React.FC<CalendarImageProps> = ({
   imageUrl,
   alt,
-  isLoading = false,
+  // isLoading - reserved for future use
   onLoad,
   onError,
 }) => {

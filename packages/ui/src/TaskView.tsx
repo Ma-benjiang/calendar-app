@@ -5,10 +5,6 @@
 import React, { useState, useCallback } from 'react';
 import {
   Task,
-  TaskStatus,
-  TaskPriority,
-  TaskFilter,
-  TaskSortOption,
   CreateTaskInput,
   UpdateTaskInput,
 } from '@calendar/core';
@@ -23,9 +19,9 @@ interface TaskViewProps {
   /** 视图标题 */
   title?: string;
   /** 初始筛选条件 */
-  initialFilter?: TaskFilter;
+  initialFilter?: import('@calendar/core').TaskFilter;
   /** 初始排序 */
-  initialSortBy?: TaskSortOption;
+  initialSortBy?: import('@calendar/core').TaskSortOption;
   /** 是否显示标题栏 */
   showHeader?: boolean;
   /** 是否显示统计信息 */
@@ -104,7 +100,6 @@ export const TaskView: React.FC<TaskViewProps> = ({
     allTasks,
     isLoading,
     unscheduledTasks,
-    todayTasks,
     completedTasks,
     filter,
     setFilter,
@@ -116,7 +111,6 @@ export const TaskView: React.FC<TaskViewProps> = ({
     toggleTaskCompletion,
     scheduleTask,
     unscheduleTask,
-    getTasksForDate,
     createSubTask,
     getSubTasks,
     getTaskProgress,
@@ -177,11 +171,6 @@ export const TaskView: React.FC<TaskViewProps> = ({
     },
     [onTaskDragStart]
   );
-
-  // 快速筛选：今日任务
-  const showTodayTasks = useCallback(() => {
-    setFilter({ ...filter, dueAfter: new Date(), dueBefore: new Date() });
-  }, [filter, setFilter]);
 
   // 快速筛选：未安排任务
   const showUnscheduledTasks = useCallback(() => {

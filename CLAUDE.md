@@ -46,9 +46,10 @@ CEO: 怎么样了
         ┌─────────────────────────────┐
         │   主对话 Claude Code         │
         │   ─────────────────         │
-        │   意图识别器                │
+        │   意图识别 + SprintMaster   │
         │   - 识别 CEO 意图           │
-        │   - 路由到对应 Agent        │
+        │   - 创建 Task 链            │
+        │   - 阶段调度、自动流转      │
         └─────────────┬───────────────┘
                       │
         ┌─────────────┼─────────────┬─────────────┐
@@ -62,39 +63,28 @@ CEO: 怎么样了
    └────┬────┘        │        └─────────┘   └─────────┘
         │             │
         │             ▼
-        │        ┌─────────────┐
-        │        │SprintMaster │
-        │        │直接启动指定 │
-        │        │功能的 Sprint│
-        │        └──────┬──────┘
-        │               │
-        └───────────────┘
-              │
-              ▼
-       ┌─────────────┐
-       │ SprintMaster │
-       │ 执行编排器   │
-       │ - 创建 Task  │
-       │ - 阶段调度   │
-       │ - 自动流转   │
-       └──────┬──────┘
-              │
-    ┌─────────┼─────────┬─────────┐
-    ▼         ▼         ▼         ▼
-┌───────┐ ┌───────┐ ┌───────┐ ┌───────┐
-│Product│ │QA     │ │Developer│ │DevOps │
-│Owner  │ │Engineer│ + Code   │        │
-│       │ │        │ Reviewer │        │
-└───────┘ └───────┘ └───────┘ └───────┘
+        │    ┌─────────────────┐
+        │    │ 主对话直接创建  │
+        │    │ Sprint Task 链  │
+        │    └────────┬────────┘
+        │             │
+        └─────────────┘
+                      │
+                      ▼
+    ┌─────────┬─────────┬─────────┬─────────┐
+    ▼         ▼         ▼         ▼         ▼
+┌───────┐ ┌───────┐ ┌───────┐ ┌───────┐ ┌───────┐
+│Product│ │QA     │ │Developer│ │Code   │ │DevOps │
+│Owner  │ │Engineer│         │ │Reviewer│ │       │
+└───────┘ └───────┘ └───────┘ └───────┘ └───────┘
 ```
 
 ### Agent 职责
 
 | Agent | 职责 | 触发条件 |
 |-------|------|----------|
-| **主对话 Claude Code** | 意图识别、命令路由、任务管理 | CEO 每次输入 |
-| **Researcher** | 产品调研、竞品分析、功能推荐 | 自主模式启动时 / `/research` |
-| **SprintMaster** | Task 创建、阶段调度、进度跟踪 | Sprint 启动时 |
+| **主对话 Claude Code** | 意图识别、**SprintMaster**（Task 创建、阶段调度、进度跟踪） | CEO 每次输入 |
+| **Researcher** | 产品调研、竞品分析、功能推荐 | 自主模式启动时 |
 | **ProductOwner** | PRD 编写、需求澄清 | Phase 1 |
 | **QAEngineer** | 测试计划、测试执行 | Phase 2, 4 |
 | **Developer** | 编码实现、单元测试 | Phase 3 |
@@ -130,7 +120,7 @@ CEO: 做个新功能
                      │
                      ▼
 ┌────────────────────────────────────────────────┐
-│ 2. SprintMaster 创建 Task 链                     │
+│ 2. 主对话 Claude Code 创建 Task 链               │
 │    Task 1: [Sprint] 周视图功能                    │
 │    Task 2: Phase 1 - PRD (blockedBy: 1)         │
 │    Task 3: Phase 2 - 测试计划 (blockedBy: 2)     │
@@ -188,7 +178,7 @@ CEO: 做自然语言创建事件功能
                      │
                      ▼
 ┌────────────────────────────────────────────────┐
-│ 2. SprintMaster 立即创建 Task 链                 │
+│ 2. 主对话 Claude Code 立即创建 Task 链           │
 │    (功能名固定为"自然语言创建事件")               │
 └────────────────────┬───────────────────────────┘
                      │
@@ -264,7 +254,7 @@ CEO: 进度怎么样
 
 ## 阶段转换检查点
 
-SprintMaster 自动验证检查点，无需 CEO 介入：
+主对话 Claude Code 自动验证检查点，无需 CEO 介入：
 
 | 转换点 | 自动检查项 | 不通过处理 |
 |--------|-----------|-----------|
@@ -333,7 +323,7 @@ docs/
     └── RELEASE-v{x.y.z}.md # DevOps 输出
 
 .sprint/
-└── SPRINT-REPORT.md        # SprintMaster 输出：Sprint 总结
+└── SPRINT-REPORT.md        # 主对话 Claude Code 输出：Sprint 总结
 ```
 
 ### 文档命名规范
@@ -347,7 +337,7 @@ docs/
 | 代码审查 | `CODE-REVIEW-{module}.md` | `docs/review/` | CodeReviewer |
 | Bug修复 | `BUGFIX-{issue}.md` | `docs/bugfix/` | BugFixer |
 | 发布记录 | `RELEASE-v{x.y.z}.md` | `docs/release/` | DevOps |
-| Sprint报告 | `SPRINT-REPORT.md` | `.sprint/` | SprintMaster |
+| Sprint报告 | `SPRINT-REPORT.md` | `.sprint/` | 主对话 Claude Code |
 
 ---
 
@@ -396,19 +386,19 @@ Agent 系统仅在以下情况主动请示 CEO：
    - Developer 与 CodeReviewer 通过文档评论讨论
    - 尝试达成一致意见
 
-2. **仲裁阶段**（SprintMaster 介入，10分钟内）
-   - 无法快速达成一致 → 升级至 SprintMaster
-   - SprintMaster 基于「代码质量 > 开发速度」原则裁决
+2. **仲裁阶段**（主对话 Claude Code 介入，10分钟内）
+   - 无法快速达成一致 → 升级至主对话
+   - 主对话基于「代码质量 > 开发速度」原则裁决
    - 记录裁决理由到对应 Task 的 metadata
 
 3. **CEO 请示阶段**（需人工决策时）
    - **触发条件**：
      - 涉及架构重大变更，影响产品长期演进
      - 技术债务 vs 交付时间的权衡（影响 > 1 个 Sprint）
-     - 连续 2 次 SprintMaster 仲裁无法解决
+     - 连续 2 次仲裁无法解决
    - **CEO 接收信息**：
      - 冲突背景和双方观点
-     - SprintMaster 建议方案
+     - 主对话建议方案
      - 不同选择的预期影响
    - **CEO 决策方式**：
      - 回复「同意方案A」或「同意方案B」

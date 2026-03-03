@@ -3,7 +3,7 @@
  * 显示任务完成统计和趋势
  */
 import React, { useMemo } from 'react';
-import { Task, TaskStatus, TaskPriority } from '@calendar/core';
+import { Task, TaskPriority } from '@calendar/core';
 import './TaskStatsBoard.css';
 
 interface TaskStatsBoardProps {
@@ -15,12 +15,6 @@ interface DailyStats {
   date: string;
   completed: number;
   created: number;
-}
-
-interface ProjectStats {
-  name: string;
-  total: number;
-  completed: number;
 }
 
 export const TaskStatsBoard: React.FC<TaskStatsBoardProps> = ({

@@ -8,8 +8,8 @@ import {
   DailyCalendarRecord,
   UserPreferences,
   ThemeType,
-  ImageSize,
-  ImageQuality,
+  // ImageSize - for future use
+  // ImageQuality - for future use
   ThemeStrategyType,
 } from '../types';
 import { formatDateKey } from '../utils/dateUtils';

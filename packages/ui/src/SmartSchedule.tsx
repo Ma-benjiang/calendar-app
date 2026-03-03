@@ -8,8 +8,6 @@ import {
   CalendarEvent,
   AIScheduler,
   TimeSlot,
-  ScheduledTask,
-  ScheduleResult,
   UserPreference,
   getDefaultPreferences,
 } from '@calendar/core';

@@ -8,7 +8,7 @@ import { Sidebar } from './Sidebar';
 import { TaskList } from './TaskList';
 import { SmartSchedule } from './SmartSchedule';
 import { useTaskCalendar } from './useTaskCalendar';
-import { useSidebar, TreeNode } from './useSidebar';
+import type { TreeNode } from './useSidebar';
 import './CalendarApp.css';
 
 type ViewType = 'month' | 'week' | 'day' | 'tasks';
@@ -33,7 +33,6 @@ export const CalendarAppWithSidebar: React.FC = () => {
     view,
     setView,
     unscheduledTasks,
-    todayTasks,
     addEvent,
     updateEvent,
     deleteEvent,
@@ -42,7 +41,6 @@ export const CalendarAppWithSidebar: React.FC = () => {
     deleteTask,
     toggleTaskCompletion,
     scheduleTask,
-    getItemsForDate,
     handleTaskDrop,
     goToToday,
     goToPrev,

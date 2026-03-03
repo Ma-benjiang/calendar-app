@@ -8,7 +8,6 @@ import {
   GregorianDate,
   LunarDate,
   WeekdayInfo,
-  SpecialDayInfo,
 } from '../types';
 
 // 农历数据表（1900-2100年）

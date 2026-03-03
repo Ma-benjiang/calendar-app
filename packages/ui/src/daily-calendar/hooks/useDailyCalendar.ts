@@ -7,10 +7,10 @@ import { useState, useCallback, useEffect, useRef } from 'react';
 import {
   DailyCalendarRecord,
   ThemeType,
-  ImageSize,
-  ImageQuality,
-  GeneratedImage,
-  CalendarDateInfo,
+  // ImageSize - for future use
+  // ImageQuality - for future use
+  // GeneratedImage - for future use
+  // CalendarDateInfo - for future use
   ThemeStrategyType,
 } from '../types';
 import { seedreamService } from '../services/seedreamService';
@@ -141,7 +141,7 @@ export function useDailyCalendar(): UseDailyCalendarReturn {
   }, [getRecord]);
 
   // 生成台历
-  const generateCalendar = useCallback(async (
+  const _generateCalendar = useCallback(async (
     date: Date = currentDate,
     theme?: ThemeType
   ) => {
@@ -246,12 +246,13 @@ export function useDailyCalendar(): UseDailyCalendarReturn {
     // 强制重新生成，不使用缓存
     const dateKey = formatDateKey(currentDate);
     const dateInfo = getCalendarDateInfo(currentDate);
-    const theme = selectThemeByStrategy(
+    const selectedTheme = selectThemeByStrategy(
       preferences.themeStrategy.type,
       preferences.themeStrategy.preferences,
       currentDate
     );
-    const quote = selectDailyQuote(currentDate, theme, dateInfo);
+    const dateInfo = getCalendarDateInfo(currentDate);
+    const quote = selectDailyQuote(currentDate, selectedTheme, dateInfo);
 
     setIsLoading(true);
     setIsGenerating(true);
@@ -262,7 +263,7 @@ export function useDailyCalendar(): UseDailyCalendarReturn {
       setProgress(30);
       const imageParams = {
         date: currentDate,
-        theme,
+        theme: selectedTheme,
         quote: quote.text,
         size: preferences.defaultImageSize,
         quality: preferences.defaultImageQuality,
@@ -276,7 +277,7 @@ export function useDailyCalendar(): UseDailyCalendarReturn {
         id: generateId(),
         date: dateKey,
         dateInfo,
-        theme,
+        theme: selectedTheme,
         quote,
         image: generatedImage,
         createdAt: new Date(),
@@ -342,17 +343,17 @@ export function useDailyCalendar(): UseDailyCalendarReturn {
   }, [updateThemeStrategy]);
 
   // 设置手动主题
-  const setManualTheme = useCallback((theme: ThemeType) => {
+  const _setManualTheme = useCallback((theme: ThemeType) => {
     updateThemeStrategy('manual', theme);
   }, [updateThemeStrategy]);
 
   // 检查指定日期是否有记录
-  const hasRecordForDate = useCallback((date: Date): boolean => {
+  const _hasRecordForDate = useCallback((date: Date): boolean => {
     return hasRecord(formatDateKey(date));
   }, [hasRecord]);
 
   // 获取指定日期的记录
-  const getRecordForDate = useCallback((date: Date): DailyCalendarRecord | null => {
+  const _getRecordForDate = useCallback((date: Date): DailyCalendarRecord | null => {
     return getRecord(formatDateKey(date));
   }, [getRecord]);
 

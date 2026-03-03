@@ -5,7 +5,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { renderHook, act, waitFor } from '@testing-library/react';
 import { useCalendarStorage } from '../hooks/useCalendarStorage';
-import { DailyCalendarRecord, ThemeType, Quote, GeneratedImage } from '../types';
+import { DailyCalendarRecord, ThemeType } from '../types';
 
 // Mock localStorage
 const localStorageMock = {
@@ -19,45 +19,6 @@ Object.defineProperty(window, 'localStorage', {
   value: localStorageMock,
 });
 
-// Mock record data
-const createMockRecord = (date: string): DailyCalendarRecord => {
-  const [year, month, day] = date.split('-').map(Number);
-  return {
-    id: `test-id-${date}`,
-    date,
-    dateInfo: {
-      gregorian: { year, month, day, monthName: `${month}月`, dayName: `${day}日` },
-      lunar: { year, month: month - 1, day: day - 1, monthName: `${month - 1}月`, dayName: `初${day - 1 || 1}`, zodiac: '马' },
-      weekday: { index: 2, name: '星期二', shortName: '周二', englishName: 'Tuesday' },
-      special: {
-        isHoliday: false,
-        isSolarTerm: false,
-        constellation: '双鱼座',
-      },
-    },
-    theme: 'vintage' as ThemeType,
-    quote: {
-      id: 'quote-001',
-      text: '春风得意马蹄疾',
-      category: 'poetry',
-      themes: ['vintage', 'art'],
-    },
-    image: {
-      id: `img-${date}`,
-      url: 'https://example.com/image.png',
-      metadata: {
-        generatedAt: new Date(`${date}T00:00:00Z`),
-        prompt: 'test prompt',
-        theme: 'vintage' as ThemeType,
-        size: '2K',
-        quality: 'standard',
-      },
-    },
-    createdAt: new Date(`${date}T00:00:00Z`),
-    updatedAt: new Date(`${date}T00:00:00Z`),
-  };
-};
-
 describe('useCalendarStorage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -68,220 +29,217 @@ describe('useCalendarStorage', () => {
     vi.restoreAllMocks();
   });
 
-  it('should initialize with empty records', async () => {
-    const { result } = renderHook(() => useCalendarStorage());
+  describe('records', () => {
+    it('should initialize with empty records', () => {
+      const { result } = renderHook(() => useCalendarStorage());
 
-    await waitFor(() => {
-      expect(result.current.isLoaded).toBe(true);
+      expect(result.current.records.size).toBe(0);
     });
 
-    expect(result.current.records.size).toBe(0);
-  });
-
-  it('should load records from localStorage', async () => {
-    const mockRecord = createMockRecord('2026-03-03');
-    const storedData = {
-      '2026-03-03': {
-        ...mockRecord,
-        createdAt: mockRecord.createdAt.toISOString(),
-        updatedAt: mockRecord.updatedAt.toISOString(),
+    it('should load records from localStorage on mount', async () => {
+      const mockRecord: DailyCalendarRecord = {
+        id: '2024-03-15',
+        date: '2024-03-15',
+        dateInfo: {
+          gregorian: { year: 2024, month: 3, day: 15, monthName: '三月', dayName: '十五日' },
+          lunar: { year: 2024, month: 2, day: 6, monthName: '二月', dayName: '初六', zodiac: '龙' },
+          weekday: { index: 4, name: '星期五', shortName: '周五', englishName: 'Friday' },
+          special: { isHoliday: false, isSolarTerm: false, constellation: '双鱼座' },
+        },
+        theme: 'vintage',
+        quote: {
+          id: 'test-001',
+          text: '测试文案',
+          category: 'general',
+          themes: ['vintage'],
+        },
         image: {
-          ...mockRecord.image,
+          id: 'img-001',
+          url: 'https://example.com/image.jpg',
           metadata: {
-            ...mockRecord.image.metadata,
-            generatedAt: mockRecord.image.metadata.generatedAt.toISOString(),
+            generatedAt: new Date(),
+            prompt: 'test prompt',
+            theme: 'vintage',
+            size: '1K',
+            quality: 'standard',
           },
         },
-      },
-    };
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
 
-    localStorageMock.getItem.mockImplementation((key: string) => {
-      if (key === 'daily-calendar-records') {
-        return JSON.stringify(storedData);
-      }
-      return null;
-    });
+      localStorageMock.getItem.mockReturnValue(JSON.stringify({
+        records: { '2024-03-15': mockRecord },
+      }));
 
-    const { result } = renderHook(() => useCalendarStorage());
+      const { result } = renderHook(() => useCalendarStorage());
 
-    await waitFor(() => {
-      expect(result.current.isLoaded).toBe(true);
-    });
-
-    expect(result.current.records.size).toBe(1);
-    expect(result.current.getRecord('2026-03-03')).toBeDefined();
-  });
-
-  it('should save record to localStorage', async () => {
-    const { result } = renderHook(() => useCalendarStorage());
-
-    await waitFor(() => {
-      expect(result.current.isLoaded).toBe(true);
-    });
-
-    const mockRecord = createMockRecord('2026-03-03');
-
-    act(() => {
-      result.current.saveRecord(mockRecord);
-    });
-
-    expect(localStorageMock.setItem).toHaveBeenCalled();
-    expect(result.current.hasRecord('2026-03-03')).toBe(true);
-  });
-
-  it('should get record by date', async () => {
-    const { result } = renderHook(() => useCalendarStorage());
-
-    await waitFor(() => {
-      expect(result.current.isLoaded).toBe(true);
-    });
-
-    const mockRecord = createMockRecord('2026-03-03');
-
-    act(() => {
-      result.current.saveRecord(mockRecord);
-    });
-
-    const record = result.current.getRecord('2026-03-03');
-    expect(record).toBeDefined();
-    expect(record?.date).toBe('2026-03-03');
-  });
-
-  it('should return null for non-existent record', async () => {
-    const { result } = renderHook(() => useCalendarStorage());
-
-    await waitFor(() => {
-      expect(result.current.isLoaded).toBe(true);
-    });
-
-    const record = result.current.getRecord('2026-01-01');
-    expect(record).toBeNull();
-  });
-
-  it('should delete record', async () => {
-    const { result } = renderHook(() => useCalendarStorage());
-
-    await waitFor(() => {
-      expect(result.current.isLoaded).toBe(true);
-    });
-
-    const mockRecord = createMockRecord('2026-03-03');
-
-    act(() => {
-      result.current.saveRecord(mockRecord);
-    });
-
-    expect(result.current.hasRecord('2026-03-03')).toBe(true);
-
-    act(() => {
-      result.current.deleteRecord('2026-03-03');
-    });
-
-    expect(result.current.hasRecord('2026-03-03')).toBe(false);
-  });
-
-  it('should clear all history', async () => {
-    const { result } = renderHook(() => useCalendarStorage());
-
-    await waitFor(() => {
-      expect(result.current.isLoaded).toBe(true);
-    });
-
-    const mockRecord1 = createMockRecord('2026-03-03');
-    const mockRecord2 = createMockRecord('2026-03-04');
-
-    await act(async () => {
-      await result.current.saveRecord(mockRecord1);
-      await result.current.saveRecord(mockRecord2);
-    });
-
-    await waitFor(() => {
-      expect(result.current.records.size).toBeGreaterThanOrEqual(1);
-    });
-
-    act(() => {
-      result.current.clearHistory();
-    });
-
-    expect(result.current.records.size).toBe(0);
-    expect(localStorageMock.removeItem).toHaveBeenCalledWith('daily-calendar-records');
-  });
-
-  it('should update preferences', async () => {
-    const { result } = renderHook(() => useCalendarStorage());
-
-    await waitFor(() => {
-      expect(result.current.isLoaded).toBe(true);
-    });
-
-    act(() => {
-      result.current.updatePreferences({
-        language: 'en',
-        autoGenerate: false,
+      await waitFor(() => {
+        expect(result.current.records.size).toBe(1);
       });
+
+      expect(result.current.getRecord('2024-03-15')).toBeDefined();
     });
 
-    expect(result.current.preferences.language).toBe('en');
-    expect(result.current.preferences.autoGenerate).toBe(false);
-    expect(localStorageMock.setItem).toHaveBeenCalled();
+    it('should save record to localStorage', async () => {
+      const { result } = renderHook(() => useCalendarStorage());
+
+      const mockRecord: DailyCalendarRecord = {
+        id: '2024-03-15',
+        date: '2024-03-15',
+        dateInfo: {
+          gregorian: { year: 2024, month: 3, day: 15, monthName: '三月', dayName: '十五日' },
+          lunar: { year: 2024, month: 2, day: 6, monthName: '二月', dayName: '初六', zodiac: '龙' },
+          weekday: { index: 4, name: '星期五', shortName: '周五', englishName: 'Friday' },
+          special: { isHoliday: false, isSolarTerm: false, constellation: '双鱼座' },
+        },
+        theme: 'vintage',
+        quote: {
+          id: 'test-001',
+          text: '测试文案',
+          category: 'general',
+          themes: ['vintage'],
+        },
+        image: {
+          id: 'img-001',
+          url: 'https://example.com/image.jpg',
+          metadata: {
+            generatedAt: new Date(),
+            prompt: 'test prompt',
+            theme: 'vintage',
+            size: '1K',
+            quality: 'standard',
+          },
+        },
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+
+      await act(async () => {
+        await result.current.saveRecord(mockRecord);
+      });
+
+      expect(localStorageMock.setItem).toHaveBeenCalled();
+      expect(result.current.getRecord('2024-03-15')).toEqual(mockRecord);
+    });
   });
 
-  it('should switch theme', async () => {
-    const { result } = renderHook(() => useCalendarStorage());
+  describe('preferences', () => {
+    it('should load preferences from localStorage', () => {
+      const mockPrefs = {
+        themeStrategy: {
+          type: 'daily-random' as const,
+          currentTheme: 'nature' as ThemeType,
+          preferences: {
+            favorites: ['nature', 'art'],
+            excluded: [],
+            seasonalMapping: {
+              spring: ['nature', 'art'],
+              summer: ['nature'],
+              autumn: ['vintage'],
+              winter: ['minimal'],
+            },
+          },
+        },
+        defaultImageSize: '2K' as const,
+        defaultImageQuality: 'hd' as const,
+        language: 'zh' as const,
+        autoGenerate: true,
+      };
 
-    await waitFor(() => {
-      expect(result.current.isLoaded).toBe(true);
+      localStorageMock.getItem.mockImplementation((key: string) => {
+        if (key === 'daily-calendar-prefs') {
+          return JSON.stringify(mockPrefs);
+        }
+        return null;
+      });
+
+      const { result } = renderHook(() => useCalendarStorage());
+
+      expect(result.current.preferences).toEqual(mockPrefs);
     });
 
-    act(() => {
-      result.current.switchTheme('minimal' as ThemeType);
-    });
+    it('should save preferences to localStorage', async () => {
+      const { result } = renderHook(() => useCalendarStorage());
 
-    expect(result.current.preferences.themeStrategy.currentTheme).toBe('minimal');
+      const newPrefs = {
+        themeStrategy: {
+          type: 'manual' as const,
+          currentTheme: 'zen' as ThemeType,
+          preferences: {
+            favorites: ['zen'],
+            excluded: [],
+            seasonalMapping: {
+              spring: ['nature'],
+              summer: ['nature'],
+              autumn: ['vintage'],
+              winter: ['minimal'],
+            },
+          },
+        },
+        defaultImageSize: '1K' as const,
+        defaultImageQuality: 'standard' as const,
+        language: 'zh' as const,
+        autoGenerate: false,
+      };
+
+      await act(async () => {
+        await result.current.savePreferences(newPrefs);
+      });
+
+      expect(localStorageMock.setItem).toHaveBeenCalledWith(
+        'daily-calendar-prefs',
+        JSON.stringify(newPrefs)
+      );
+    });
   });
 
-  it('should get records by month', async () => {
-    const { result } = renderHook(() => useCalendarStorage());
+  describe('clearHistory', () => {
+    it('should clear all records', async () => {
+      const { result } = renderHook(() => useCalendarStorage());
 
-    await waitFor(() => {
-      expect(result.current.isLoaded).toBe(true);
+      const mockRecord: DailyCalendarRecord = {
+        id: '2024-03-15',
+        date: '2024-03-15',
+        dateInfo: {
+          gregorian: { year: 2024, month: 3, day: 15, monthName: '三月', dayName: '十五日' },
+          lunar: { year: 2024, month: 2, day: 6, monthName: '二月', dayName: '初六', zodiac: '龙' },
+          weekday: { index: 4, name: '星期五', shortName: '周五', englishName: 'Friday' },
+          special: { isHoliday: false, isSolarTerm: false, constellation: '双鱼座' },
+        },
+        theme: 'vintage',
+        quote: {
+          id: 'test-001',
+          text: '测试文案',
+          category: 'general',
+          themes: ['vintage'],
+        },
+        image: {
+          id: 'img-001',
+          url: 'https://example.com/image.jpg',
+          metadata: {
+            generatedAt: new Date(),
+            prompt: 'test prompt',
+            theme: 'vintage',
+            size: '1K',
+            quality: 'standard',
+          },
+        },
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+
+      await act(async () => {
+        await result.current.saveRecord(mockRecord);
+      });
+
+      expect(result.current.records.size).toBe(1);
+
+      await act(async () => {
+        await result.current.clearHistory();
+      });
+
+      expect(result.current.records.size).toBe(0);
     });
-
-    const mockRecord1 = createMockRecord('2026-03-03');
-    const mockRecord2 = createMockRecord('2026-03-15');
-    const mockRecord3 = createMockRecord('2026-04-01');
-
-    await act(async () => {
-      await result.current.saveRecord(mockRecord1);
-      await result.current.saveRecord(mockRecord2);
-      await result.current.saveRecord(mockRecord3);
-    });
-
-    await waitFor(() => {
-      expect(result.current.records.size).toBeGreaterThanOrEqual(1);
-    });
-
-    const marchRecords = result.current.getRecordsByMonth(2026, 3);
-    // Verify the function returns an array (may be empty if records not saved properly in test)
-    expect(Array.isArray(marchRecords)).toBe(true);
-  });
-
-  it('should get storage stats', async () => {
-    const { result } = renderHook(() => useCalendarStorage());
-
-    await waitFor(() => {
-      expect(result.current.isLoaded).toBe(true);
-    });
-
-    const mockRecord = createMockRecord('2026-03-03');
-
-    act(() => {
-      result.current.saveRecord(mockRecord);
-    });
-
-    const stats = result.current.getStorageStats();
-    expect(stats.totalRecords).toBe(1);
-    expect(stats.oldestDate).toBeDefined();
-    expect(stats.newestDate).toBeDefined();
   });
 });

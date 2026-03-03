@@ -74,7 +74,7 @@ export const CalendarCard: React.FC<CalendarCardProps> = ({
   const [isImageLoaded, setIsImageLoaded] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
 
-  const theme = record?.theme || 'vintage';
+  const _theme = record?.theme || 'vintage';
   const styles = THEME_STYLES[theme];
   const isDarkTheme = theme === 'cosmic';
 

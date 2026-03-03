@@ -5,15 +5,13 @@
 
 import React, { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronLeft, ChevronRight, Calendar, X } from 'lucide-react';
+import { ChevronLeft, ChevronRight, X } from 'lucide-react';
 import { DailyCalendarRecord } from '../types';
 import {
   getFirstDayOfMonth,
   getLastDayOfMonth,
   getDaysInMonth,
-  getWeekdayInfo,
   formatDateKey,
-  isSameDay,
   addMonths,
 } from '../utils/dateUtils';
 
@@ -46,7 +44,6 @@ export const HistoryCalendar: React.FC<HistoryCalendarProps> = ({
     const month = currentMonth.getMonth() + 1;
 
     const firstDay = getFirstDayOfMonth(year, month);
-    const lastDay = getLastDayOfMonth(year, month);
     const daysInMonth = getDaysInMonth(year, month);
 
     const firstWeekday = firstDay.getDay(); // 0 = Sunday
@@ -192,7 +189,7 @@ export const HistoryCalendar: React.FC<HistoryCalendarProps> = ({
 
               {/* 日期网格 */}
               <div className="grid grid-cols-7 gap-1">
-                {calendarDays.map((day, index) => {
+                {calendarDays.map((day) => {
                   const isSelected = day.dateKey === selectedDate;
                   const isHovered = day.dateKey === hoveredDate;
                   const hasRecord = !!day.record;

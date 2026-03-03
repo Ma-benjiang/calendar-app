@@ -118,7 +118,7 @@ function getSpecialDayQuote(dateInfo: CalendarDateInfo): Quote | null {
 /**
  * 根据主题筛选文案
  */
-function getQuotesByTheme(theme: ThemeType): Quote[] {
+function getQuotesByTheme(_theme: ThemeType): Quote[] {
   // 优先返回适合该主题的文案
   const themedQuotes = QUOTES_LIBRARY.filter(q => q.themes.includes(theme));
 
@@ -267,7 +267,7 @@ export function clearRecentQuotes(): void {
 /**
  * 生成 Prompt 用的文案描述
  */
-export function generatePromptQuote(quote: Quote, theme: ThemeType): string {
+export function generatePromptQuote(quote: Quote, _theme: ThemeType): string {
   const categoryDescriptions: Record<QuoteCategory, string> = {
     poetry: '古典诗词意境',
     healing: '温暖治愈风格',
