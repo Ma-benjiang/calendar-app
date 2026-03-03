@@ -8,6 +8,10 @@ export { useSidebar, type TreeNode } from './useSidebar';
 export { useCommand, type Command } from './useCommand';
 export { useTasks } from './useTasks';
 export {
+  useTaskCalendar,
+  type TaskCalendarItem,
+} from './useTaskCalendar';
+export {
   useViewMode,
   type ViewMode,
   type CalendarView,

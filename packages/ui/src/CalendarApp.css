@@ -392,3 +392,104 @@
   max-height: 90vh;
   overflow: auto;
 }
+
+/* ========== 拖放样式 ========== */
+
+/* 拖拽状态 */
+.task-item.dragging {
+  opacity: 0.5;
+  transform: rotate(2deg);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+}
+
+/* 放置目标高亮 */
+.day-cell.drag-over,
+.hour-cell.drag-over,
+.day-hour-content.drag-over {
+  background: #dbeafe !important;
+  border: 2px dashed #3b82f6;
+  position: relative;
+}
+
+/* 放置指示器 */
+.drop-indicator {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: #3b82f6;
+  color: #fff;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  pointer-events: none;
+  z-index: 10;
+}
+
+/* 任务在日历中的样式 */
+.event-dot.task {
+  border-radius: 4px;
+  width: auto;
+  height: auto;
+  padding: 2px 6px;
+  font-size: 10px;
+  color: #fff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.week-event.task {
+  border-left: 3px solid rgba(255,255,255,0.5);
+}
+
+.day-event.task {
+  border-left: 4px solid rgba(255,255,255,0.5);
+}
+
+/* 已完成任务样式 */
+.week-event.task.completed,
+.day-event.task.completed {
+  opacity: 0.5;
+  text-decoration: line-through;
+}
+
+/* 任务详情面板 */
+.task-detail {
+  padding: 24px;
+  min-width: 400px;
+}
+
+.task-detail h3 {
+  margin: 0 0 16px 0;
+  color: #1f2937;
+}
+
+.task-detail p {
+  margin: 8px 0;
+  color: #4b5563;
+}
+
+.task-detail .task-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid #e5e7eb;
+}
+
+.task-detail .task-actions button {
+  padding: 10px 20px;
+  border-radius: 6px;
+  font-size: 14px;
+  cursor: pointer;
+  border: 1px solid #d1d5db;
+  background: #fff;
+}
+
+.task-detail .task-actions button:first-child {
+  background: #3b82f6;
+  color: #fff;
+  border-color: #3b82f6;
+}
