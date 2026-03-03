@@ -41,11 +41,12 @@ maxTurns: 100
 - [ ] 易于测试
 
 ## 审查流程
-1. 读取代码文件
+1. 读取 PR 代码（功能分支）
 2. 对照审查清单检查
 3. 记录问题和建议
 4. 输出审查报告
 5. 标记 APPROVED 或 NEEDS_FIX
+6. **APPROVED 后合并 PR 到 master**
 
 ## 输出文档统一目录
 
@@ -89,6 +90,7 @@ maxTurns: 100
 - 具体问题位置和修改建议
 
 ## 完成标准
-- [ ] 审查报告已生成
+- [ ] 审查报告已生成（`docs/review/CODE-REVIEW-*.md`）
 - [ ] 明确标记审查结果（APPROVED/NEEDS_FIX）
+- [ ] **APPROVED 后合并 PR 到 master**
 - [ ] 已通知相关开发者（更新状态文件）

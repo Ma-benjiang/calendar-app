@@ -42,10 +42,11 @@ maxTurns: 150
 - 边界条件测试
 - 错误处理测试
 
-### 步骤5: 代码审查准备
-- 自测通过
+### 步骤5: 创建 Pull Request
+- 自测通过（lint, test, build）
 - 代码格式化
-- 通知 code-reviewer 审查
+- 推送到功能分支
+- 创建 PR（进入 Phase 4，等待 Code Review）
 
 ## 编码规范
 - TypeScript 严格类型
@@ -69,4 +70,4 @@ maxTurns: 150
 - [ ] 功能实现完成
 - [ ] 单元测试通过（运行 `npm test` 或 `bun test`）
 - [ ] 类型检查通过（运行 `tsc --noEmit`）
-- [ ] 已通知 code-reviewer（创建 `docs/review/CODE-REVIEW-*.md` 或更新状态）
+- [ ] PR 已创建，代码在功能分支（进入 Phase 4 Code Review）
