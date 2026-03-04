@@ -327,3 +327,62 @@
 2026-03-04T07:16:46.969007Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
 2026-03-04T07:16:47.969864Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf(".turbo/cookies/48.cookie")}
 2026-03-04T07:16:47.969873Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2026-03-04T07:20:14.973948Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf(".github/workflows/ci.yml")}
+2026-03-04T07:20:14.973966Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2026-03-04T07:22:33.778085Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("packages/ui/vitest.config.ts")}
+2026-03-04T07:22:33.778097Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Other("@calendar/ui"), path: AnchoredSystemPathBuf("packages/ui") }}))
+2026-03-04T07:23:24.279594Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("packages/ui/src/daily-calendar/__tests__/seedreamService.test.ts")}
+2026-03-04T07:23:24.279602Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Other("@calendar/ui"), path: AnchoredSystemPathBuf("packages/ui") }}))
+2026-03-04T07:23:38.279896Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("packages/ui/src/daily-calendar/__tests__/captionService.test.ts")}
+2026-03-04T07:23:38.279908Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Other("@calendar/ui"), path: AnchoredSystemPathBuf("packages/ui") }}))
+2026-03-04T07:23:38.379313Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("packages/ui/src/daily-calendar/__tests__/captionService.test.ts")}
+2026-03-04T07:23:38.379321Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Other("@calendar/ui"), path: AnchoredSystemPathBuf("packages/ui") }}))
+2026-03-04T07:23:38.379347Z  WARN turborepo_lib::package_changes_watcher: hashes are the same, no need to rerun
+2026-03-04T07:23:42.279843Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf(".turbo/cookies/49.cookie")}
+2026-03-04T07:23:42.279853Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2026-03-04T07:23:42.378777Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf(".turbo/cookies/50.cookie")}
+2026-03-04T07:23:42.378786Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2026-03-04T07:24:05.679549Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("packages/ui/src/daily-calendar/__tests__/useCalendarStorage.test.ts")}
+2026-03-04T07:24:05.679559Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Other("@calendar/ui"), path: AnchoredSystemPathBuf("packages/ui") }}))
+2026-03-04T07:24:05.779913Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("packages/ui/src/daily-calendar/__tests__/captionService.test.ts")}
+2026-03-04T07:24:05.779922Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Other("@calendar/ui"), path: AnchoredSystemPathBuf("packages/ui") }}))
+2026-03-04T07:24:05.880786Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("packages/ui/src/daily-calendar/__tests__/seedreamService.test.ts")}
+2026-03-04T07:24:05.880795Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Other("@calendar/ui"), path: AnchoredSystemPathBuf("packages/ui") }}))
+2026-03-04T07:24:58.181194Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf(".turbo/cookies/51.cookie")}
+2026-03-04T07:24:58.181204Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2026-03-04T07:24:58.281558Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf(".turbo/cookies/53.cookie"), AnchoredSystemPathBuf(".turbo/cookies/54.cookie"), AnchoredSystemPathBuf(".turbo/cookies/52.cookie"), AnchoredSystemPathBuf(".turbo/cookies/55.cookie"), AnchoredSystemPathBuf(".turbo/cookies/56.cookie")}
+2026-03-04T07:24:58.281567Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2026-03-04T07:25:05.881110Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("packages/ui/src/daily-calendar/__tests__/useCalendarStorage.test.ts")}
+2026-03-04T07:25:05.881118Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Other("@calendar/ui"), path: AnchoredSystemPathBuf("packages/ui") }}))
+2026-03-04T07:25:08.182128Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf(".turbo/cookies/57.cookie")}
+2026-03-04T07:25:08.182147Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2026-03-04T07:25:08.282183Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf(".turbo/cookies/59.cookie"), AnchoredSystemPathBuf(".turbo/cookies/60.cookie"), AnchoredSystemPathBuf(".turbo/cookies/62.cookie"), AnchoredSystemPathBuf(".turbo/cookies/61.cookie"), AnchoredSystemPathBuf(".turbo/cookies/58.cookie")}
+2026-03-04T07:25:08.282194Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2026-03-04T07:25:09.381551Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf(".turbo/cookies/63.cookie")}
+2026-03-04T07:25:09.381559Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2026-03-04T07:25:10.481511Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf(".turbo/cookies/64.cookie")}
+2026-03-04T07:25:10.481523Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2026-03-04T07:25:10.581240Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf(".turbo/cookies/65.cookie")}
+2026-03-04T07:25:10.581250Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2026-03-04T07:25:20.281414Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("packages/ui/src/daily-calendar/__tests__/captionService.test.ts")}
+2026-03-04T07:25:20.281428Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Other("@calendar/ui"), path: AnchoredSystemPathBuf("packages/ui") }}))
+2026-03-04T07:25:22.482526Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf(".turbo/cookies/66.cookie")}
+2026-03-04T07:25:22.482542Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2026-03-04T07:25:22.582476Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf(".turbo/cookies/67.cookie"), AnchoredSystemPathBuf(".turbo/cookies/69.cookie"), AnchoredSystemPathBuf(".turbo/cookies/68.cookie"), AnchoredSystemPathBuf(".turbo/cookies/71.cookie"), AnchoredSystemPathBuf(".turbo/cookies/70.cookie")}
+2026-03-04T07:25:22.582486Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2026-03-04T07:25:23.681901Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf(".turbo/cookies/72.cookie")}
+2026-03-04T07:25:23.681910Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2026-03-04T07:25:24.782568Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf(".turbo/cookies/73.cookie")}
+2026-03-04T07:25:24.782576Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2026-03-04T07:25:24.881509Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf(".turbo/cookies/74.cookie")}
+2026-03-04T07:25:24.881517Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2026-03-04T07:25:32.882229Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf("packages/ui/src/daily-calendar/__tests__/seedreamService.test.ts")}
+2026-03-04T07:25:32.882239Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Other("@calendar/ui"), path: AnchoredSystemPathBuf("packages/ui") }}))
+2026-03-04T07:25:39.382195Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf(".turbo/cookies/76.cookie"), AnchoredSystemPathBuf(".turbo/cookies/77.cookie"), AnchoredSystemPathBuf(".turbo/cookies/78.cookie"), AnchoredSystemPathBuf(".turbo/cookies/79.cookie"), AnchoredSystemPathBuf(".turbo/cookies/80.cookie"), AnchoredSystemPathBuf(".turbo/cookies/75.cookie")}
+2026-03-04T07:25:39.382210Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2026-03-04T07:25:40.482372Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf(".turbo/cookies/81.cookie")}
+2026-03-04T07:25:40.482381Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2026-03-04T07:25:41.681384Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf(".turbo/cookies/83.cookie"), AnchoredSystemPathBuf(".turbo/cookies/82.cookie")}
+2026-03-04T07:25:41.681397Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
+2026-03-04T07:25:42.783091Z  WARN turborepo_lib::package_changes_watcher: changed_files: {AnchoredSystemPathBuf(".turbo/cookies/84.cookie")}
+2026-03-04T07:25:42.783101Z  WARN turborepo_lib::package_changes_watcher: changed_packages: Ok(Some({WorkspacePackage { name: Root, path: AnchoredSystemPathBuf("") }}))
