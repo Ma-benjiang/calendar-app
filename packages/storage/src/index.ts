@@ -22,14 +22,19 @@ export class LocalStorageAdapter implements StorageAdapter {
   }
 }
 
+interface IpcRenderer {
+  invoke(channel: string, ...args: unknown[]): Promise<unknown>;
+}
+
 // Electron SQLite 适配器
 export class ElectronSQLiteAdapter implements StorageAdapter {
-  private ipc: any;
+  private ipc: IpcRenderer | null = null;
 
   constructor() {
-    if (typeof window !== 'undefined' && (window as any).require) {
+    if (typeof window !== 'undefined' && 'require' in window) {
       try {
-        this.ipc = (window as any).require('electron').ipcRenderer;
+        const electron = (window as unknown as { require(module: string): { ipcRenderer: IpcRenderer } }).require('electron');
+        this.ipc = electron.ipcRenderer;
       } catch (e) {
         console.warn('Electron ipcRenderer not available');
       }
@@ -57,8 +62,8 @@ export class ElectronSQLiteAdapter implements StorageAdapter {
  */
 export function getStorageAdapter(): StorageAdapter {
   const isElectron = typeof window !== 'undefined' && 
-                     (window as any).process && 
-                     (window as any).process.type === 'renderer';
+                     'process' in window && 
+                     (window as unknown as { process: { type: string } }).process.type === 'renderer';
   
   if (isElectron) {
     return new ElectronSQLiteAdapter();

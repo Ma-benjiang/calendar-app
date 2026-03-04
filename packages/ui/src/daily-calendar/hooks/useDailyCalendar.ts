@@ -3,7 +3,7 @@
  * 整合日期计算、文案生成(LLM)、图片生成(Seedream/Img2Img)、存储管理等功能
  */
 
-import { useState, useCallback, useEffect, useRef } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import {
   DailyCalendarRecord,
   ThemeType,
@@ -85,7 +85,6 @@ export function useDailyCalendar(): UseDailyCalendarReturn {
     preferences,
     saveRecord,
     getRecord,
-    hasRecord,
     deleteRecord,
     updateThemeStrategy,
     switchTheme,
@@ -98,8 +97,6 @@ export function useDailyCalendar(): UseDailyCalendarReturn {
   const [isGenerating, setIsGenerating] = useState(false);
   const [progress, setProgress] = useState(0);
   const [error, setError] = useState<Error | null>(null);
-
-  const abortControllerRef = useRef<AbortController | null>(null);
 
   const currentTheme = preferences.themeStrategy.currentTheme;
   const themeStrategy = preferences.themeStrategy.type;
@@ -122,6 +119,7 @@ export function useDailyCalendar(): UseDailyCalendarReturn {
     if (isLoaded) {
       loadCalendarForDate(currentDate);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isLoaded]); // 仅在存储加载完成时运行一次
 
   // 2. 生成逻辑

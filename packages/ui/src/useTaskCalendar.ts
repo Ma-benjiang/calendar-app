@@ -192,15 +192,15 @@ export function useTaskCalendar(options: UseTaskCalendarOptions = {}) {
   // Task queries
   const filteredTasks = useMemo(() => {
     return taskManager.queryTasks(taskFilter, taskSortBy);
-  }, [tasks, taskFilter, taskSortBy, taskManager]);
+  }, [taskFilter, taskSortBy, taskManager]);
 
   const unscheduledTasks = useMemo(() => {
     return taskManager.getUnscheduledTasks();
-  }, [tasks, taskManager]);
+  }, [taskManager]);
 
   const todayTasks = useMemo(() => {
     return taskManager.getTodayTasks();
-  }, [tasks, taskManager]);
+  }, [taskManager]);
 
   // Stats
   const taskStats = useMemo(() => {
@@ -214,7 +214,7 @@ export function useTaskCalendar(options: UseTaskCalendarOptions = {}) {
       pending: total - completed,
       completionRate: total > 0 ? Math.round((completed / total) * 100) : 0,
     };
-  }, [tasks, taskManager]);
+  }, [taskManager]);
 
   // Combine events and scheduled tasks for calendar display
   const calendarItems = useMemo((): TaskCalendarItem[] => {

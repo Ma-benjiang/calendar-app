@@ -149,15 +149,15 @@ export const ThemeSelector: React.FC<ThemeSelectorProps> = ({
             {/* Tabs */}
             <div className="flex px-5 border-b border-[var(--color-border)] gap-6">
               {[
-                { id: 'theme', label: '主题风格' },
-                { id: 'strategy', label: '切换策略' }
+                { id: 'theme' as const, label: '主题风格' },
+                { id: 'strategy' as const, label: '切换策略' }
               ].map(tab => (
                 <button
                   key={tab.id}
                   className={`py-3 text-xs font-medium transition-all relative ${
                     activeTab === tab.id ? 'text-[var(--color-text-primary)]' : 'text-[var(--color-text-tertiary)] hover:text-[var(--color-text-secondary)]'
                   }`}
-                  onClick={() => setActiveTab(tab.id as any)}
+                  onClick={() => setActiveTab(tab.id)}
                 >
                   {tab.label}
                   {activeTab === tab.id && (

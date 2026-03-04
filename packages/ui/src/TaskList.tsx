@@ -3,11 +3,8 @@ import {
   Task,
   TaskStatus,
   TaskPriority,
-  TaskFilter,
-  TaskSortOption,
   CreateTaskInput,
   getPriorityColor,
-  getStatusLabel,
 } from '@calendar/core';
 import { ChevronRight, Plus, Trash2, Edit2, Sparkles } from 'lucide-react';
 import './TaskList.css';
@@ -428,11 +425,11 @@ export const TaskList: React.FC<TaskListProps> = (props) => {
           </div>
 
           <div className="filter-tabs">
-            {['all', 'todo', 'completed'].map((f) => (
+            {(['all', 'todo', 'completed'] as const).map((f) => (
               <button
                 key={f}
                 className={`filter-tab ${activeFilter === f ? 'active' : ''}`}
-                onClick={() => setActiveFilter(f as any)}
+                onClick={() => setActiveFilter(f)}
               >
                 {f === 'all' ? '全部' : f === 'todo' ? '待办' : '已完成'}
               </button>

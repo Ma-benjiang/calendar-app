@@ -18,7 +18,7 @@ const DEFAULT_CONFIG: SeedreamConfig = {
 };
 
 function getConfig(): SeedreamConfig {
-  const env = (import.meta as any).env || {};
+  const env = (import.meta as unknown as { env: Record<string, string | undefined> }).env || {};
   return {
     ...DEFAULT_CONFIG,
     apiKey: env.VITE_SEEDREAM_API_KEY || '',
@@ -29,7 +29,7 @@ function getConfig(): SeedreamConfig {
 /**
  * 根据主题生成 Prompt
  */
-function generatePrompt(theme: ThemeType, date: Date, quote: string): string {
+function generatePrompt(theme: ThemeType, _date: Date, _quote: string): string {
   const themePrompts: Record<ThemeType, string> = {
     vintage: `A beautiful and nostalgic scene, 90s fashion editorial style, direct flash, high-end paper texture, muted nostalgic tones`,
     minimal: `An exquisite minimalist still life photography, a single beautiful object, clean background, soft organic shadows, elegant composition`,
@@ -61,7 +61,16 @@ export const seedreamService = {
     }
 
     try {
-      const body: any = {
+      const body: {
+        model: string;
+        prompt: string;
+        size: string;
+        quality: string;
+        n: number;
+        response_format: string;
+        ref_image_url?: string;
+        strength?: number;
+      } = {
         model: config.model,
         prompt,
         // 核心修复：Seedream 5.0 要求分辨率至少 368.6 万像素，1024x1024 会报错

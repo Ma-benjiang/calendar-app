@@ -4,7 +4,7 @@
  * 使用纯对象 Record 代替 Map 以提高 React 兼容性
  */
 
-import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   DailyCalendarRecord,
   UserPreferences,
@@ -12,7 +12,7 @@ import {
   ThemeStrategyType,
 } from '../types';
 import { formatDateKey } from '../utils/dateUtils';
-import { getStorageAdapter, StorageAdapter } from '@calendar/storage';
+import { getStorageAdapter } from '@calendar/storage';
 
 // Storage keys
 const STORAGE_KEY_RECORDS = 'daily-calendar-records';
@@ -55,20 +55,20 @@ function serializeRecord(record: DailyCalendarRecord): string {
   });
 }
 
-function deserializeRecord(data: any): DailyCalendarRecord {
-  const parsed = typeof data === 'string' ? JSON.parse(data) : data;
+function deserializeRecord(data: unknown): DailyCalendarRecord {
+  const parsed = (typeof data === 'string' ? JSON.parse(data) : data) as Record<string, unknown>;
   return {
     ...parsed,
-    createdAt: new Date(parsed.createdAt),
-    updatedAt: new Date(parsed.updatedAt),
+    createdAt: new Date(parsed.createdAt as string),
+    updatedAt: new Date(parsed.updatedAt as string),
     image: {
-      ...parsed.image,
+      ...(parsed.image as Record<string, unknown>),
       metadata: {
-        ...parsed.image.metadata,
-        generatedAt: new Date(parsed.image.metadata.generatedAt),
+        ...((parsed.image as Record<string, unknown>).metadata as Record<string, unknown>),
+        generatedAt: new Date(((parsed.image as Record<string, unknown>).metadata as Record<string, unknown>).generatedAt as string),
       },
     },
-  };
+  } as unknown as DailyCalendarRecord;
 }
 
 export function useCalendarStorage() {
@@ -76,7 +76,6 @@ export function useCalendarStorage() {
   const [records, setRecords] = useState<Record<string, DailyCalendarRecord>>({});
   const [preferences, setPreferences] = useState<UserPreferences>(DEFAULT_PREFERENCES);
   const [isLoaded, setIsLoaded] = useState(false);
-  const [isInitializing, setIsInitializing] = useState(true);
 
   // 1. 从适配器加载初始数据
   useEffect(() => {
@@ -85,7 +84,7 @@ export function useCalendarStorage() {
         console.log('[Storage] Initializing storage...');
         const recordsData = await adapter.getItem(STORAGE_KEY_RECORDS);
         if (recordsData) {
-          const parsed = JSON.parse(recordsData);
+          const parsed = JSON.parse(recordsData) as Record<string, unknown>;
           const recordsObj: Record<string, DailyCalendarRecord> = {};
 
           Object.entries(parsed).forEach(([date, data]) => {
@@ -101,7 +100,7 @@ export function useCalendarStorage() {
 
         const prefsData = await adapter.getItem(STORAGE_KEY_PREFERENCES);
         if (prefsData) {
-          const parsed = JSON.parse(prefsData);
+          const parsed = JSON.parse(prefsData) as { version: string; data: Partial<UserPreferences> };
           if (parsed.version === STORAGE_VERSION) {
             setPreferences({ ...DEFAULT_PREFERENCES, ...parsed.data });
           }
@@ -110,7 +109,6 @@ export function useCalendarStorage() {
         console.error('Failed to load data from storage:', error);
       } finally {
         setIsLoaded(true);
-        setIsInitializing(false);
       }
     }
     loadData();
@@ -119,7 +117,7 @@ export function useCalendarStorage() {
   // 2. 自动持久化函数
   const persistToPhysicalStorage = useCallback(async (currentRecords: Record<string, DailyCalendarRecord>) => {
     try {
-      const serializedObj: Record<string, any> = {};
+      const serializedObj: Record<string, unknown> = {};
       Object.entries(currentRecords).forEach(([date, record]) => {
         serializedObj[date] = JSON.parse(serializeRecord(record));
       });

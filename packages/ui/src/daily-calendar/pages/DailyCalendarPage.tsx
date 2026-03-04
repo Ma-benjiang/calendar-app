@@ -7,7 +7,6 @@ import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Download,
-  RefreshCw,
   Camera,
   RotateCcw,
   History,
@@ -22,7 +21,7 @@ import { useDailyCalendar } from '../hooks/useDailyCalendar';
 import { ThemeSelector } from '../components/ThemeSelector';
 import { HistoryCalendar } from '../components/HistoryCalendar';
 import { ThemeType } from '../types';
-import { getDaysInMonth, getFirstDayOfMonth, getCalendarDateInfo } from '../utils/dateUtils';
+import { getDaysInMonth, getCalendarDateInfo } from '../utils/dateUtils';
 
 interface DailyCalendarPageProps {
   isVisible?: boolean; // 新增：控制当前页面是否可见
@@ -169,7 +168,8 @@ export const DailyCalendarPage: React.FC<DailyCalendarPageProps> = ({ isVisible 
     setFlash(true);
     setTimeout(() => setFlash(false), 450);
     try {
-      const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const AudioContextClass = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+      const audioCtx = new AudioContextClass();
       const osc = audioCtx.createOscillator();
       const gain = audioCtx.createGain();
       osc.connect(gain);
@@ -180,7 +180,9 @@ export const DailyCalendarPage: React.FC<DailyCalendarPageProps> = ({ isVisible 
       gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
       osc.start();
       osc.stop(audioCtx.currentTime + 0.15);
-    } catch (e) {}
+    } catch (e) {
+      console.warn('Shutter sound failed:', e);
+    }
   }, []);
 
   const handleCapture = useCallback(() => {
