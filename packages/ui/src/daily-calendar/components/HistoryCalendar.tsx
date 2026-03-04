@@ -1,11 +1,10 @@
 /**
- * 历史台历日历组件
- * 以月历形式展示历史生成的台历
+ * HistoryCalendar - Notion 风格历史台历组件
  */
 
 import React, { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronLeft, ChevronRight, X } from 'lucide-react';
+import { ChevronLeft, ChevronRight, X, Image as ImageIcon } from 'lucide-react';
 import { DailyCalendarRecord } from '../types';
 import {
   getFirstDayOfMonth,
@@ -16,7 +15,7 @@ import {
 } from '../utils/dateUtils';
 
 interface HistoryCalendarProps {
-  records: Map<string, DailyCalendarRecord>;
+  records: Record<string, DailyCalendarRecord>;
   currentMonth: Date;
   onMonthChange: (date: Date) => void;
   onSelectDate: (date: string) => void;
@@ -25,7 +24,7 @@ interface HistoryCalendarProps {
   isOpen: boolean;
 }
 
-const WEEKDAYS = ['日', '一', '二', '三', '四', '五', '六'];
+const WEEKDAYS = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
 
 export const HistoryCalendar: React.FC<HistoryCalendarProps> = ({
   records,
@@ -38,222 +37,131 @@ export const HistoryCalendar: React.FC<HistoryCalendarProps> = ({
 }) => {
   const [hoveredDate, setHoveredDate] = useState<string | null>(null);
 
-  // 计算当前月份的日历数据
   const calendarDays = useMemo(() => {
     const year = currentMonth.getFullYear();
     const month = currentMonth.getMonth() + 1;
-
     const firstDay = getFirstDayOfMonth(year, month);
     const daysInMonth = getDaysInMonth(year, month);
+    const firstWeekday = firstDay.getDay();
+    
+    const days = [];
 
-    const firstWeekday = firstDay.getDay(); // 0 = Sunday
-    const days: Array<{
-      date: Date;
-      dateKey: string;
-      isCurrentMonth: boolean;
-      record: DailyCalendarRecord | null;
-    }> = [];
-
-    // 上个月的日期
-    const prevMonthDays = firstWeekday;
+    // 上个月填充
     const prevMonth = new Date(year, month - 2, 1);
     const prevMonthLastDay = getLastDayOfMonth(prevMonth.getFullYear(), prevMonth.getMonth() + 1);
-
-    for (let i = prevMonthDays - 1; i >= 0; i--) {
+    for (let i = firstWeekday - 1; i >= 0; i--) {
       const date = new Date(prevMonth.getFullYear(), prevMonth.getMonth(), prevMonthLastDay.getDate() - i);
-      days.push({
-        date,
-        dateKey: formatDateKey(date),
-        isCurrentMonth: false,
-        record: records.get(formatDateKey(date)) || null,
-      });
+      const key = formatDateKey(date);
+      days.push({ date, dateKey: key, isCurrentMonth: false, record: records[key] || null });
     }
 
-    // 当前月的日期
+    // 本月
     for (let i = 1; i <= daysInMonth; i++) {
       const date = new Date(year, month - 1, i);
-      days.push({
-        date,
-        dateKey: formatDateKey(date),
-        isCurrentMonth: true,
-        record: records.get(formatDateKey(date)) || null,
-      });
+      const key = formatDateKey(date);
+      days.push({ date, dateKey: key, isCurrentMonth: true, record: records[key] || null });
     }
 
-    // 下个月的日期
-    const remainingDays = 42 - days.length; // 6行 x 7列 = 42
-    const nextMonth = new Date(year, month, 1);
-
-    for (let i = 1; i <= remainingDays; i++) {
-      const date = new Date(nextMonth.getFullYear(), nextMonth.getMonth(), i);
-      days.push({
-        date,
-        dateKey: formatDateKey(date),
-        isCurrentMonth: false,
-        record: records.get(formatDateKey(date)) || null,
-      });
+    // 下个月填充
+    const remaining = 42 - days.length;
+    for (let i = 1; i <= remaining; i++) {
+      const date = new Date(year, month, i);
+      const key = formatDateKey(date);
+      days.push({ date, dateKey: key, isCurrentMonth: false, record: records[key] || null });
     }
 
     return days;
   }, [currentMonth, records]);
 
-  // 月份标题
-  const monthTitle = useMemo(() => {
-    return `${currentMonth.getFullYear()}年${currentMonth.getMonth() + 1}月`;
-  }, [currentMonth]);
-
-  // 切换月份
-  const goToPrevMonth = () => {
-    onMonthChange(addMonths(currentMonth, -1));
-  };
-
-  const goToNextMonth = () => {
-    onMonthChange(addMonths(currentMonth, 1));
-  };
-
-  const goToToday = () => {
-    onMonthChange(new Date());
-  };
-
   return (
     <AnimatePresence>
       {isOpen && (
         <>
-          {/* 背景遮罩 */}
           <motion.div
-            className="fixed inset-0 bg-black/50 z-40"
+            className="fixed inset-0 bg-black/20 backdrop-blur-[2px] z-[1000]"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={onClose}
           />
 
-          {/* 弹窗 */}
           <motion.div
-            className="fixed inset-x-4 top-[5%] max-w-2xl mx-auto bg-white rounded-2xl shadow-2xl z-50 overflow-hidden"
-            initial={{ opacity: 0, scale: 0.9, y: 20 }}
+            className="fixed inset-x-4 top-[8%] max-w-2xl mx-auto bg-[var(--color-bg-primary)] rounded-xl shadow-[var(--shadow-lg)] border border-[var(--color-border)] z-[1001] overflow-hidden flex flex-col"
+            initial={{ opacity: 0, scale: 0.98, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.9, y: 20 }}
+            exit={{ opacity: 0, scale: 0.98, y: 20 }}
           >
-            {/* 头部 */}
-            <div className="flex items-center justify-between p-4 border-b">
-              <div className="flex items-center gap-4">
-                <h2 className="text-lg font-semibold text-gray-900">历史台历</h2>
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={goToPrevMonth}
-                    className="p-1 hover:bg-gray-100 rounded-full transition-colors"
-                  >
-                    <ChevronLeft className="w-5 h-5 text-gray-600" />
+            {/* Header */}
+            <div className="flex items-center justify-between px-6 py-5 border-b border-[var(--color-border)]">
+              <div className="flex items-center gap-6">
+                <h2 className="text-sm font-bold text-[var(--color-text-primary)] tracking-tight">时光相册</h2>
+                <div className="flex items-center gap-1 bg-[var(--color-bg-secondary)] rounded-full p-0.5 border border-[var(--color-border)]">
+                  <button onClick={() => onMonthChange(addMonths(currentMonth, -1))} className="p-1 hover:bg-[var(--color-bg-primary)] rounded-full transition-colors">
+                    <ChevronLeft className="w-3.5 h-3.5 text-[var(--color-text-secondary)]" />
                   </button>
-                  <span className="text-base font-medium text-gray-800 min-w-[100px] text-center">
-                    {monthTitle}
+                  <span className="text-[11px] font-bold text-[var(--color-text-primary)] min-w-[80px] text-center uppercase tracking-widest">
+                    {currentMonth.getFullYear()} . {currentMonth.getMonth() + 1}
                   </span>
-                  <button
-                    onClick={goToNextMonth}
-                    className="p-1 hover:bg-gray-100 rounded-full transition-colors"
-                  >
-                    <ChevronRight className="w-5 h-5 text-gray-600" />
+                  <button onClick={() => onMonthChange(addMonths(currentMonth, 1))} className="p-1 hover:bg-[var(--color-bg-primary)] rounded-full transition-colors">
+                    <ChevronRight className="w-3.5 h-3.5 text-[var(--color-text-secondary)]" />
                   </button>
                 </div>
               </div>
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={goToToday}
-                  className="px-3 py-1.5 text-sm font-medium text-amber-600 hover:bg-amber-50 rounded-lg transition-colors"
-                >
-                  今天
-                </button>
-                <button
-                  onClick={onClose}
-                  className="p-2 hover:bg-gray-100 rounded-full transition-colors"
-                >
-                  <X className="w-5 h-5 text-gray-500" />
-                </button>
-              </div>
+              <button onClick={onClose} className="p-1.5 hover:bg-[var(--color-bg-hover)] rounded-md transition-colors text-[var(--color-text-tertiary)]">
+                <X size={18} />
+              </button>
             </div>
 
-            {/* 日历 */}
-            <div className="p-4">
-              {/* 星期标题 */}
-              <div className="grid grid-cols-7 gap-1 mb-2">
+            {/* Grid */}
+            <div className="p-6">
+              <div className="grid grid-cols-7 gap-2 mb-4">
                 {WEEKDAYS.map((day) => (
-                  <div
-                    key={day}
-                    className="text-center text-sm font-medium text-gray-500 py-2"
-                  >
+                  <div key={day} className="text-center text-[9px] font-black text-[var(--color-text-tertiary)] tracking-widest">
                     {day}
                   </div>
                 ))}
               </div>
 
-              {/* 日期网格 */}
-              <div className="grid grid-cols-7 gap-1">
+              <div className="grid grid-cols-7 gap-2">
                 {calendarDays.map((day) => {
-                  const isSelected = day.dateKey === selectedDate;
-                  const isHovered = day.dateKey === hoveredDate;
                   const hasRecord = !!day.record;
+                  const isToday = day.dateKey === formatDateKey(new Date());
 
                   return (
                     <motion.button
                       key={day.dateKey}
                       className={`
-                        relative aspect-square rounded-lg overflow-hidden transition-all
-                        ${day.isCurrentMonth ? 'bg-gray-50' : 'bg-gray-100/50'}
-                        ${isSelected ? 'ring-2 ring-amber-500 ring-offset-2' : ''}
-                        ${hasRecord ? 'cursor-pointer' : 'cursor-default'}
+                        relative aspect-[3/4] rounded-md overflow-hidden border transition-all
+                        ${day.isCurrentMonth ? 'bg-[var(--color-bg-primary)]' : 'bg-[var(--color-bg-secondary)] opacity-40'}
+                        ${day.dateKey === selectedDate ? 'border-[var(--color-text-primary)] ring-2 ring-[var(--color-text-primary)] ring-offset-2' : 'border-[var(--color-border)]'}
+                        ${hasRecord ? 'cursor-pointer hover:shadow-md' : 'cursor-default'}
                       `}
                       onClick={() => hasRecord && onSelectDate(day.dateKey)}
                       onMouseEnter={() => setHoveredDate(day.dateKey)}
                       onMouseLeave={() => setHoveredDate(null)}
-                      whileHover={hasRecord ? { scale: 1.05 } : {}}
-                      whileTap={hasRecord ? { scale: 0.95 } : {}}
+                      whileHover={hasRecord ? { y: -2 } : {}}
                     >
                       {hasRecord ? (
                         <>
-                          {/* 台历缩略图 */}
-                          <img
-                            src={day.record!.image.url}
-                            alt={day.dateKey}
-                            className="absolute inset-0 w-full h-full object-cover"
-                            loading="lazy"
-                          />
-                          {/* 日期数字 */}
-                          <div
-                            className={`
-                              absolute top-1 left-1 px-1.5 py-0.5 rounded text-xs font-medium
-                              ${isSelected
-                                ? 'bg-amber-500 text-white'
-                                : 'bg-black/50 text-white'
-                              }
-                            `}
-                          >
+                          <img src={day.record!.image.url} alt="" className="absolute inset-0 w-full h-full object-cover" />
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
+                          <div className={`absolute top-1.5 left-1.5 w-5 h-5 flex items-center justify-center rounded-full text-[10px] font-bold ${isToday ? 'bg-[var(--color-accent-blue)] text-white' : 'bg-white/90 text-black shadow-sm'}`}>
                             {day.date.getDate()}
                           </div>
-                          {/* 悬停效果 */}
-                          {isHovered && (
-                            <motion.div
-                              className="absolute inset-0 bg-black/40 flex items-center justify-center"
-                              initial={{ opacity: 0 }}
-                              animate={{ opacity: 1 }}
-                            >
-                              <span className="text-white text-xs font-medium">
-                                查看
-                              </span>
-                            </motion.div>
-                          )}
                         </>
                       ) : (
-                        <div className="w-full h-full flex items-center justify-center">
-                          <span
-                            className={`
-                              text-sm
-                              ${day.isCurrentMonth ? 'text-gray-700' : 'text-gray-400'}
-                            `}
-                          >
+                        <div className="w-full h-full flex flex-col items-center justify-center gap-1">
+                          <span className={`text-[11px] font-medium ${isToday ? 'text-[var(--color-accent-blue)] font-bold' : 'text-[var(--color-text-tertiary)]'}`}>
                             {day.date.getDate()}
                           </span>
+                          {day.isCurrentMonth && !hasRecord && <div className="w-1 h-1 rounded-full bg-[var(--color-border)]" />}
                         </div>
+                      )}
+                      
+                      {hasRecord && hoveredDate === day.dateKey && (
+                        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="absolute inset-0 bg-black/20 flex items-center justify-center">
+                          <ImageIcon size={14} className="text-white" />
+                        </motion.div>
                       )}
                     </motion.button>
                   );
@@ -261,22 +169,15 @@ export const HistoryCalendar: React.FC<HistoryCalendarProps> = ({
               </div>
             </div>
 
-            {/* 底部统计 */}
-            <div className="p-4 bg-gray-50 border-t">
-              <div className="flex items-center justify-between text-sm text-gray-600">
-                <span>
-                  本月已生成{' '}
-                  <span className="font-medium text-amber-600">
-                    {calendarDays.filter((d) => d.isCurrentMonth && d.record).length}
-                  </span>{' '}
-                  张台历
-                </span>
-                <span>
-                  总计{' '}
-                  <span className="font-medium text-amber-600">{records.size}</span>{' '}
-                  张
-                </span>
+            {/* Footer */}
+            <div className="px-6 py-4 bg-[var(--color-bg-secondary)] border-t border-[var(--color-border)] flex items-center justify-between">
+              <div className="flex items-center gap-2 text-[10px] font-bold text-[var(--color-text-tertiary)] uppercase tracking-widest">
+                <span className="w-2 h-2 rounded-full bg-[var(--color-accent-blue)]" />
+                已珍藏 {Object.keys(records).length} 张回忆
               </div>
+              <button onClick={() => onMonthChange(new Date())} className="text-[10px] font-black text-[var(--color-text-primary)] hover:underline uppercase tracking-widest">
+                回到今天
+              </button>
             </div>
           </motion.div>
         </>

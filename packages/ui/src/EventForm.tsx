@@ -32,12 +32,12 @@ export const EventForm: React.FC<EventFormProps> = ({
   const [color, setColor] = useState(event?.color || '#3b82f6');
 
   const colors = [
-    { value: '#3b82f6', label: '蓝色' },
-    { value: '#ef4444', label: '红色' },
-    { value: '#10b981', label: '绿色' },
-    { value: '#f59e0b', label: '橙色' },
-    { value: '#8b5cf6', label: '紫色' },
-    { value: '#9ca3af', label: '灰色' }
+    { value: '#7c90a0', label: '灰蓝' },
+    { value: '#b48a8a', label: '豆沙红' },
+    { value: '#8a9a8a', label: '鼠尾草绿' },
+    { value: '#c4a46d', label: '芥末黄' },
+    { value: '#9a8ab4', label: '熏衣紫' },
+    { value: '#9a9a97', label: '大地灰' }
   ];
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -77,13 +77,14 @@ export const EventForm: React.FC<EventFormProps> = ({
         />
       </div>
 
-      <div className="form-group">
-        <label>
-          <input
-            type="checkbox"
-            checked={allDay}
-            onChange={(e) => setAllDay(e.target.checked)}
-          />
+      <div className="form-group checkbox-row">
+        <input
+          type="checkbox"
+          id="all-day-checkbox"
+          checked={allDay}
+          onChange={(e) => setAllDay(e.target.checked)}
+        />
+        <label htmlFor="all-day-checkbox" style={{ marginBottom: 0 }}>
           全天事件
         </label>
       </div>

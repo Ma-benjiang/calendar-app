@@ -22,6 +22,51 @@ export class LocalStorageAdapter implements StorageAdapter {
   }
 }
 
+// Electron SQLite 适配器
+export class ElectronSQLiteAdapter implements StorageAdapter {
+  private ipc: any;
+
+  constructor() {
+    if (typeof window !== 'undefined' && (window as any).require) {
+      try {
+        this.ipc = (window as any).require('electron').ipcRenderer;
+      } catch (e) {
+        console.warn('Electron ipcRenderer not available');
+      }
+    }
+  }
+
+  async getItem(key: string): Promise<string | null> {
+    if (!this.ipc) return null;
+    return this.ipc.invoke('storage-get', key);
+  }
+
+  async setItem(key: string, value: string): Promise<void> {
+    if (!this.ipc) return;
+    await this.ipc.invoke('storage-set', key, value);
+  }
+
+  async removeItem(key: string): Promise<void> {
+    if (!this.ipc) return;
+    await this.ipc.invoke('storage-remove', key);
+  }
+}
+
+/**
+ * 获取当前环境的最佳存储适配器
+ */
+export function getStorageAdapter(): StorageAdapter {
+  const isElectron = typeof window !== 'undefined' && 
+                     (window as any).process && 
+                     (window as any).process.type === 'renderer';
+  
+  if (isElectron) {
+    return new ElectronSQLiteAdapter();
+  }
+  
+  return new LocalStorageAdapter();
+}
+
 // 存储管理器
 export class StorageManager {
   private static EVENTS_KEY = 'calendar_events';

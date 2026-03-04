@@ -132,9 +132,9 @@ export const SmartSchedule: React.FC<SmartScheduleProps> = ({
 
   // 获取置信度颜色
   const getConfidenceColor = (confidence: number): string => {
-    if (confidence >= 80) return '#10b981'; // 绿色
-    if (confidence >= 60) return '#f59e0b'; // 黄色
-    return '#ef4444'; // 红色
+    if (confidence >= 80) return '#8a9a8a'; // 鼠尾草绿
+    if (confidence >= 60) return '#c4a46d'; // 芥末黄
+    return '#b48a8a'; // 豆沙红
   };
 
   if (!isOpen) return null;
@@ -303,12 +303,12 @@ export const SmartSchedule: React.FC<SmartScheduleProps> = ({
 
 function getPriorityColor(priority: string): string {
   const colors: Record<string, string> = {
-    high: '#ef4444',
-    medium: '#f59e0b',
-    low: '#3b82f6',
-    none: '#9ca3af',
+    high: '#b48a8a',
+    medium: '#c4a46d',
+    low: '#7c90a0',
+    none: '#9a9a97',
   };
-  return colors[priority] || '#3b82f6';
+  return colors[priority] || '#7c90a0';
 }
 
 export default SmartSchedule;

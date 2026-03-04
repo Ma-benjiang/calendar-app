@@ -5,9 +5,6 @@
 
 import {
   SeedreamConfig,
-  SeedreamGenerationRequest,
-  SeedreamGenerationResponse,
-  SeedreamError,
   ImageGenerationParams,
   GeneratedImage,
   ThemeType,
@@ -19,25 +16,6 @@ const DEFAULT_CONFIG: SeedreamConfig = {
   apiKey: '',
   model: 'doubao-seedream-5-0-260128',
 };
-
-// ...其余代码保持不变...
-export class SeedreamService {
-  private config: SeedreamConfig;
-  private abortController: AbortController | null = null;
-
-  constructor(config?: Partial<SeedreamConfig>) {
-    this.config = {
-      ...getConfig(),
-      ...config,
-    };
-  }
-
-  // ...其余实现逻辑...
-  async generateImage(params: ImageGenerationParams): Promise<GeneratedImage> {
-    // 逻辑...
-    return { /* ... */ } as any;
-  }
-}
 
 function getConfig(): SeedreamConfig {
   const env = (import.meta as any).env || {};
@@ -53,73 +31,83 @@ function getConfig(): SeedreamConfig {
  */
 function generatePrompt(theme: ThemeType, date: Date, quote: string): string {
   const themePrompts: Record<ThemeType, string> = {
-    vintage: `High-end vintage editorial photography, 90s film grain, direct flash, low saturation neutral tones, shot on Leica M6, nostalgic atmosphere, luxury magazine aesthetic`,
-    minimal: `Exquisite card design, premium fine paper texture, tactile letterpress effect, elegant minimalist layout, soft organic shadows, neutral beige palette, sophisticated stationery aesthetic`,
-    nature: `Industrial minimalism, nature inside a museum, a single botanical leaf behind frosted glass, soft gallery lighting, marble textures, serene and expensive atmosphere`,
-    art: `Conceptual art installation, hyper-realistic textures, floating elements in a minimalist void, soft volumetric lighting, museum-grade composition, clean and avant-garde`,
-    zen: `Black and white minimalist illustration, elegant thin lines, bold geometric color blocks, extreme negative space, conceptual and poetic, high-end independent magazine style`,
-    cosmic: `Futuristic industrial design, translucent materials, glowing soft nebulas through frosted glass, deep navy and silver accents, sleek and sophisticated, astronomical luxury`,
-    clay: `3D render, cute claymation style, soft matte clay texture, handcrafted look with tiny thumbprint details, rounded organic shapes, vibrant pastel colors, studio lighting, clean solid background, high detail`,
-    sticker: `3D sticker design, die-cut sticker with a thick white border, 3D pop-out effect, glossy finish, vibrant colors, white background, high contrast, soft shadow underneath to create depth, professional sticker aesthetic`,
-    illustration: `3D stylized illustration, high-end product feel, C4D Octane render, smooth plastic and metallic textures, trendy aesthetic, soft studio lighting, minimalist design, bright sophisticated color palette`,
-    cyberpunk: `Cyberpunk aesthetic, neon-lit city evening, futuristic technology, rainy streets with vibrant reflections, high contrast, cinematic lighting, sharp details, teal and magenta color palette, 8k resolution`,
-    ukiyoe: `Traditional Japanese Ukiyo-e style, woodblock print texture, iconic flat colors, elegant line work, mountain or ocean waves landscape, vintage paper texture, classic oriental art`,
-    ghibli: `Studio Ghibli style, hand-drawn aesthetic, lush watercolor scenery, soft nostalgic sunlight, whimsical atmosphere, high quality anime art, peaceful and heartwarming`,
+    vintage: `A beautiful and nostalgic scene, 90s fashion editorial style, direct flash, high-end paper texture, muted nostalgic tones`,
+    minimal: `An exquisite minimalist still life photography, a single beautiful object, clean background, soft organic shadows, elegant composition`,
+    nature: `A stunning botanical art piece, lush green leaves, morning light, dew drops, serene and fresh atmosphere`,
+    art: `A captivating avant-garde conceptual art installation, floating surrealist elements, hyper-realistic textures, striking composition`,
+    zen: `A poetic zen landscape, traditional Chinese ink wash painting style, a lone boat on a misty lake, elegant brush strokes, serene and calm`,
+    cosmic: `A breathtaking deep space nebula, glowing stardust, mystical astronomical masterpiece, deep navy gradients, ethereal and vast`,
+    clay: `A cute 3D claymation character or scene, soft matte clay textures, handcrafted look, rounded forms, vibrant pastel colors`,
+    sticker: `A vibrant 3D pop-out sticker design of a cool object, die-cut with thick white borders, glossy finish, high contrast`,
+    illustration: `A trendy 3D stylized illustration of a modern object, C4D Octane render, smooth plastic and metallic textures, bright color palette`,
+    cyberpunk: `A cinematic cyberpunk city street at night, neon lights, rainy reflections, futuristic technology, sharp details`,
+    ukiyoe: `A classic Japanese Ukiyo-e style print, iconic ocean waves or mountain landscape, woodblock texture, elegant flat colors`,
+    ghibli: `A heartwarming Studio Ghibli style anime scene, lush watercolor nature, soft nostalgic sunlight, peaceful and magical`,
   };
 
   const basePrompt = themePrompts[theme] || themePrompts.vintage;
-  const dateStr = date.toLocaleDateString('zh-CN', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-  });
-
-  return `${basePrompt}. High quality, detailed, professional composition, artistic photography, NO TEXT in image.`;
+  return `${basePrompt}. High-end artistic photography or illustration, rich details, stunning visual impact, NO TEXT, NO CALENDAR LAYOUT in image.`;
 }
 
 export const seedreamService = {
-  generateImage: async (params: ImageGenerationParams) => {
+  generateImage: async (params: ImageGenerationParams & { refImage?: string }) => {
     const config = getConfig();
     const prompt = generatePrompt(params.theme, params.date, params.quote);
     
-    console.log(`[Seedream] Requesting image with model: ${config.model}`);
+    console.log(`[Seedream] Requesting image with model: ${config.model}${params.refImage ? ' (Img2Img Mode)' : ''}`);
+    
     if (!config.apiKey) {
-      console.error('[Seedream] API Key is missing!');
-      throw new Error('API Key 未配置');
+      throw new Error('VITE_SEEDREAM_API_KEY is not configured');
     }
 
     try {
+      const body: any = {
+        model: config.model,
+        prompt,
+        // 核心修复：Seedream 5.0 要求分辨率至少 368.6 万像素，1024x1024 会报错
+        size: '2048x2048', 
+        quality: params.quality || 'standard',
+        n: 1,
+        response_format: 'url',
+      };
+
+      if (params.refImage) {
+        body.ref_image_url = params.refImage; // 已经是 data:image/jpeg;base64,... 格式
+        body.strength = 0.6; 
+      }
+
       const response = await fetch(config.apiEndpoint, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${config.apiKey}`,
         },
-        body: JSON.stringify({
-          model: config.model,
-          prompt,
-          size: params.size || '1024x1024',
-          quality: params.quality || 'standard',
-          n: 1,
-          response_format: 'url',
-        }),
+        body: JSON.stringify(body),
       });
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
         console.error(`[Seedream] API Error: ${response.status}`, errorData);
-        throw new Error(`Image generation failed: ${response.status}`);
+        throw new Error(`AI 绘图失败: ${response.status}. ${errorData.error?.message || ''}`);
       }
 
       const data = await response.json();
+      const imageUrl = data.data[0].url;
       console.log('[Seedream] Image generated successfully!');
+      
       return {
         id: `${Date.now()}`,
-        url: data.data[0].url,
-        metadata: { generatedAt: new Date(), prompt, theme: params.theme, size: params.size, quality: params.quality }
+        url: imageUrl,
+        metadata: { 
+          generatedAt: new Date(), 
+          prompt, 
+          theme: params.theme, 
+          size: '2048x2048', 
+          quality: params.quality || 'standard' 
+        }
       };
     } catch (error) {
-      console.error('[Seedream] Fetch error:', error);
+      console.error('[Seedream] Error:', error);
       throw error;
     }
   },

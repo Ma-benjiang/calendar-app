@@ -1,383 +1,319 @@
-/* TaskList 样式 - Notion 风格 */
+/* TaskList 样式 - 拟物化纸张风格 */
 
 .task-list-container {
   display: flex;
   flex-direction: column;
   height: 100%;
-  color: var(--color-text-primary);
-  font-family: var(--font-family);
+  color: #37352f;
+  font-family: Georgia, serif;
+  max-width: 860px; /* 限制最大宽度 */
+  margin: 0 auto;   /* 水平居中 */
+  padding: 40px 20px; /* 增加上下内边距 */
 }
 
-/* 头部工具栏 */
+/* 头部工具栏优化 */
 .task-list-header {
-  padding: 16px 4px;
-  margin-bottom: 8px;
+  padding: 0 0 32px 0;
+  border-bottom: 1.5px solid #f0ede4;
+  margin-bottom: 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
 }
 
 .task-list-title {
   display: flex;
   align-items: baseline;
-  gap: 8px;
-  margin-bottom: 16px;
+  justify-content: space-between; /* 左右分布 */
+  width: 100%;
 }
 
 .task-list-title h3 {
   margin: 0;
-  font-size: 16px;
-  font-weight: 600;
+  font-size: 28px; /* 放大标题，增加气场 */
+  font-weight: 900;
+  letter-spacing: -0.02em;
 }
 
 .task-count {
-  font-size: 12px;
-  color: var(--color-text-tertiary);
-  font-weight: 500;
+  font-size: 11px;
+  color: #9a9a97;
+  font-weight: 700;
+  font-family: -apple-system, sans-serif;
 }
 
 .task-list-filters {
   display: flex;
-  flex-direction: column;
-  gap: 12px;
+  align-items: center; /* 改为横向排列 */
+  justify-content: space-between;
+  gap: 20px;
 }
 
+/* 拟物化搜索框优化 */
 .task-search {
-  position: relative;
-  width: 100%;
+  flex: 1;
 }
 
 .task-search-input {
   width: 100%;
-  padding: 6px 10px;
-  background: var(--color-bg-secondary);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  font-size: 13px;
-  color: var(--color-text-primary);
-  transition: all 0.2s;
+  padding: 8px 0;
+  background: transparent;
+  border: none;
+  border-bottom: 1.5px solid #f0ede4;
+  font-size: 15px;
+  color: #37352f;
+  font-family: Georgia, serif;
+  transition: all 0.3s;
 }
 
 .task-search-input:focus {
-  background: var(--color-bg-primary);
-  border-color: var(--color-border-hover);
   outline: none;
+  border-bottom-color: #37352f;
 }
 
 .filter-tabs {
   display: flex;
-  gap: 4px;
-  overflow-x: auto;
-  padding-bottom: 4px;
+  gap: 12px;
 }
 
 .filter-tab {
-  padding: 4px 8px;
-  font-size: 12px;
-  font-weight: 500;
-  color: var(--color-text-secondary);
+  padding: 4px 0;
+  font-size: 11px;
+  font-weight: 800;
+  color: #9a9a97;
   background: transparent;
   border: none;
-  border-radius: 4px;
   cursor: pointer;
-  white-space: nowrap;
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  transition: all 0.2s;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  position: relative;
+  transition: color 0.2s;
 }
 
 .filter-tab:hover {
-  background: var(--color-bg-hover);
+  color: #37352f;
 }
 
 .filter-tab.active {
-  background: var(--color-bg-tertiary);
-  color: var(--color-text-primary);
+  color: #37352f;
 }
 
-.tab-count {
-  font-size: 10px;
-  opacity: 0.6;
+.filter-tab.active::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 0;
+  right: 0;
+  height: 1.5px;
+  background: #37352f;
 }
 
-/* 快速添加 */
+/* 快速添加 - 像在纸上随手记一笔 */
 .task-quick-add {
-  margin-bottom: 16px;
+  margin-bottom: 24px;
 }
 
 .quick-add-input-wrapper {
-  padding: 4px;
-  border-radius: var(--radius-md);
-  transition: all 0.2s;
+  padding: 4px 0;
+  border-bottom: 1px dashed #e0dcd5;
+  transition: all 0.3s;
 }
 
 .quick-add-input-wrapper.expanded {
-  background: var(--color-bg-secondary);
-  border: 1px solid var(--color-border);
+  border-bottom-style: solid;
+  border-bottom-color: #37352f;
+  background: rgba(247, 246, 243, 0.3);
 }
 
 .quick-add-input {
   width: 100%;
-  padding: 6px 8px;
+  padding: 8px 0;
   background: transparent;
   border: none;
-  font-size: 14px;
-  color: var(--color-text-primary);
+  font-size: 15px;
+  color: #37352f;
+  font-family: Georgia, serif;
   outline: none;
-}
-
-.quick-add-input::placeholder {
-  color: var(--color-text-tertiary);
 }
 
 .quick-add-options {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 8px;
-  margin-top: 4px;
-  border-top: 1px solid var(--color-border);
+  padding: 12px 0;
 }
 
 .priority-selector {
   display: flex;
-  gap: 6px;
+  gap: 10px;
 }
 
 .priority-btn {
-  width: 12px;
-  height: 12px;
+  width: 10px;
+  height: 10px;
   border-radius: 50%;
-  border: 2px solid transparent;
+  border: none;
   cursor: pointer;
-  padding: 0;
   transition: transform 0.2s;
 }
 
 .priority-btn.active {
-  transform: scale(1.2);
-  border-color: rgba(0, 0, 0, 0.1);
+  transform: scale(1.4);
+  box-shadow: 0 0 0 2px #fffdf9, 0 0 0 3.5px #37352f;
 }
 
 .quick-add-hints {
-  font-size: 10px;
-  color: var(--color-text-tertiary);
+  font-size: 9px;
+  font-weight: 700;
+  color: #9a9a97;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
 }
 
-/* 任务列表内容 */
-.task-list-content {
-  flex: 1;
-  overflow-y: auto;
-}
-
-.task-items {
-  display: flex;
-  flex-direction: column;
-}
-
+/* 任务项 - 像手写上去的 */
 .task-item-wrapper {
-  border-bottom: 1px solid var(--color-border);
+  margin-bottom: 2px;
 }
 
 .task-item {
   display: flex;
   align-items: flex-start;
-  padding: 10px 8px;
-  gap: 10px;
+  padding: 12px 0;
+  gap: 12px;
   cursor: pointer;
   transition: background 0.2s;
-  position: relative;
+  border-bottom: 1px solid #f0ede4;
 }
 
 .task-item:hover {
-  background: var(--color-bg-hover);
-}
-
-.task-item.completed {
-  opacity: 0.6;
-}
-
-.task-priority-indicator {
-  position: absolute;
-  left: 0;
-  top: 10px;
-  bottom: 10px;
-  width: 3px;
-  border-radius: 0 2px 2px 0;
+  background: rgba(247, 246, 243, 0.4);
 }
 
 .task-checkbox {
-  width: 16px;
-  height: 16px;
-  border: 1.5px solid var(--color-text-tertiary);
+  width: 18px;
+  height: 18px;
+  border: 1.5px solid #dcdad2;
   border-radius: 3px;
-  background: transparent;
+  background: #fff;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
   margin-top: 2px;
   color: transparent;
-  font-size: 12px;
   transition: all 0.2s;
-  padding: 0;
+  box-shadow: inset 0 1px 2px rgba(0,0,0,0.05);
 }
 
 .task-checkbox:hover {
-  border-color: var(--color-text-secondary);
-  background: var(--color-bg-tertiary);
+  border-color: #37352f;
 }
 
 .task-checkbox.checked {
-  background: var(--color-accent-blue);
-  border-color: var(--color-accent-blue);
-  color: white;
-}
-
-.task-content {
-  flex: 1;
-  min-width: 0;
+  background: #37352f;
+  border-color: #37352f;
+  color: #fffdf9;
 }
 
 .task-title {
-  font-size: 14px;
-  font-weight: 500;
-  color: var(--color-text-primary);
-  display: block;
-  margin-bottom: 4px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  font-size: 15px;
+  font-weight: 600;
+  color: #37352f;
+  font-family: Georgia, serif;
+}
+
+.task-item.completed {
+  opacity: 0.5;
 }
 
 .task-item.completed .task-title {
   text-decoration: line-through;
-  color: var(--color-text-tertiary);
+  color: #9a9a97;
 }
 
 .task-meta {
   display: flex;
   align-items: center;
   gap: 8px;
-  flex-wrap: wrap;
+  margin-top: 6px;
 }
 
 .task-tag {
-  font-size: 11px;
-  color: var(--color-text-tertiary);
-  background: var(--color-bg-tertiary);
-  padding: 1px 4px;
-  border-radius: 3px;
-}
-
-.task-project {
-  font-size: 11px;
-  color: var(--color-text-tertiary);
-  display: flex;
-  align-items: center;
-  gap: 2px;
+  font-size: 10px;
+  font-weight: 700;
+  color: #9a9a97;
+  background: #f0ede4;
+  padding: 1px 6px;
+  border-radius: 10px;
+  text-transform: uppercase;
 }
 
 .task-right {
+  margin-left: auto;
   display: flex;
   align-items: center;
   gap: 12px;
-  font-size: 12px;
-  color: var(--color-text-tertiary);
-}
-
-.task-due-date {
-  font-weight: 500;
+  font-size: 11px;
+  font-weight: 700;
+  color: #9a9a97;
 }
 
 .task-due-date.overdue {
-  color: var(--color-accent-red);
+  color: #eb5757;
 }
 
-.task-actions {
-  display: flex;
-  gap: 4px;
-  opacity: 0;
-  transition: opacity 0.2s;
+/* 子任务抛光 */
+.task-item-wrapper.is-subtask {
+  margin-left: 30px;
+  position: relative;
 }
 
-.task-item:hover .task-actions {
-  opacity: 1;
+.task-item-wrapper.is-subtask::before {
+  content: '';
+  position: absolute;
+  left: -18px;
+  top: 0;
+  bottom: 50%;
+  width: 12px;
+  border-left: 1.5px solid #f0ede4;
+  border-bottom: 1.5px solid #f0ede4;
+  border-bottom-left-radius: 4px;
 }
 
-.task-action-btn {
-  width: 24px;
-  height: 24px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border: none;
+.subtask-add-btn {
+  margin-left: 42px;
+  padding: 8px 0;
+  font-size: 11px;
+  font-weight: 800;
+  color: #9a9a97;
   background: transparent;
-  border-radius: 4px;
+  border: none;
   cursor: pointer;
-  color: var(--color-text-tertiary);
-  font-size: 14px;
-}
-
-.task-action-btn:hover {
-  background: var(--color-bg-tertiary);
-  color: var(--color-text-primary);
-}
-
-/* 分组样式 */
-.task-group {
-  margin-bottom: 24px;
-}
-
-.task-group-header {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 4px 8px;
-  margin-bottom: 8px;
-}
-
-.group-status-icon {
-  font-size: 14px;
-  color: var(--color-text-tertiary);
-}
-
-.group-label {
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--color-text-secondary);
   text-transform: uppercase;
   letter-spacing: 0.05em;
+  opacity: 0.6;
 }
 
-.group-count {
-  font-size: 11px;
-  color: var(--color-text-tertiary);
+.subtask-add-btn:hover {
+  opacity: 1;
+  color: #37352f;
 }
 
 /* 空状态 */
 .task-empty-state {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 48px 16px;
+  padding: 60px 0;
   text-align: center;
 }
 
 .empty-icon {
-  font-size: 32px;
+  font-size: 24px;
   margin-bottom: 12px;
-  opacity: 0.5;
+  opacity: 0.2;
 }
 
 .empty-title {
   font-size: 14px;
-  font-weight: 600;
-  color: var(--color-text-secondary);
-  margin: 0 0 4px 0;
-}
-
-.empty-subtitle {
-  font-size: 12px;
-  color: var(--color-text-tertiary);
-  margin: 0;
+  font-weight: 700;
+  color: #9a9a97;
+  font-family: Georgia, serif;
 }
