@@ -55,6 +55,36 @@ const THEME_STYLES: Record<ThemeType, { text: string; accent: string; quote: str
     accent: 'text-[#a0a0ff]',
     quote: 'text-[#6060ff]',
   },
+  clay: {
+    text: 'text-[#4a4a4a]',
+    accent: 'text-[#c96f75]',
+    quote: 'text-[#ff9a9e]',
+  },
+  sticker: {
+    text: 'text-[#3e2723]',
+    accent: 'text-[#795548]',
+    quote: 'text-[#a1887f]',
+  },
+  illustration: {
+    text: 'text-[#1a1a1a]',
+    accent: 'text-[#0072ff]',
+    quote: 'text-[#00c6ff]',
+  },
+  cyberpunk: {
+    text: 'text-white',
+    accent: 'text-[#00ffea]',
+    quote: 'text-[#f000ff]',
+  },
+  ukiyoe: {
+    text: 'text-[#1d3557]',
+    accent: 'text-[#457b9d]',
+    quote: 'text-[#e63946]',
+  },
+  ghibli: {
+    text: 'text-[#6d6875]',
+    accent: 'text-[#b5838d]',
+    quote: 'text-[#ffcdb2]',
+  },
 };
 
 // 分类标签

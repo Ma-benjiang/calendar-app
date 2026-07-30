@@ -1,401 +1,144 @@
+/* ============================================================
+   Skeuomorphic Calendar App Styles
+   Desk-like Background, Paper Texture, and Serif Typography
+   ============================================================ */
+
 .calendar-app {
   display: flex;
   flex-direction: column;
   height: 100vh;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family: Georgia, serif;
+  background: #e0dcd5; /* Desk surface */
+  color: #37352f;
+  padding: 24px;
+  overflow: hidden;
 }
 
+.calendar-container-skeuo {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  background: #fffdf9; /* High-end paper */
+  background-image: radial-gradient(#e0dcd5 0.5px, transparent 0.5px);
+  background-size: 30px 30px; /* Subtle paper texture */
+  border-radius: 12px;
+  box-shadow: 
+    0 1px 2px rgba(0,0,0,0.05),
+    0 15px 45px -10px rgba(0,0,0,0.2),
+    0 30px 80px -20px rgba(0,0,0,0.1);
+  border: 1px solid #e3e2e0;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Header Refined */
 .calendar-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 16px 24px;
-  background: #fff;
-  border-bottom: 1px solid #e5e7eb;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  padding: 24px 40px;
+  border-bottom: 1px solid #f0ede4;
 }
 
 .calendar-header h1 {
   margin: 0;
   font-size: 24px;
-  color: #1f2937;
-}
-
-.header-center {
-  display: flex;
-  align-items: center;
-  gap: 12px;
+  font-weight: 900;
+  letter-spacing: -0.02em;
+  color: #37352f;
 }
 
 .current-date {
   font-size: 20px;
-  font-weight: 600;
-  min-width: 120px;
+  font-weight: 800;
+  min-width: 180px;
   text-align: center;
+  color: #37352f;
 }
 
-.nav-btn, .today-btn, .view-btn {
+/* Button UI Skeuo */
+.nav-btn, .today-btn, .view-btn, .btn-secondary {
   padding: 8px 16px;
-  border: 1px solid #d1d5db;
+  border: 1px solid #e3e2e0;
   background: #fff;
   border-radius: 6px;
   cursor: pointer;
-  font-size: 14px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #37352f;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.05);
   transition: all 0.2s;
+  font-family: -apple-system, system-ui, sans-serif;
 }
 
 .nav-btn:hover, .today-btn:hover, .view-btn:hover {
-  background: #f3f4f6;
-}
-
-.smart-schedule-btn {
-  padding: 8px 16px;
-  border: 1px solid #8b5cf6;
-  background: #fff;
-  color: #8b5cf6;
-  border-radius: 6px;
-  cursor: pointer;
-  font-size: 14px;
-  font-weight: 500;
-  transition: all 0.2s;
-}
-
-.smart-schedule-btn:hover {
-  background: #8b5cf6;
-  color: #fff;
-}
-
-.view-btn.active {
-  background: #3b82f6;
-  color: #fff;
-  border-color: #3b82f6;
-}
-
-.view-switcher {
-  display: flex;
-  gap: 4px;
-}
-
-.calendar-main {
-  flex: 1;
-  overflow: auto;
-  padding: 20px;
-}
-
-/* 月视图样式 */
-.month-view .week-header {
-  display: grid;
-  grid-template-columns: repeat(7, 1fr);
-  gap: 1px;
-  background: #e5e7eb;
-  border-radius: 8px 8px 0 0;
-  overflow: hidden;
-}
-
-.week-day-header {
-  background: #f9fafb;
-  padding: 12px;
-  text-align: center;
-  font-weight: 600;
-  color: #6b7280;
-}
-
-.days-grid {
-  display: grid;
-  grid-template-columns: repeat(7, 1fr);
-  gap: 1px;
-  background: #e5e7eb;
-  border-radius: 0 0 8px 8px;
-  overflow: hidden;
-}
-
-.day-cell {
-  background: #fff;
-  min-height: 100px;
-  padding: 8px;
-  cursor: pointer;
-  transition: background 0.2s;
-}
-
-.day-cell:hover {
-  background: #f3f4f6;
-}
-
-.day-cell.other-month {
-  background: #f9fafb;
-  color: #9ca3af;
-}
-
-.day-number {
-  font-weight: 600;
-  margin-bottom: 4px;
-}
-
-.day-events {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 2px;
-}
-
-.event-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  cursor: pointer;
-}
-
-.more-events {
-  font-size: 10px;
-  color: #6b7280;
-}
-
-/* 周视图样式 */
-.week-view .week-header {
-  display: grid;
-  grid-template-columns: 60px repeat(7, 1fr);
-  gap: 1px;
-  background: #e5e7eb;
-}
-
-.week-day-header {
-  background: #f9fafb;
-  padding: 12px;
-  text-align: center;
-}
-
-.week-day-header .day-name {
-  font-size: 12px;
-  color: #6b7280;
-}
-
-.week-day-header .day-number {
-  font-size: 18px;
-  font-weight: 600;
-}
-
-.week-grid {
-  display: flex;
-  flex-direction: column;
-}
-
-.hour-row {
-  display: grid;
-  grid-template-columns: 60px repeat(7, 1fr);
-  gap: 1px;
-  background: #e5e7eb;
-  min-height: 50px;
-}
-
-.hour-label {
-  background: #f9fafb;
-  padding: 4px 8px;
-  font-size: 12px;
-  color: #6b7280;
-  text-align: right;
-}
-
-.hour-cell {
-  background: #fff;
-  padding: 4px;
-  cursor: pointer;
-}
-
-.hour-cell:hover {
-  background: #f3f4f6;
-}
-
-.week-event {
-  padding: 2px 6px;
-  border-radius: 4px;
-  color: #fff;
-  font-size: 11px;
-  margin-bottom: 2px;
-  cursor: pointer;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-/* 日视图样式 */
-.day-view {
-  max-width: 800px;
-  margin: 0 auto;
-}
-
-.day-header {
-  text-align: center;
-  padding: 20px;
-  border-bottom: 1px solid #e5e7eb;
-}
-
-.day-timeline {
-  display: flex;
-  flex-direction: column;
-}
-
-.day-hour-row {
-  display: flex;
-  min-height: 60px;
-  border-bottom: 1px solid #e5e7eb;
-}
-
-.day-hour-label {
-  width: 80px;
-  padding: 8px 12px;
-  color: #6b7280;
-  font-size: 14px;
-  text-align: right;
-  background: #f9fafb;
-}
-
-.day-hour-content {
-  flex: 1;
-  padding: 4px;
-  cursor: pointer;
-}
-
-.day-hour-content:hover {
-  background: #f3f4f6;
-}
-
-.day-event {
-  padding: 8px 12px;
-  border-radius: 6px;
-  color: #fff;
-  margin-bottom: 4px;
-  cursor: pointer;
-}
-
-.day-event .event-time {
-  font-size: 12px;
-  opacity: 0.9;
-}
-
-.day-event .event-title {
-  font-weight: 600;
-}
-
-.day-event .event-desc {
-  font-size: 12px;
-  opacity: 0.8;
-  margin-top: 4px;
-}
-
-/* 表单样式 */
-.event-form {
-  padding: 24px;
-  max-width: 500px;
-}
-
-.event-form h3 {
-  margin: 0 0 20px 0;
-  color: #1f2937;
-}
-
-.form-group {
-  margin-bottom: 16px;
-}
-
-.form-group label {
-  display: block;
-  margin-bottom: 6px;
-  font-weight: 500;
-  color: #374151;
-}
-
-.form-group input,
-.form-group textarea {
-  width: 100%;
-  padding: 10px 12px;
-  border: 1px solid #d1d5db;
-  border-radius: 6px;
-  font-size: 14px;
-}
-
-.form-group input:focus,
-.form-group textarea:focus {
-  outline: none;
-  border-color: #3b82f6;
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-}
-
-.form-row {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 16px;
-}
-
-.color-picker {
-  display: flex;
-  gap: 8px;
-}
-
-.color-btn {
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  border: 3px solid transparent;
-  cursor: pointer;
-}
-
-.color-btn.active {
-  border-color: #1f2937;
-}
-
-.form-actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 12px;
-  margin-top: 24px;
-}
-
-.btn-primary,
-.btn-secondary,
-.btn-danger {
-  padding: 10px 20px;
-  border-radius: 6px;
-  font-size: 14px;
-  font-weight: 500;
-  cursor: pointer;
-  border: none;
+  background: #f7f6f3;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.08);
 }
 
 .btn-primary {
-  background: #3b82f6;
-  color: #fff;
+  background: #37352f !important;
+  color: #fffdf9 !important;
+  border: 1px solid #2c2a26;
+  border-radius: 6px;
+  padding: 10px 24px;
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  transition: all 0.2s;
 }
 
 .btn-primary:hover {
-  background: #2563eb;
-}
-
-.btn-secondary {
-  background: #f3f4f6;
-  color: #374151;
-}
-
-.btn-secondary:hover {
-  background: #e5e7eb;
+  background: #000 !important;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(0,0,0,0.25);
 }
 
 .btn-danger {
-  background: #ef4444;
-  color: #fff;
+  color: #eb5757;
+  background: transparent;
+  border: 1px solid rgba(235, 87, 87, 0.2);
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
   margin-right: auto;
 }
 
-.btn-danger:hover {
-  background: #dc2626;
+/* View Switcher Skeuo */
+.view-switcher {
+  display: flex;
+  background: #f0ede4;
+  padding: 4px;
+  border-radius: 8px;
+  gap: 2px;
+  box-shadow: inset 0 1px 4px rgba(0,0,0,0.1);
 }
 
-/* 模态框样式 */
+.view-switcher .view-btn {
+  border: none;
+  background: transparent;
+  box-shadow: none;
+  border-radius: 4px;
+}
+
+.view-switcher .view-btn.active {
+  background: #fff;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+  font-weight: 800;
+}
+
+/* Modal / Paper Note Styles */
 .modal-overlay {
   position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
+  inset: 0;
+  background: rgba(45, 42, 38, 0.4);
+  backdrop-filter: blur(2px);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -403,110 +146,492 @@
 }
 
 .modal-content {
-  background: #fff;
-  border-radius: 12px;
-  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
-  max-height: 90vh;
-  overflow: auto;
+  background: #fffdf9;
+  background-image: radial-gradient(#e0dcd5 0.5px, transparent 0.5px);
+  background-size: 20px 20px;
+  border-radius: 8px;
+  box-shadow: 0 30px 90px -20px rgba(0,0,0,0.3);
+  border: 1px solid #dcdad2;
+  max-width: 480px;
+  width: 90%;
+  animation: paperSlideIn 0.4s cubic-bezier(0.23, 1, 0.32, 1);
 }
 
-/* ========== 拖放样式 ========== */
-
-/* 拖拽状态 */
-.task-item.dragging {
-  opacity: 0.5;
-  transform: rotate(2deg);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+@keyframes paperSlideIn {
+  from { opacity: 0; transform: translateY(40px) rotate(-1deg); }
+  to { opacity: 1; transform: translateY(0) rotate(0); }
 }
 
-/* 放置目标高亮 */
-.day-cell.drag-over,
-.hour-cell.drag-over,
-.day-hour-content.drag-over {
-  background: #dbeafe !important;
-  border: 2px dashed #3b82f6;
+.event-form {
+  padding: 48px;
+}
+
+.event-form h3 {
+  margin: 0 0 32px 0;
+  font-size: 24px;
+  font-weight: 900;
+  text-align: center;
+  border-bottom: 1px solid #f0ede4;
+  padding-bottom: 20px;
+}
+
+.form-group label {
+  display: block;
+  font-size: 10px;
+  font-weight: 800;
+  color: #9a9a97;
+  text-transform: uppercase;
+  letter-spacing: 0.2em;
+  margin-bottom: 12px;
+}
+
+.form-group input[type="text"],
+.form-group input[type="date"],
+.form-group input[type="datetime-local"],
+.form-group textarea {
+  width: 100%;
+  border: none;
+  border-bottom: 1px solid #f0ede4;
+  background: transparent;
+  padding: 10px 0;
+  font-size: 18px;
+  color: #37352f;
+  font-family: Georgia, serif;
+  transition: border-color 0.3s;
+}
+
+.form-group input:focus,
+.form-group textarea:focus {
+  outline: none;
+  border-bottom-color: #37352f;
+}
+
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 24px;
+  margin-top: 48px;
+  padding-top: 32px;
+  border-top: 1px solid #f0ede4;
+}
+
+/* Color Picker Skeuo - Muted Morandi Tones */
+.color-picker {
+  display: flex;
+  gap: 16px;
+  padding: 12px 0;
+}
+
+.color-btn {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: none;
+  cursor: pointer;
+  position: relative;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: inset 0 1px 3px rgba(0,0,0,0.1);
+  opacity: 0.8;
+}
+
+.color-btn:hover {
+  opacity: 1;
+  transform: scale(1.15);
+}
+
+.color-btn.active {
+  opacity: 1;
+  transform: scale(1.1);
+}
+
+.color-btn.active::after {
+  content: '';
+  position: absolute;
+  inset: -5px;
+  border: 1.5px solid #37352f;
+  border-radius: 50%;
+  animation: strokeRotate 0.5s ease-out;
+}
+
+@keyframes strokeRotate {
+  from { opacity: 0; transform: scale(0.8); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+/* Month View Grid Skeuo */
+.month-view {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.month-view .week-header {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  border-bottom: 1px solid #f0ede4;
+  background: transparent;
+}
+
+.week-day-header {
+  padding: 12px;
+  text-align: center;
+  font-size: 11px;
+  font-weight: 800;
+  color: #9a9a97;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+}
+
+.days-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  grid-auto-rows: 1fr;
+  flex: 1;
+}
+
+.day-cell {
+  padding: 16px;
+  border-right: 1px solid #f0ede4;
+  border-bottom: 1px solid #f0ede4;
+  transition: background 0.2s;
+}
+
+.day-cell.holiday-off {
+  background: rgba(191, 74, 63, 0.035);
+}
+
+.day-cell.holiday-workday {
+  background: rgba(164, 116, 33, 0.04);
+}
+
+.day-cell:hover {
+  background: rgba(247, 246, 243, 0.5);
+}
+
+.day-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 24px;
+}
+
+.day-number {
+  font-size: 16px;
+  font-weight: 800;
+}
+
+.holiday-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 7px;
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.holiday-badge.off {
+  color: #a43d34;
+  background: #f4dfda;
+}
+
+.holiday-badge.workday {
+  color: #815d1d;
+  background: #eee3c9;
+}
+
+.holiday-name {
+  margin: 2px 0 9px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+.holiday-name.off,
+.week-holiday.off,
+.day-holiday.off {
+  color: #a43d34;
+}
+
+.holiday-name.workday,
+.week-holiday.workday,
+.day-holiday.workday {
+  color: #815d1d;
+}
+
+.day-cell.today .day-number {
+  color: #eb5757;
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+
+.week-holiday {
+  margin-top: 3px;
+  font-size: 9px;
+  font-weight: 800;
+}
+
+.day-holiday {
+  margin-top: 10px;
+  padding: 4px 10px;
+  border: 1px solid currentColor;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+/* Week View Skeuo */
+.week-view {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.week-view .week-header {
+  display: grid;
+  grid-template-columns: 60px repeat(7, 1fr);
+  border-bottom: 1px solid #f0ede4;
+  background: #fffdf9;
+}
+
+.week-grid {
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
   position: relative;
 }
 
-/* 放置指示器 */
-.drop-indicator {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  background: #3b82f6;
-  color: #fff;
-  padding: 4px 12px;
-  border-radius: 20px;
-  font-size: 12px;
-  font-weight: 600;
-  pointer-events: none;
-  z-index: 10;
+.hour-row {
+  display: grid;
+  grid-template-columns: 60px repeat(7, 1fr);
+  min-height: 60px;
+  border-bottom: 1px solid #f0ede4;
 }
 
-/* 任务在日历中的样式 */
-.event-dot.task {
-  border-radius: 4px;
-  width: auto;
-  height: auto;
-  padding: 2px 6px;
+.hour-label {
+  padding: 8px;
   font-size: 10px;
-  color: #fff;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  font-weight: 800;
+  color: #9a9a97;
+  text-align: right;
+  border-right: 1px solid #f0ede4;
+  background: #fffdf9;
+  position: sticky;
+  left: 0;
+  z-index: 5;
 }
 
-.week-event.task {
-  border-left: 3px solid rgba(255,255,255,0.5);
+.hour-cell {
+  background: transparent;
+  transition: background 0.2s;
+  border-right: 1px solid #f0ede4;
 }
 
-.day-event.task {
-  border-left: 4px solid rgba(255,255,255,0.5);
+.hour-cell:hover {
+  background: rgba(247, 246, 243, 0.5);
 }
 
-/* 已完成任务样式 */
-.week-event.task.completed,
-.day-event.task.completed {
-  opacity: 0.5;
-  text-decoration: line-through;
+.week-event {
+  margin: 2px;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 700;
+  color: #37352f;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+  border-left: 4px solid rgba(0,0,0,0.1);
 }
 
-/* 任务详情面板 */
-.task-detail {
-  padding: 24px;
-  min-width: 400px;
+/* Day View Skeuo */
+.day-view {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 40px;
 }
 
-.task-detail h3 {
-  margin: 0 0 16px 0;
-  color: #1f2937;
-}
-
-.task-detail p {
-  margin: 8px 0;
-  color: #4b5563;
-}
-
-.task-detail .task-actions {
+.day-timeline {
   display: flex;
-  gap: 12px;
-  margin-top: 20px;
-  padding-top: 16px;
-  border-top: 1px solid #e5e7eb;
+  flex-direction: column;
+  border-top: 1px solid #f0ede4;
+  position: relative;
 }
 
-.task-detail .task-actions button {
-  padding: 10px 20px;
+.day-hour-row {
+  display: flex;
+  min-height: 80px;
+  border-bottom: 1px solid #f0ede4;
+}
+
+.day-hour-label {
+  width: 80px;
+  padding: 12px;
+  font-size: 11px;
+  font-weight: 800;
+  color: #9a9a97;
+  text-align: right;
+  border-right: 1px solid #f0ede4;
+  background: #fffdf9;
+}
+
+.day-hour-content {
+  flex: 1;
+  padding: 8px;
+  background: transparent;
+  transition: background 0.2s;
+}
+
+.day-hour-content:hover {
+  background: rgba(247, 246, 243, 0.5);
+}
+
+.day-event {
+  padding: 12px 16px;
+  border-radius: 8px;
+  margin-bottom: 8px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+  border-left: 6px solid rgba(0,0,0,0.1);
+}
+
+.day-event .event-time {
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+  margin-bottom: 4px;
+  opacity: 0.6;
+}
+
+.day-event .event-title {
+  font-size: 15px;
+  font-weight: 700;
+}
+
+/* Command Menu Skeuo */
+.command-menu-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(45, 42, 38, 0.3);
+  backdrop-filter: blur(2px);
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding-top: 15vh;
+  z-index: 2000;
+}
+
+.command-menu-container {
+  background: #fffdf9;
+  width: 100%;
+  max-width: 600px;
+  border-radius: 8px;
+  box-shadow: 
+    0 0 0 1px rgba(0,0,0,0.05),
+    0 20px 50px -10px rgba(0,0,0,0.3);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  animation: paperSlideIn 0.3s cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+.command-menu-input-wrapper {
+  display: flex;
+  align-items: center;
+  padding: 16px 24px;
+  border-bottom: 1px solid #f0ede4;
+  gap: 16px;
+}
+
+.command-menu-search-icon {
+  font-size: 20px;
+  opacity: 0.3;
+}
+
+.command-menu-input {
+  flex: 1;
+  border: none;
+  background: transparent;
+  font-size: 18px;
+  font-family: Georgia, serif;
+  color: #37352f;
+  outline: none;
+}
+
+.command-menu-list {
+  max-height: 400px;
+  overflow-y: auto;
+  padding: 12px;
+}
+
+.command-menu-group-header {
+  padding: 16px 16px 8px;
+  font-size: 10px;
+  font-weight: 800;
+  color: #9a9a97;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+}
+
+.command-menu-item {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 16px;
+  border: none;
+  background: transparent;
   border-radius: 6px;
-  font-size: 14px;
   cursor: pointer;
-  border: 1px solid #d1d5db;
-  background: #fff;
+  transition: all 0.1s;
+  text-align: left;
 }
 
-.task-detail .task-actions button:first-child {
-  background: #3b82f6;
-  color: #fff;
-  border-color: #3b82f6;
+.command-menu-item.selected {
+  background: #f0ede4;
+}
+
+.command-menu-item-icon {
+  font-size: 18px;
+  opacity: 0.6;
+}
+
+.command-menu-item-label {
+  flex: 1;
+  font-size: 15px;
+  font-weight: 600;
+  color: #37352f;
+}
+
+.command-menu-item-shortcut {
+  font-family: -apple-system, system-ui, sans-serif;
+  font-size: 10px;
+  font-weight: 700;
+  opacity: 0.3;
+  background: rgba(0,0,0,0.05);
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.command-menu-footer {
+  padding: 14px 24px;
+  background: #f7f6f3;
+  border-top: 1px solid #f0ede4;
+  display: flex;
+  gap: 20px;
+}
+
+.command-menu-hint {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 10px;
+  font-weight: 700;
+  color: #9a9a97;
+}
+
+.command-menu-hint kbd {
+  background: #fff;
+  border: 1px solid #e3e2e0;
+  padding: 2px 5px;
+  border-radius: 4px;
+  box-shadow: 0 1px 0 rgba(0,0,0,0.1);
 }

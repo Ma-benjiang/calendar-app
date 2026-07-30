@@ -1,6 +1,7 @@
 import React, { useState, useCallback } from 'react';
 import { CalendarCore, CalendarEvent, Task } from '@calendar/core';
 import { TaskCalendarItem } from './useTaskCalendar';
+import { getChinaHoliday } from './services/chinaHolidayService';
 
 interface WeekViewProps {
   date: Date;
@@ -97,12 +98,50 @@ export const WeekView: React.FC<WeekViewProps> = ({
   return (
     <div className="week-view">
       <div className="week-header">
-        {weekDays.map((day, index) => (
+        <div className="hour-label-header" style={{ width: '60px', borderRight: '1px solid #f0ede4' }}></div>
+        {weekDays.map((day, index) => {
+          const holiday = getChinaHoliday(day);
+          return (
           <div key={index} className="week-day-header">
-            <div className="day-name">{['日', '一', '二', '三', '四', '五', '六'][day.getDay()]}</div>
-            <div className="day-number">{day.getDate()}</div>
+            <div className="day-name" style={{ fontSize: '10px', color: '#9a9a97', fontWeight: '800' }}>
+              {['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'][day.getDay()]}
+            </div>
+            <div className="day-number" style={{ 
+              fontSize: '20px', 
+              fontWeight: '800', 
+              color: '#37352f', 
+              fontFamily: 'Georgia, serif',
+              marginTop: '4px',
+              position: 'relative',
+              display: 'inline-block'
+            }}>
+              {day.getDate()}
+              {(() => {
+                const today = new Date();
+                return day.getDate() === today.getDate() && 
+                       day.getMonth() === today.getMonth() && 
+                       day.getFullYear() === today.getFullYear();
+              })() && (
+                <div style={{ 
+                  position: 'absolute', 
+                  bottom: '-4px', 
+                  left: '0', 
+                  right: '0', 
+                  height: '2px', 
+                  backgroundColor: '#eb5757' 
+                }} />
+              )}
+            </div>
+            {holiday && (
+              <div
+                className={`week-holiday ${holiday.isOffDay ? 'off' : 'workday'}`}
+              >
+                {holiday.name} · {holiday.isOffDay ? '休' : '班'}
+              </div>
+            )}
           </div>
-        ))}
+          );
+        })}
       </div>
       <div className="week-grid">
         {hours.map(hour => (

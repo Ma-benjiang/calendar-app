@@ -15,6 +15,7 @@ export { CalendarImage } from './components/CalendarImage';
 export { CalendarCaption } from './components/CalendarCaption';
 export { ThemeSelector } from './components/ThemeSelector';
 export { HistoryCalendar } from './components/HistoryCalendar';
+export { ImageModelSettings } from './components/ImageModelSettings';
 
 // 页面
 export { DailyCalendarPage } from './pages/DailyCalendarPage';
@@ -25,6 +26,23 @@ export { useCalendarStorage } from './hooks/useCalendarStorage';
 
 // 服务
 export { seedreamService, generateCalendarImage, cancelImageGeneration } from './services/seedreamService';
+export {
+  getDefaultImageModelConfig,
+  OPENAI_IMAGE_MODEL_PRESET,
+  hasEnvironmentImageApiKey,
+  normalizeImageModelConfig,
+  resolveImageModelConfig,
+  validateImageModelConfig,
+  VOLCENGINE_IMAGE_MODEL_PRESET,
+} from './services/imageModelConfig';
+export {
+  DEEPSEEK_LLM_MODEL_PRESET,
+  getDefaultLLMModelConfig,
+  hasEnvironmentLLMApiKey,
+  normalizeLLMModelConfig,
+  resolveLLMModelConfig,
+  validateLLMModelConfig,
+} from './services/llmModelConfig';
 export {
   selectDailyQuote,
   getQuoteById,

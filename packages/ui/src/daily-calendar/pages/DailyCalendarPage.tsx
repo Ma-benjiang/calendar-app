@@ -1,37 +1,49 @@
 /**
- * DailyCalendarPage - 每日台历页面
- * 宝丽来拍立得风格设计
+ * DailyCalendarPage - 极致复古相机风格 & 顶级台历排版重构
+ * 支持：后台挂机生图、动态摄像头控制
  */
 
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  Calendar,
-  ChevronLeft,
-  ChevronRight,
-  RefreshCw,
   Download,
   Camera,
+  History,
+  Palette,
+  ChevronLeft,
+  ChevronRight,
   Sparkles,
-  Image as ImageIcon,
+  Zap,
+  CameraOff,
+  Settings2
 } from 'lucide-react';
 import { useDailyCalendar } from '../hooks/useDailyCalendar';
 import { ThemeSelector } from '../components/ThemeSelector';
 import { HistoryCalendar } from '../components/HistoryCalendar';
-import { ThemeType } from '../types';
-import { formatDateKey } from '../utils/dateUtils';
+import { ImageModelSettings } from '../components/ImageModelSettings';
+import { ThemeStrategyType, ThemeType } from '../types';
+import {
+  formatDateKey,
+  getDaysInMonth,
+  getCalendarDateInfo,
+} from '../utils/dateUtils';
+import { hasEnvironmentImageApiKey } from '../services/imageModelConfig';
+import { hasEnvironmentLLMApiKey } from '../services/llmModelConfig';
+import { useChinaHolidays } from '../../hooks/useChinaHolidays';
 
-export const DailyCalendarPage: React.FC = () => {
+interface DailyCalendarPageProps {
+  isVisible?: boolean; // 新增：控制当前页面是否可见
+}
+
+export const DailyCalendarPage: React.FC<DailyCalendarPageProps> = ({ isVisible = true }) => {
   const {
     currentRecord,
     currentDate,
-    isLoading,
     isGenerating,
-    progress,
     error,
     generateCalendar,
     regenerateCalendar,
-    changeTheme,
+    deleteCurrentRecord,
     changeDate,
     goToToday,
     goToPrevDay,
@@ -40,427 +52,426 @@ export const DailyCalendarPage: React.FC = () => {
     themeStrategy,
     setThemeStrategy,
     records,
+    llmModelConfig,
+    updateLLMModelConfig,
+    imageModelConfig,
+    updateImageModelConfig,
   } = useDailyCalendar();
+  useChinaHolidays([currentDate.getFullYear()]);
 
-  // UI 状态
   const [showThemeSelector, setShowThemeSelector] = useState(false);
+  const [showImageModelSettings, setShowImageModelSettings] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
-  const [historyMonth, setHistoryMonth] = useState(new Date());
+  const [historyMonth, setHistoryMonth] = useState(
+    () => new Date(currentDate.getFullYear(), currentDate.getMonth(), 1)
+  );
   const [developmentStage, setDevelopmentStage] = useState(100);
+  const [flash, setFlash] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
+  const [img2imgEnabled, setImg2imgEnabled] = useState(true);
 
-  // 显影效果
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const [hasCamera, setHasCamera] = useState(false);
+  const isTodayDate = useMemo(() => {
+    const today = new Date();
+    return currentDate.getDate() === today.getDate() &&
+           currentDate.getMonth() === today.getMonth() &&
+           currentDate.getFullYear() === today.getFullYear();
+  }, [currentDate]);
+
+  // 初始化相机取景器 - 只有在页面可见且没有照片时开启
+  useEffect(() => {
+    let stream: MediaStream | null = null;
+    const startCamera = async () => {
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({ 
+          video: { width: 1024, height: 1024, facingMode: "user" } 
+        });
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream;
+          setHasCamera(true);
+        }
+      } catch (err) {
+        setHasCamera(false);
+      }
+    };
+
+    if (isVisible && isTodayDate && !currentRecord && !isGenerating) {
+      startCamera();
+    } else {
+      // 不可见或有照片时，关闭摄像头省电/隐私
+      if (videoRef.current?.srcObject) {
+        (videoRef.current.srcObject as MediaStream).getTracks().forEach(track => track.stop());
+        videoRef.current.srcObject = null;
+        setHasCamera(false);
+      }
+    }
+
+    return () => {
+      if (stream) stream.getTracks().forEach(track => track.stop());
+    };
+  }, [currentRecord, isGenerating, isTodayDate, isVisible]);
+
   useEffect(() => {
     if (isGenerating) {
       setDevelopmentStage(0);
     } else if (currentRecord && !isGenerating) {
-      // 模拟显影过程
       const interval = setInterval(() => {
         setDevelopmentStage(prev => {
           if (prev >= 100) {
             clearInterval(interval);
             return 100;
           }
-          return prev + 5;
+          return prev + 2;
         });
-      }, 100);
+      }, 50);
       return () => clearInterval(interval);
     }
+    return undefined;
   }, [isGenerating, currentRecord]);
 
-  // 处理日期选择
-  const handleSelectDate = useCallback((dateKey: string) => {
-    const date = new Date(dateKey);
-    changeDate(date);
-    setShowHistory(false);
-  }, [changeDate]);
+  const dateInfo = (() => {
+    const weekdays = ['SUNDAY', 'MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY'];
+    const months = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
+    const liveDateInfo = getCalendarDateInfo(currentDate);
+    return {
+      year: currentDate.getFullYear(),
+      month: months[currentDate.getMonth()],
+      day: String(currentDate.getDate()).padStart(2, '0'),
+      weekday: weekdays[currentDate.getDay()],
+      lunar: `${liveDateInfo.lunar.monthName}月${liveDateInfo.lunar.dayName}`,
+      solarTerm: liveDateInfo.special?.solarTermName || '',
+      holiday: liveDateInfo.special?.holidayName
+        ? `${liveDateInfo.special.holidayName}${
+            liveDateInfo.special.isWorkdayAdjustment ? ' · 班' : ''
+          }`
+        : ''
+    };
+  })();
 
-  // 处理主题变更
-  const handleThemeChange = useCallback(async (theme: ThemeType) => {
-    await changeTheme(theme);
-    setShowThemeSelector(false);
-  }, [changeTheme]);
+  const miniMonthGrid = useMemo(() => {
+    try {
+      const year = currentDate.getFullYear();
+      const month = currentDate.getMonth();
+      const totalDays = getDaysInMonth(year, month + 1);
+      const firstDayDate = new Date(year, month, 1);
+      const firstDay = firstDayDate.getDay();
+      const days = [];
+      for (let i = 0; i < firstDay; i++) days.push(null);
+      for (let i = 1; i <= totalDays; i++) days.push(i);
+      return days;
+    } catch (e) {
+      return [];
+    }
+  }, [currentDate]);
 
-  // 格式化日期显示
-  const formatDateDisplay = useCallback((date: Date) => {
-    const year = date.getFullYear();
-    const month = date.getMonth() + 1;
-    const day = date.getDate();
-    const weekdays = ['日', '一', '二', '三', '四', '五', '六'];
-    const weekday = weekdays[date.getDay()];
-    return { year, month, day, weekday };
+  const filterString = useMemo(() => {
+    const blurAmount = developmentStage < 30 ? 15 * (1 - developmentStage / 30) : Math.max(0, 5 * (1 - (developmentStage - 30) / 70));
+    const grayscale = Math.max(0, 100 - developmentStage);
+    const brightness = 25 + (developmentStage * 0.8);
+    const contrast = 40 + (developmentStage * 0.7);
+    return `blur(${developmentStage === 100 ? 0 : blurAmount}px) grayscale(${grayscale}%) brightness(${brightness}%) contrast(${contrast}%)`;
+  }, [developmentStage]);
+
+  const captureFrame = useCallback(() => {
+    if (!videoRef.current || !hasCamera || !img2imgEnabled) return null;
+    try {
+      const canvas = document.createElement('canvas');
+      canvas.width = videoRef.current.videoWidth || 1024;
+      canvas.height = videoRef.current.videoHeight || 1024;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return null;
+      ctx.translate(canvas.width, 0);
+      ctx.scale(-1, 1);
+      ctx.drawImage(videoRef.current, 0, 0, canvas.width, canvas.height);
+      return canvas.toDataURL('image/jpeg', 0.9);
+    } catch (e) {
+      return null;
+    }
+  }, [hasCamera, img2imgEnabled]);
+
+  const triggerShutter = useCallback(() => {
+    setFlash(true);
+    setTimeout(() => setFlash(false), 450);
+    try {
+      const AudioContextClass = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+      const audioCtx = new AudioContextClass();
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+      osc.frequency.setValueAtTime(800, audioCtx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(100, audioCtx.currentTime + 0.1);
+      gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
+      osc.start();
+      osc.stop(audioCtx.currentTime + 0.15);
+    } catch (e) {
+      console.warn('Shutter sound failed:', e);
+    }
   }, []);
 
-  const dateInfo = formatDateDisplay(currentDate);
+  const handleCapture = useCallback(() => {
+    if (isGenerating) return;
+    triggerShutter();
+    const frame = captureFrame();
+    generateCalendar(currentDate, undefined, frame || undefined);
+  }, [isGenerating, currentDate, generateCalendar, captureFrame, triggerShutter]);
 
-  // 计算显影滤镜
-  const blur = Math.max(0, 10 - (developmentStage / 10));
-  const grayscale = Math.max(0, 100 - developmentStage);
-  const brightness = 100 + Math.max(0, (100 - developmentStage) / 2);
-  const contrast = 80 + (developmentStage * 0.2);
-  const filterString = `blur(${blur}px) grayscale(${grayscale}%) brightness(${brightness}%) contrast(${contrast}%)`;
-
-  // 下载宝丽来图片
-  const handleDownload = async () => {
-    if (!currentRecord?.image?.url) return;
-
-    const canvas = document.createElement('canvas');
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-
-    const scale = 2;
-    const padding = 16 * scale;
-    const width = 320 * scale;
-    const photoHeight = 380 * scale;
-    const height = padding + photoHeight + 140 * scale + padding;
-
-    canvas.width = width;
-    canvas.height = height;
-
-    // 背景 - 米白色
-    ctx.fillStyle = '#fdfbf7';
-    ctx.fillRect(0, 0, width, height);
-
-    // 加载并绘制图片
-    const img = new Image();
-    img.crossOrigin = 'anonymous';
-    img.src = currentRecord.image.url;
-    await new Promise((resolve) => { img.onload = resolve; });
-    ctx.drawImage(img, padding, padding, width - padding * 2, photoHeight);
-
-    // 绘制日期
-    ctx.textAlign = 'center';
-    ctx.fillStyle = '#9ca3af';
-    ctx.font = `bold ${12 * scale}px sans-serif`;
-    ctx.letterSpacing = '3px';
-    const dateText = `${dateInfo.year}.${String(dateInfo.month).padStart(2, '0')}.${String(dateInfo.day).padStart(2, '0')}`;
-    ctx.fillText(dateText, width / 2, padding + photoHeight + 35 * scale);
-
-    // 绘制文案
-    ctx.fillStyle = '#374151';
-    ctx.font = `${18 * scale}px 'Caveat', cursive, serif`;
-    const caption = currentRecord.quote?.text || '愿每一天都充满阳光';
-    wrapText(ctx, caption, width / 2, padding + photoHeight + 75 * scale, width - padding * 3, 28 * scale);
-
-    // 绘制农历/节气
-    if (currentRecord.dateInfo?.lunarDate) {
-      ctx.fillStyle = '#9ca3af';
-      ctx.font = `${10 * scale}px sans-serif`;
-      const lunarText = `${currentRecord.dateInfo.lunarDate.month}${currentRecord.dateInfo.lunarDate.day}`;
-      ctx.fillText(lunarText, width / 2, padding + photoHeight + 115 * scale);
-    }
-
-    // 下载
-    const link = document.createElement('a');
-    link.download = `daily-calendar-${formatDateKey(currentDate)}.png`;
-    link.href = canvas.toDataURL('image/png');
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  };
-
-  // 文字换行辅助函数
-  function wrapText(ctx: CanvasRenderingContext2D, text: string, x: number, y: number, maxWidth: number, lineHeight: number) {
-    const chars = text.split('');
-    let line = '';
-    let currentY = y;
-
-    for (let n = 0; n < chars.length; n++) {
-      const testLine = line + chars[n];
-      const metrics = ctx.measureText(testLine);
-      if (metrics.width > maxWidth && n > 0) {
-        ctx.fillText(line, x, currentY);
-        line = chars[n];
-        currentY += lineHeight;
-      } else {
-        line = testLine;
-      }
-    }
-    ctx.fillText(line, x, currentY);
-  }
-
-  // 主题名称映射
-  const themeNames: Record<ThemeType, string> = {
-    vintage: '复古时光',
-    minimal: '极简主义',
-    nature: '自然之境',
-    art: '艺术画廊',
-    zen: '禅意东方',
-    cosmic: '星空宇宙',
-  };
+  const handleThemeSettingsSave = useCallback((strategy: ThemeStrategyType, theme: ThemeType) => {
+    setThemeStrategy(strategy, theme);
+    setShowThemeSelector(false);
+  }, [setThemeStrategy]);
 
   return (
-    <div className="min-h-screen bg-[#f5f3f0] relative overflow-hidden">
-      {/* 顶部标题 */}
-      <div className="absolute top-8 left-0 right-0 text-center z-10">
-        <h1 className="text-5xl font-bold text-[#2c2c2c] tracking-wide" style={{ fontFamily: 'Georgia, serif' }}>
-          每日台历
-        </h1>
-        <p className="text-gray-500 mt-2 text-sm tracking-widest">DAILY CALENDAR</p>
+    <div className="flex flex-col items-center bg-[#f0ede9] overflow-y-auto relative w-full h-full font-serif pb-12">
+      <AnimatePresence>
+        {flash && (
+          <motion.div 
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[200] flex items-center justify-center pointer-events-none"
+          >
+            <motion.div 
+              initial={{ scale: 3, rotate: 0 }} animate={{ scale: 0, rotate: 120 }}
+              transition={{ duration: 0.3, ease: "circIn" }}
+              className="w-[250vmax] h-[200vmax] rounded-full border-[100vmax] border-black flex items-center justify-center"
+            >
+              <div className="w-20 h-20 bg-transparent" />
+            </motion.div>
+            <motion.div 
+              initial={{ opacity: 0 }} animate={{ opacity: [0, 1, 0] }}
+              transition={{ duration: 0.4, times: [0, 0.4, 1] }}
+              className="absolute inset-0 bg-white"
+            />
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <div className="absolute inset-0 opacity-[0.03] pointer-events-none" style={{ backgroundImage: 'url("https://www.transparenttextures.com/patterns/paper-fibers.png")' }} />
+
+      <div className="w-full max-w-5xl flex items-center justify-between px-8 py-6 z-50">
+        <div className="flex items-center gap-6">
+          <div className="flex items-center gap-3 bg-white/50 backdrop-blur-sm p-1 rounded-full border border-black/5">
+            <button aria-label="前一天" onClick={goToPrevDay} className="p-2 hover:bg-white rounded-full transition-colors"><ChevronLeft size={18} /></button>
+            <div className="text-center px-4 min-w-[140px]">
+              <div className="text-sm font-bold tracking-tighter">{currentDate.getFullYear()} / {currentDate.getMonth()+1} / {dateInfo.day}</div>
+              <div className="text-[9px] uppercase tracking-[0.2em] text-black/40 font-bold">{dateInfo.weekday}</div>
+            </div>
+            <button 
+              onClick={goToNextDay} 
+              aria-label="后一天"
+              disabled={isTodayDate || isGenerating}
+              className={`p-2 rounded-full transition-all ${isTodayDate ? 'opacity-5 cursor-not-allowed scale-75' : 'hover:bg-white active:scale-90'}`}
+            >
+              <ChevronRight size={18} />
+            </button>
+          </div>
+        </div>
+        <div className="flex items-center gap-3">
+          <button
+            aria-label="打开时光相册"
+            onClick={() => {
+              setHistoryMonth(new Date(
+                currentDate.getFullYear(),
+                currentDate.getMonth(),
+                1
+              ));
+              setShowHistory(true);
+            }}
+            className="p-2.5 bg-white/80 rounded-full shadow-sm border border-black/5 hover:bg-white transition-all group"
+          >
+            <History size={18} />
+          </button>
+          <button
+            onClick={() => setShowThemeSelector(true)}
+            disabled={!isTodayDate}
+            title={isTodayDate ? '选择今日主题' : '历史台历不能重新生成'}
+            className={`p-2.5 bg-white/80 rounded-full shadow-sm border border-black/5 transition-all group ${
+              isTodayDate ? 'hover:bg-white' : 'opacity-30 cursor-not-allowed'
+            }`}
+          >
+            <Palette size={18} />
+          </button>
+          <button
+            onClick={() => setShowImageModelSettings(true)}
+            aria-label="配置 AI 模型"
+            title={`文案：${llmModelConfig.model || '未配置'} · 生图：${imageModelConfig.model || '未配置'}`}
+            className="relative p-2.5 bg-white/80 rounded-full shadow-sm border border-black/5 hover:bg-white transition-all group"
+          >
+            <Settings2 size={18} />
+            {(
+              (!llmModelConfig.apiKey && !hasEnvironmentLLMApiKey()) ||
+              (!imageModelConfig.apiKey && !hasEnvironmentImageApiKey(imageModelConfig.provider))
+            ) && (
+              <span className="absolute right-0.5 top-0.5 w-2 h-2 rounded-full bg-amber-500 ring-2 ring-[#f0ede9]" />
+            )}
+          </button>
+          <button onClick={goToToday} className="px-5 py-2 bg-black text-white rounded-full text-xs font-bold tracking-widest uppercase hover:bg-black/80 transition-colors shadow-lg active:scale-95">Today</button>
+        </div>
       </div>
 
-      {/* 主内容区 */}
-      <div className="h-screen flex flex-col items-center justify-center pt-20 pb-8 px-4">
-        {/* 日期导航 */}
-        <div className="flex items-center gap-6 mb-8">
+      {error && (
+        <div role="alert" className="z-40 -mt-2 mb-3 flex items-center gap-3 rounded-full border border-red-200 bg-red-50 px-4 py-2 text-[10px] text-red-700 shadow-sm">
+          <span>{error.message}</span>
           <button
-            onClick={goToPrevDay}
-            disabled={isGenerating}
-            className="p-3 rounded-full bg-white shadow-md hover:shadow-lg transition-shadow disabled:opacity-50"
+            onClick={() => setShowImageModelSettings(true)}
+            className="font-bold underline underline-offset-2"
           >
-            <ChevronLeft className="w-5 h-5 text-gray-600" />
-          </button>
-          <div className="text-center">
-            <div className="text-3xl font-light text-gray-800">
-              {dateInfo.year}年{dateInfo.month}月{dateInfo.day}日
-            </div>
-            <div className="text-gray-500 text-sm mt-1">
-              星期{dateInfo.weekday}
-              {currentRecord?.dateInfo?.lunarDate && (
-                <span className="ml-2 text-amber-600">
-                  {currentRecord.dateInfo.lunarDate.month}{currentRecord.dateInfo.lunarDate.day}
-                </span>
-              )}
-            </div>
-          </div>
-          <button
-            onClick={goToNextDay}
-            disabled={isGenerating}
-            className="p-3 rounded-full bg-white shadow-md hover:shadow-lg transition-shadow disabled:opacity-50"
-          >
-            <ChevronRight className="w-5 h-5 text-gray-600" />
+            检查配置
           </button>
         </div>
+      )}
 
-        {/* 宝丽来卡片区域 */}
-        <div className="relative flex-1 flex items-center justify-center w-full max-w-4xl">
-          <AnimatePresence mode="wait">
-            {currentRecord?.image?.url ? (
-              <motion.div
-                key={currentRecord.id}
-                initial={{ scale: 0.8, opacity: 0, y: 50 }}
-                animate={{ scale: 1, opacity: 1, y: 0 }}
-                exit={{ scale: 0.8, opacity: 0 }}
-                transition={{ type: 'spring', damping: 20 }}
-                className="relative"
-                onMouseEnter={() => setIsHovered(true)}
-                onMouseLeave={() => setIsHovered(false)}
-              >
-                {/* 宝丽来卡片 */}
-                <div className="bg-[#fdfbf7] p-4 pb-6 shadow-2xl rotate-1 hover:rotate-0 transition-transform duration-300"
-                  style={{ boxShadow: '0 20px 60px -10px rgba(0,0,0,0.3)' }}
-                >
-                  {/* 图片区域 */}
-                  <div className="w-[300px] h-[380px] bg-gray-100 relative overflow-hidden">
-                    <img
-                      src={currentRecord.image.url}
-                      alt="Daily Calendar"
-                      className="w-full h-full object-cover transition-all duration-1000"
-                      style={{ filter: filterString }}
-                    />
-                    {/* 光泽效果 */}
-                    <div className="absolute inset-0 bg-gradient-to-tr from-white/20 to-transparent pointer-events-none" />
-                  </div>
-
-                  {/* 底部文字区域 */}
-                  <div className="mt-4 text-center min-h-[100px] flex flex-col justify-center">
-                    {/* 日期 */}
-                    <div className="text-gray-400 text-xs tracking-[0.3em] uppercase mb-2">
-                      {dateInfo.year}.{String(dateInfo.month).padStart(2, '0')}.{String(dateInfo.day).padStart(2, '0')}
-                      {currentRecord.dateInfo?.solarTerm && (
-                        <span className="ml-2 text-amber-500">{currentRecord.dateInfo.solarTerm}</span>
-                      )}
-                    </div>
-
-                    {/* 文案 */}
-                    <div className="text-gray-700 text-lg leading-relaxed px-2"
-                      style={{ fontFamily: '"Caveat", "Ma Shan Zheng", cursive' }}
-                    >
-                      {currentRecord.quote?.text || '愿每一天都充满阳光'}
-                    </div>
-
-                    {/* 作者 */}
-                    {currentRecord.quote?.author && (
-                      <div className="text-gray-400 text-xs mt-2">
-                        — {currentRecord.quote.author}
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {/* 悬浮操作按钮 */}
-                <AnimatePresence>
-                  {isHovered && (
-                    <motion.div
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: 10 }}
-                      className="absolute -right-16 top-0 flex flex-col gap-2"
-                    >
-                      <button
-                        onClick={handleDownload}
-                        className="p-3 bg-white rounded-full shadow-lg hover:bg-blue-50 text-gray-600 hover:text-blue-600 transition-colors"
-                        title="下载台历"
-                      >
-                        <Download size={20} />
-                      </button>
-                      <button
-                        onClick={() => regenerateCalendar()}
-                        disabled={isGenerating}
-                        className="p-3 bg-white rounded-full shadow-lg hover:bg-green-50 text-gray-600 hover:text-green-600 transition-colors disabled:opacity-50"
-                        title="重新生成"
-                      >
-                        <RefreshCw size={20} className={isGenerating ? 'animate-spin' : ''} />
-                      </button>
-                      <button
-                        onClick={() => setShowThemeSelector(true)}
-                        className="p-3 bg-white rounded-full shadow-lg hover:bg-purple-50 text-gray-600 hover:text-purple-600 transition-colors"
-                        title="切换主题"
-                      >
-                        <Sparkles size={20} />
-                      </button>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </motion.div>
-            ) : (
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="text-center"
-              >
-                {/* 空白状态 - 相机按钮 */}
-                <div className="relative">
-                  {/* 相机装饰 - 复古宝丽来相机 */}
-                  <motion.div
-                    className="w-56 h-56 mx-auto mb-10 relative"
-                    animate={{ y: [0, -5, 0] }}
-                    transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
-                  >
-                    {/* 相机主体外壳 */}
-                    <div className="absolute inset-0 bg-gradient-to-br from-[#e8e4dc] to-[#c4b8a8] rounded-[2rem] shadow-[0_20px_60px_-10px_rgba(0,0,0,0.4)] border border-[#d4ccc0]" />
-
-                    {/* 相机正面面板 */}
-                    <div className="absolute inset-3 bg-gradient-to-br from-[#f5f1eb] to-[#e0d8cc] rounded-[1.5rem]" />
-
-                    {/* 镜头外圈 */}
-                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-32 h-32 rounded-full bg-gradient-to-br from-[#2a2a2a] to-[#0a0a0a] shadow-inner border-4 border-[#3a3a3a]">
-                      {/* 镜头玻璃反光 */}
-                      <div className="absolute inset-2 rounded-full bg-gradient-to-br from-[#1a1a2e] via-[#16213e] to-[#0f0f23]">
-                        {/* 镜头高光 */}
-                        <div className="absolute top-3 right-4 w-8 h-8 rounded-full bg-blue-400/20 blur-sm" />
-                        <div className="absolute top-6 right-6 w-4 h-4 rounded-full bg-white/30" />
-                      </div>
-                    </div>
-
-                    {/* 快门按钮 */}
-                    <div className="absolute top-6 right-8 w-12 h-8 bg-gradient-to-b from-[#8b7355] to-[#6b5344] rounded-full shadow-md border border-[#a08060]" />
-                    <div className="absolute top-5 right-9 w-10 h-4 bg-gradient-to-b from-[#a08060] to-[#8b7355] rounded-full" />
-
-                    {/* 闪光灯 */}
-                    <div className="absolute top-8 left-8 w-10 h-10 rounded-lg bg-gradient-to-br from-[#f5f1eb] to-[#e0d8cc] shadow-inner border border-[#d4ccc0]">
-                      <div className="absolute inset-2 rounded bg-[#fff8e7] shadow-[0_0_10px_rgba(255,248,231,0.8)]" />
-                    </div>
-
-                    {/* 品牌标志 */}
-                    <div className="absolute bottom-8 left-1/2 -translate-x-1/2 text-[#8b7355] text-xs font-bold tracking-widest" style={{ fontFamily: 'Georgia, serif' }}>
-                      DAILY
-                    </div>
-
-                    {/* 装饰线条 */}
-                    <div className="absolute bottom-16 left-1/2 -translate-x-1/2 w-20 h-0.5 bg-gradient-to-r from-transparent via-[#c4b8a8] to-transparent" />
-                  </motion.div>
-
-                  <motion.button
-                    onClick={() => generateCalendar(currentDate)}
-                    disabled={isGenerating}
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    className="group relative px-10 py-5 bg-gradient-to-r from-[#8b7355] to-[#6b5344] text-white rounded-full text-xl font-bold shadow-[0_10px_40px_-10px_rgba(139,115,85,0.5)] hover:shadow-[0_15px_50px_-10px_rgba(139,115,85,0.7)] transition-all disabled:opacity-70 border border-[#a08060]"
-                  >
-                    <span className="flex items-center gap-3">
-                      <Camera className={`w-7 h-7 ${isGenerating ? 'animate-pulse' : 'group-hover:rotate-12'} transition-transform`} />
-                      {isGenerating ? '生成中...' : '咔嚓！生成今日台历'}
-                    </span>
-                  </motion.button>
-
-                  {/* 当前主题提示 */}
-                  <p className="mt-4 text-gray-500 text-sm">
-                    当前主题：<span className="text-amber-600 font-medium">{themeNames[currentTheme]}</span>
-                    <button
-                      onClick={() => setShowThemeSelector(true)}
-                      className="ml-2 text-blue-500 hover:underline"
-                    >
-                      切换
-                    </button>
-                  </p>
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
-
-          {/* 生成进度指示器 */}
-          {isGenerating && (
-            <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-64">
-              <div className="h-1 bg-gray-200 rounded-full overflow-hidden">
-                <motion.div
-                  className="h-full bg-amber-500"
-                  initial={{ width: 0 }}
-                  animate={{ width: `${progress}%` }}
-                  transition={{ duration: 0.3 }}
-                />
-              </div>
-              <p className="text-center text-gray-500 text-sm mt-2">
-                {progress < 30 ? '准备中...' : progress < 60 ? 'AI 绘图中...' : '显影中...'}
+      <div className="flex-1 w-full flex items-center justify-center relative min-h-[750px]">
+        <div className={`relative transition-all duration-1000 ${currentRecord ? 'scale-75 opacity-20 blur-sm translate-y-[-100px]' : 'scale-100 opacity-100 blur-0'}`}>
+          {!currentRecord && !isGenerating && isTodayDate && (
+            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="absolute -top-12 left-1/2 -translate-x-1/2 flex items-center gap-3 bg-white/80 backdrop-blur px-4 py-2 rounded-full shadow-sm border border-black/5 z-50 cursor-pointer" onClick={() => setImg2imgEnabled(!img2imgEnabled)}>
+              {img2imgEnabled ? <><Zap size={14} className="text-amber-500 fill-amber-500" /><span className="text-[10px] tracking-[0.2em] uppercase font-bold text-black">AI Vision On</span></> : <><CameraOff size={14} className="text-gray-400" /><span className="text-[10px] tracking-[0.2em] uppercase font-bold text-gray-400">Pure Imagination</span></>}
+            </motion.div>
+          )}
+          <div className="relative w-[500px] h-[500px]">
+            <img src="https://s.baoyu.io/images/retro-camera.webp" alt="Camera" className="w-full h-full object-contain relative z-10 pointer-events-none drop-shadow-2xl" />
+            <div className="absolute z-0 overflow-hidden rounded-full bg-[#1a1a1a]" style={{ bottom: '35.5%', left: '62.2%', transform: 'translateX(-50%)', width: '25%', height: '25%', boxShadow: 'inset 0 0 20px rgba(0,0,0,0.8)' }}>
+              {hasCamera && !isGenerating ? <video ref={videoRef} autoPlay playsInline muted className="w-full h-full object-cover scale-x-[-1] opacity-80" /> : <div className="w-full h-full flex flex-col items-center justify-center bg-black relative">{isGenerating ? <><div className="w-8 h-8 border-2 border-white/5 border-t-white/40 rounded-full animate-spin mb-2" /><div className="absolute inset-0 bg-blue-500/10 animate-pulse pointer-events-none" /></> : <Sparkles className="text-white/20" />}</div>}
+              {hasCamera && img2imgEnabled && !isGenerating && <div className="absolute inset-0 border-4 border-amber-500/20 rounded-full animate-pulse pointer-events-none" />}
+            </div>
+            {!currentRecord && !isGenerating && isTodayDate && <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }} onClick={handleCapture} className="absolute z-20 rounded-full cursor-pointer" style={{ bottom: '38%', left: '15%', width: '16%', height: '16%' }} />}
+          </div>
+          {!currentRecord && !isGenerating && isTodayDate && (
+            <div className="absolute -bottom-16 left-0 right-0 text-center">
+              <p className="text-black/30 text-[10px] tracking-[0.4em] uppercase mb-6">Click shutter to capture the day</p>
+              <button onClick={handleCapture} className="px-10 py-4 bg-white rounded-full shadow-lg text-xs font-bold tracking-widest uppercase flex items-center gap-3 mx-auto border border-black/5 hover:bg-gray-50 transition-all">
+                <Camera size={16} /> Capture Today
+              </button>
+            </div>
+          )}
+          {!currentRecord && !isGenerating && !isTodayDate && (
+            <div className="absolute -bottom-12 left-0 right-0 text-center">
+              <p className="text-black/35 text-[10px] tracking-[0.3em] uppercase">
+                该日期没有保存的台历
               </p>
             </div>
           )}
         </div>
 
-        {/* 底部操作栏 */}
-        {currentRecord && (
-          <div className="flex items-center gap-4 mt-6">
-            <button
-              onClick={() => setShowHistory(true)}
-              className="px-4 py-2 bg-white rounded-full shadow-md hover:shadow-lg text-gray-600 text-sm transition-shadow flex items-center gap-2"
+        <AnimatePresence>
+          {currentRecord && (
+            <motion.div
+              key={currentRecord.id}
+              initial={{ y: 400, scale: 0.6, opacity: 0, rotate: -5 }}
+              animate={{ y: 0, scale: 1, opacity: 1, rotate: 0 }}
+              exit={{ y: 600, opacity: 0, scale: 0.5 }}
+              transition={{ y: { type: 'spring', damping: 25, stiffness: 40, mass: 1.5 }, opacity: { duration: 0.4 } }}
+              className="absolute z-30 group"
+              onMouseEnter={() => setIsHovered(true)}
+              onMouseLeave={() => setIsHovered(false)}
             >
-              <Calendar size={16} />
-              历史台历
-            </button>
-            <button
-              onClick={() => setShowThemeSelector(true)}
-              className="px-4 py-2 bg-white rounded-full shadow-md hover:shadow-lg text-gray-600 text-sm transition-shadow flex items-center gap-2"
-            >
-              <ImageIcon size={16} />
-              主题风格
-            </button>
-            <button
-              onClick={goToToday}
-              className="px-4 py-2 bg-amber-500 text-white rounded-full shadow-md hover:shadow-lg text-sm transition-shadow"
-            >
-              回到今天
-            </button>
+              <div className="bg-[#fdfbf7] w-[420px] p-6 pb-10 shadow-[0_50px_100px_-20px_rgba(0,0,0,0.3)] border border-white/60 relative flex flex-col gap-6">
+                <div className="flex justify-between items-baseline border-b border-black/5 pb-4">
+                  <div className="text-[14px] font-black tracking-widest text-black/80">{dateInfo.month} {dateInfo.year}</div>
+                  <div className="text-[10px] tracking-[0.3em] text-black/30 font-bold">{dateInfo.weekday}</div>
+                </div>
+                <div className="w-full h-[320px] bg-[#111] overflow-hidden relative shadow-inner rounded-sm">
+                  <img src={currentRecord.image.url} alt="Daily Art" className="w-full h-full object-cover" style={{ filter: filterString }} />
+                  {developmentStage < 100 && <div className="absolute bottom-0 left-0 right-0 h-1 bg-white/10"><div className="h-full bg-white/40 transition-all duration-300" style={{ width: `${developmentStage}%` }} /></div>}
+                  <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/[0.02] to-white/[0.05] pointer-events-none" />
+                </div>
+                <div className="flex items-start gap-6 relative">
+                  <div className="text-[84px] leading-[0.8] font-black tracking-tighter text-black/90 select-none">{dateInfo.day}</div>
+                  <div className="flex flex-col gap-1 pt-1">
+                    <div className="text-[12px] font-bold text-black/60 tracking-wider">{dateInfo.lunar}</div>
+                    {(dateInfo.solarTerm || dateInfo.holiday) && (
+                      <div className="px-2 py-0.5 bg-black text-white text-[9px] font-black tracking-widest uppercase rounded-sm inline-block w-fit">
+                        {dateInfo.holiday || dateInfo.solarTerm}
+                      </div>
+                    )}
+                  </div>
+                  <div className="ml-auto grid grid-cols-7 gap-x-1 gap-y-0.5 opacity-[0.25] scale-90 origin-top-right transition-opacity hover:opacity-100">
+                    {['S','M','T','W','T','F','S'].map((d, i) => <div key={`${d}-${i}`} className="text-[7px] font-black text-center">{d}</div>)}
+                    {miniMonthGrid.map((d, i) => (
+                      <div 
+                        key={i} 
+                        className={`text-[7px] text-center w-3 h-3 flex items-center justify-center transition-all ${
+                          d === currentDate.getDate() ? 'bg-black text-white rounded-full font-bold' : 
+                          d ? 'cursor-pointer hover:bg-black/10 rounded-full' : ''
+                        }`}
+                        onClick={(e) => {
+                          if (d) {
+                            e.stopPropagation();
+                            changeDate(new Date(currentDate.getFullYear(), currentDate.getMonth(), d));
+                          }
+                        }}
+                      >
+                        {d}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                <div className="mt-2 border-t border-black/5 pt-6 text-center">
+                  <div className="text-[#333] text-xl leading-relaxed italic" style={{ fontFamily: '"Ma Shan Zheng", cursive' }}>{currentRecord.quote?.text}</div>
+                </div>
+                <div className="absolute left-[-8px] top-1/2 -translate-y-1/2 flex flex-col gap-4">
+                  {[1,2,3].map(i => <div key={i} className="w-2 h-2 bg-[#e0dcd5] rounded-full shadow-inner border border-black/5" />)}
+                </div>
+              </div>
+              <AnimatePresence>
+                {isHovered && (
+                  <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }} className="absolute -right-16 top-0 flex flex-col gap-3">
+                    <button className="p-3 bg-white rounded-full shadow-lg border border-black/5 hover:bg-black hover:text-white transition-all"><Download size={18} /></button>
+                    {isTodayDate && (
+                      <button
+                        aria-label="重新拍摄今日台历"
+                        disabled={isGenerating}
+                        onClick={() => {
+                          triggerShutter();
+                          regenerateCalendar(captureFrame() || undefined);
+                        }}
+                        className="p-3 bg-white rounded-full shadow-lg border border-black/5 hover:bg-black hover:text-white transition-all disabled:cursor-not-allowed disabled:opacity-40"
+                      >
+                        <Camera size={18} />
+                      </button>
+                    )}
+                  </motion.div>
+                )}
+              </AnimatePresence>
+              {isTodayDate && (
+                <div className="absolute -bottom-20 left-0 right-0 text-center opacity-40 hover:opacity-100 transition-opacity">
+                  <button onClick={() => deleteCurrentRecord()} className="text-[10px] tracking-[0.3em] uppercase underline underline-offset-4">Discard and Return to Camera</button>
+                </div>
+              )}
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {isGenerating && (
+          <div className="absolute bottom-10 left-0 right-0 flex flex-col items-center z-40 pointer-events-none">
+            <p className="text-[10px] font-bold tracking-[0.4em] uppercase text-black/40 animate-pulse notranslate" translate="no">
+              {img2imgEnabled && hasCamera ? '正在重新构思你的瞬间...' : '正在将你的想法转化为现实...'}
+            </p>
           </div>
         )}
       </div>
 
-      {/* 主题选择器弹窗 */}
       <ThemeSelector
         isOpen={showThemeSelector}
         currentTheme={currentTheme}
         strategy={themeStrategy}
-        onThemeChange={handleThemeChange}
-        onStrategyChange={setThemeStrategy}
+        onSave={handleThemeSettingsSave}
         onClose={() => setShowThemeSelector(false)}
       />
-
-      {/* 历史记录弹窗 */}
+      {showImageModelSettings && (
+        <ImageModelSettings
+          llmConfig={llmModelConfig}
+          imageConfig={imageModelConfig}
+          onSaveLLM={updateLLMModelConfig}
+          onSaveImage={updateImageModelConfig}
+          onClose={() => setShowImageModelSettings(false)}
+        />
+      )}
       <HistoryCalendar
-        isOpen={showHistory}
-        records={records}
-        currentMonth={historyMonth}
-        onMonthChange={setHistoryMonth}
-        onSelectDate={handleSelectDate}
+        isOpen={showHistory} records={records} currentMonth={historyMonth} onMonthChange={setHistoryMonth}
+        selectedDate={formatDateKey(currentDate)}
+        onSelectDate={(key) => { const [y, m, d] = key.split('-').map(Number); changeDate(new Date(y, m - 1, d)); setShowHistory(false); }}
         onClose={() => setShowHistory(false)}
       />
     </div>

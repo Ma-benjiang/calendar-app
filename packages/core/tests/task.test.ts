@@ -458,34 +458,6 @@ describe('TaskManager', () => {
     });
   });
 
-  // ========== 子任务测试 ==========
-
-  describe('subtasks', () => {
-    it('should create subtask', () => {
-      const parent = manager.createTask({ title: 'Parent Task' });
-      
-      const subtask = manager.createSubTask(parent.id, { title: 'Subtask' });
-      
-      expect(subtask?.parentTaskId).toBe(parent.id);
-    });
-
-    it('should return null when parent does not exist', () => {
-      const subtask = manager.createSubTask('non-existent', { title: 'Orphan' });
-      expect(subtask).toBeNull();
-    });
-
-    it('should get subtasks', () => {
-      const parent = manager.createTask({ title: 'Parent' });
-      manager.createSubTask(parent.id, { title: 'Child 1' });
-      manager.createSubTask(parent.id, { title: 'Child 2' });
-      manager.createTask({ title: 'Unrelated' });
-      
-      const subtasks = manager.getSubTasks(parent.id);
-      
-      expect(subtasks).toHaveLength(2);
-    });
-  });
-
   // ========== 标签与项目测试 ==========
 
   describe('tags and projects', () => {

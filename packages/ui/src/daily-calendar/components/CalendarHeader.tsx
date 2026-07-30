@@ -74,6 +74,21 @@ export const CalendarHeader: React.FC<CalendarHeaderProps> = ({
           </motion.span>
         )}
 
+        {special.isWorkdayAdjustment && special.holidayName && (
+          <motion.span
+            className={`px-2 py-0.5 rounded-full text-xs font-medium ${
+              isDarkOverlay
+                ? 'bg-amber-500/80 text-white'
+                : 'bg-amber-100 text-amber-800'
+            }`}
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ delay: 0.4 }}
+          >
+            {special.holidayName}补班
+          </motion.span>
+        )}
+
         {special.isSolarTerm && special.solarTermName && (
           <motion.span
             className={`px-2 py-0.5 rounded-full text-xs font-medium ${

@@ -57,6 +57,51 @@ const THEME_STYLES: Record<ThemeType, { bg: string; text: string; accent: string
     text: 'text-[#e0e0ff]',
     accent: 'text-[#a0a0ff]',
   },
+  clay: {
+    bg: 'bg-[#fff5f5]',
+    text: 'text-[#4a4a4a]',
+    accent: 'text-[#c96f75]',
+  },
+  sticker: {
+    bg: 'bg-[#f5f5f5]',
+    text: 'text-[#3e2723]',
+    accent: 'text-[#795548]',
+  },
+  illustration: {
+    bg: 'bg-white',
+    text: 'text-[#1a1a1a]',
+    accent: 'text-[#0072ff]',
+  },
+  cyberpunk: {
+    bg: 'bg-[#0a0a0a]',
+    text: 'text-white',
+    accent: 'text-[#00ffea]',
+  },
+  ukiyoe: {
+    bg: 'bg-[#f1faee]',
+    text: 'text-[#1d3557]',
+    accent: 'text-[#457b9d]',
+  },
+  ghibli: {
+    bg: 'bg-[#fefae0]',
+    text: 'text-[#6d6875]',
+    accent: 'text-[#b5838d]',
+  },
+};
+
+const THEME_LABELS: Record<ThemeType, string> = {
+  vintage: '复古',
+  minimal: '极简',
+  nature: '自然',
+  art: '艺术',
+  zen: '禅意',
+  cosmic: '星空',
+  clay: '粘土',
+  sticker: '贴纸',
+  illustration: '插画',
+  cyberpunk: '赛博朋克',
+  ukiyoe: '浮世绘',
+  ghibli: '童话',
 };
 
 export const CalendarCard: React.FC<CalendarCardProps> = ({
@@ -298,14 +343,7 @@ export const CalendarCard: React.FC<CalendarCardProps> = ({
           ? 'bg-black/30 text-white/80'
           : 'bg-white/70 text-gray-600'
       }`}>
-        {{
-          vintage: '复古',
-          minimal: '极简',
-          nature: '自然',
-          art: '艺术',
-          zen: '禅意',
-          cosmic: '星空',
-        }[record.theme]}
+        {THEME_LABELS[record.theme]}
       </div>
     </motion.div>
   );

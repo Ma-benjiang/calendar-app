@@ -5,7 +5,6 @@ import './notion-theme.css';
 
 // Export hooks
 export { useSidebar, type TreeNode } from './useSidebar';
-export { useCommand, type Command } from './useCommand';
 export { useTasks } from './useTasks';
 export {
   useTaskCalendar,
@@ -23,19 +22,15 @@ export {
   type PositionedItem,
 } from './useViewMode';
 export { useDragAndDrop, type DragItem, type DragState, type DropResult } from './useDragAndDrop';
+export { useChinaHolidays } from './hooks/useChinaHolidays';
 export {
-  useQuickAdd,
-  type QuickAddMode,
-  type QuickAddSource,
-  type QuickAddFormValues,
-  type QuickAddSuggestions,
-} from './useQuickAdd';
-
-// Export utilities
-export { parseNaturalInput, type ParsedResult } from './NaturalInput';
+  getChinaHoliday,
+  syncChinaHolidayYear,
+  type ChinaHolidayDay,
+  type ChinaHolidayYear,
+} from './services/chinaHolidayService';
 
 // Export components
-export { CommandMenu } from './CommandMenu';
 export { Sidebar } from './Sidebar';
 export { SidebarItem, type SidebarItemProps } from './SidebarItem';
 export { ContentBlock } from './ContentBlock';
@@ -52,11 +47,7 @@ export { EventForm } from './EventForm';
 export { TaskList } from './TaskList';
 export { TaskView } from './TaskView';
 export { TaskStatsBoard } from './TaskStatsBoard';
-export { SmartSchedule } from './SmartSchedule';
-export { RecurrencePicker } from './RecurrencePicker';
 export { useCalendar } from './useCalendar';
-export { useNotifications } from './useNotifications';
-export { ExportImport } from './ExportImport';
 
 // Daily Calendar Feature
 export * from './daily-calendar';

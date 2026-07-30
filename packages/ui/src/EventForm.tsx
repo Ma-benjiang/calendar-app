@@ -31,7 +31,14 @@ export const EventForm: React.FC<EventFormProps> = ({
   const [allDay, setAllDay] = useState(event?.allDay || false);
   const [color, setColor] = useState(event?.color || '#3b82f6');
 
-  const colors = ['#3b82f6', '#ef4444', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899'];
+  const colors = [
+    { value: '#7c90a0', label: '灰蓝' },
+    { value: '#b48a8a', label: '豆沙红' },
+    { value: '#8a9a8a', label: '鼠尾草绿' },
+    { value: '#c4a46d', label: '芥末黄' },
+    { value: '#9a8ab4', label: '熏衣紫' },
+    { value: '#9a9a97', label: '大地灰' }
+  ];
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -70,13 +77,14 @@ export const EventForm: React.FC<EventFormProps> = ({
         />
       </div>
 
-      <div className="form-group">
-        <label>
-          <input
-            type="checkbox"
-            checked={allDay}
-            onChange={(e) => setAllDay(e.target.checked)}
-          />
+      <div className="form-group checkbox-row">
+        <input
+          type="checkbox"
+          id="all-day-checkbox"
+          checked={allDay}
+          onChange={(e) => setAllDay(e.target.checked)}
+        />
+        <label htmlFor="all-day-checkbox" style={{ marginBottom: 0 }}>
           全天事件
         </label>
       </div>
@@ -107,11 +115,12 @@ export const EventForm: React.FC<EventFormProps> = ({
         <div className="color-picker">
           {colors.map((c) => (
             <button
-              key={c}
+              key={c.value}
               type="button"
-              className={`color-btn ${color === c ? 'active' : ''}`}
-              style={{ backgroundColor: c }}
-              onClick={() => setColor(c)}
+              className={`color-btn ${color === c.value ? 'active' : ''}`}
+              style={{ backgroundColor: c.value }}
+              onClick={() => setColor(c.value)}
+              title={c.label}
             />
           ))}
         </div>
@@ -122,16 +131,21 @@ export const EventForm: React.FC<EventFormProps> = ({
           <button
             type="button"
             className="btn-danger"
-            onClick={() => onDelete(event.id)}
+            onClick={() => {
+              if (confirm('确定要删除这个事件吗？')) {
+                onDelete(event.id);
+              }
+            }}
           >
             删除
           </button>
         )}
+        <div style={{ flex: 1 }} />
         <button type="button" className="btn-secondary" onClick={onCancel}>
           取消
         </button>
         <button type="submit" className="btn-primary">
-          保存
+          保存事件
         </button>
       </div>
     </form>

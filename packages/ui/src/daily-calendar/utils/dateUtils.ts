@@ -9,6 +9,7 @@ import {
   LunarDate,
   WeekdayInfo,
 } from '../types';
+import { getChinaHoliday } from '../../services/chinaHolidayService';
 
 // 农历数据表（1900-2100年）
 // 每个元素表示该年的农历数据，格式：16进制
@@ -324,7 +325,22 @@ export function getSolarTerm(date: Date): { isSolarTerm: boolean; solarTermName?
 /**
  * 获取节假日信息
  */
-export function getHoliday(date: Date): { isHoliday: boolean; holidayName?: string } {
+export function getHoliday(date: Date): {
+  isHoliday: boolean;
+  holidayName?: string;
+  isWorkdayAdjustment?: boolean;
+  holidayStatus?: 'off' | 'workday';
+} {
+  const syncedHoliday = getChinaHoliday(date);
+  if (syncedHoliday) {
+    return {
+      isHoliday: syncedHoliday.isOffDay,
+      holidayName: syncedHoliday.name,
+      isWorkdayAdjustment: !syncedHoliday.isOffDay,
+      holidayStatus: syncedHoliday.isOffDay ? 'off' : 'workday',
+    };
+  }
+
   const month = String(date.getMonth() + 1).padStart(2, '0');
   const day = String(date.getDate()).padStart(2, '0');
   const key = `${month}-${day}`;
@@ -392,7 +408,7 @@ export function getCalendarDateInfo(date: Date): CalendarDateInfo {
   const constellation = getConstellation(date);
 
   // 优先使用公历节假日，如果没有则使用农历节假日
-  const finalHoliday = holiday.isHoliday ? holiday : lunarHoliday;
+  const finalHoliday = holiday.holidayName ? holiday : lunarHoliday;
 
   return {
     gregorian,
@@ -401,6 +417,8 @@ export function getCalendarDateInfo(date: Date): CalendarDateInfo {
     special: {
       isHoliday: finalHoliday.isHoliday,
       holidayName: finalHoliday.holidayName,
+      isWorkdayAdjustment: holiday.isWorkdayAdjustment,
+      holidayStatus: holiday.holidayStatus,
       isSolarTerm: solarTerm.isSolarTerm,
       solarTermName: solarTerm.solarTermName,
       constellation,
@@ -479,7 +497,13 @@ export function addDays(date: Date, days: number): Date {
  */
 export function addMonths(date: Date, months: number): Date {
   const result = new Date(date);
+  const originalDay = result.getDate();
+  result.setDate(1);
   result.setMonth(result.getMonth() + months);
+  result.setDate(Math.min(
+    originalDay,
+    getDaysInMonth(result.getFullYear(), result.getMonth() + 1)
+  ));
   return result;
 }
 

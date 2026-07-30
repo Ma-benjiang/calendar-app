@@ -3,7 +3,6 @@
  * 遵循 PRD v1.0 规范
  */
 import { generateUUID } from './utils';
-import { RecurrenceFrequency } from './recurrence';
 
 // ============== 类型定义 ==============
 
@@ -12,16 +11,6 @@ export type TaskStatus = 'todo' | 'in-progress' | 'completed' | 'cancelled';
 
 /** 任务优先级 */
 export type TaskPriority = 'high' | 'medium' | 'low' | 'none';
-
-/** 任务循环规则 */
-export interface TaskRecurrenceRule {
-  frequency: RecurrenceFrequency;
-  interval?: number;        // 间隔，默认1
-  weekDays?: number[];      // 周几 [0-6]，0=周日
-  endCondition?: 'never' | 'count' | 'date';
-  endCount?: number;        // 重复次数
-  endDate?: Date;           // 结束日期
-}
 
 /** 任务实体 */
 export interface Task {
@@ -46,10 +35,6 @@ export interface Task {
   project?: string;         // 所属项目
   tags: string[];
   color?: string;
-  
-  // 循环
-  recurrence?: TaskRecurrenceRule;
-  parentTaskId?: string;    // 父任务ID（子任务）
   
   // 元数据
   createdAt: Date;
@@ -385,28 +370,6 @@ export class TaskManager {
     });
   }
 
-  // ---------- 子任务 ----------
-
-  /**
-   * 获取子任务
-   */
-  getSubTasks(parentId: string): Task[] {
-    return this.getAllTasks().filter(task => task.parentTaskId === parentId);
-  }
-
-  /**
-   * 创建子任务
-   */
-  createSubTask(parentId: string, input: Omit<CreateTaskInput, 'parentTaskId'>): Task | null {
-    const parent = this.getTaskById(parentId);
-    if (!parent) return null;
-
-    return this.createTask({
-      ...input,
-      parentTaskId: parentId,
-    });
-  }
-
   // ---------- 标签与项目 ----------
 
   /**
@@ -463,10 +426,6 @@ export class TaskManager {
         completedAt: task.completedAt ? new Date(task.completedAt) : undefined,
         createdAt: new Date(task.createdAt),
         updatedAt: new Date(task.updatedAt),
-        recurrence: task.recurrence ? {
-          ...task.recurrence,
-          endDate: task.recurrence.endDate ? new Date(task.recurrence.endDate) : undefined,
-        } : undefined,
       };
       this.tasks.set(restored.id, restored);
     });

@@ -5,284 +5,170 @@
 
 import {
   SeedreamConfig,
-  SeedreamGenerationRequest,
-  SeedreamGenerationResponse,
-  SeedreamError,
   ImageGenerationParams,
   GeneratedImage,
   ThemeType,
 } from '../types';
+import {
+  getDefaultImageModelConfig,
+  resolveImageModelConfig,
+  validateImageModelConfig,
+} from './imageModelConfig';
+import { requestAIJson } from './desktopAIRequest';
 
-// 默认配置
-const DEFAULT_CONFIG: SeedreamConfig = {
-  apiEndpoint: 'https://ark.cn-beijing.volces.com/api/v3/images/generations',
-  apiKey: '',
-  model: 'doubao-seedream-5-0-260128',
-};
-
-// 重试配置
-const RETRY_CONFIG = {
-  maxRetries: 3,
-  baseDelay: 1000, // 1秒
-  maxDelay: 10000, // 10秒
-};
-
-// 扩展 ImportMeta 接口以支持 Vite 环境变量
-declare global {
-  interface ImportMetaEnv {
-    VITE_SEEDREAM_API_KEY?: string;
-    VITE_SEEDREAM_MODEL?: string;
-  }
-
-  interface ImportMeta {
-    readonly env: ImportMetaEnv;
-  }
-}
-
-/**
- * 获取 Seedream 配置
- * 优先从环境变量读取 API Key
- */
-function getConfig(): SeedreamConfig {
-  const env = import.meta.env || {};
-  return {
-    ...DEFAULT_CONFIG,
-    apiKey: env.VITE_SEEDREAM_API_KEY || '',
-    model: env.VITE_SEEDREAM_MODEL || DEFAULT_CONFIG.model,
+interface SeedreamResponse {
+  data?: Array<{
+    url?: string;
+    b64_json?: string;
+  }>;
+  error?: {
+    message?: string;
   };
 }
 
 /**
  * 根据主题生成 Prompt
  */
-function generatePrompt(theme: ThemeType, date: Date, quote: string): string {
+function generatePrompt(theme: ThemeType, _date: Date, _quote: string): string {
   const themePrompts: Record<ThemeType, string> = {
-    vintage: `Vintage calendar page, warm sepia tones, old paper texture, elegant typography showing date, soft watercolor flowers, nostalgic atmosphere, high quality illustration`,
-    minimal: `Minimalist calendar design, clean white background, modern sans-serif typography, subtle geometric shapes, soft pastel accents, Scandinavian aesthetic, high quality`,
-    nature: `Nature-inspired calendar, lush green botanical elements, morning light, fresh leaves and flowers, organic textures, peaceful outdoor setting, artistic photography style`,
-    art: `Artistic calendar illustration, impressionist painting style, vibrant colors, expressive brushstrokes, museum-quality artwork, sophisticated composition`,
-    zen: `Zen-inspired calendar, ink wash painting style, oriental aesthetics, bamboo or cherry blossoms, peaceful and serene atmosphere, traditional Chinese art style`,
-    cosmic: `Cosmic calendar design, deep space background, stars and nebulae, mystical atmosphere, dark blue and purple tones, astronomical elements, high quality digital art`,
+    vintage: `A beautiful and nostalgic scene, 90s fashion editorial style, direct flash, high-end paper texture, muted nostalgic tones`,
+    minimal: `An exquisite minimalist still life photography, a single beautiful object, clean background, soft organic shadows, elegant composition`,
+    nature: `A stunning botanical art piece, lush green leaves, morning light, dew drops, serene and fresh atmosphere`,
+    art: `A captivating avant-garde conceptual art installation, floating surrealist elements, hyper-realistic textures, striking composition`,
+    zen: `A poetic zen landscape, traditional Chinese ink wash painting style, a lone boat on a misty lake, elegant brush strokes, serene and calm`,
+    cosmic: `A breathtaking deep space nebula, glowing stardust, mystical astronomical masterpiece, deep navy gradients, ethereal and vast`,
+    clay: `A cute 3D claymation character or scene, soft matte clay textures, handcrafted look, rounded forms, vibrant pastel colors`,
+    sticker: `A vibrant 3D pop-out sticker design of a cool object, die-cut with thick white borders, glossy finish, high contrast`,
+    illustration: `A trendy 3D stylized illustration of a modern object, C4D Octane render, smooth plastic and metallic textures, bright color palette`,
+    cyberpunk: `A cinematic cyberpunk city street at night, neon lights, rainy reflections, futuristic technology, sharp details`,
+    ukiyoe: `A classic Japanese Ukiyo-e style print, iconic ocean waves or mountain landscape, woodblock texture, elegant flat colors`,
+    ghibli: `A heartwarming Studio Ghibli style anime scene, lush watercolor nature, soft nostalgic sunlight, peaceful and magical`,
   };
 
   const basePrompt = themePrompts[theme] || themePrompts.vintage;
-  const dateStr = date.toLocaleDateString('zh-CN', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-  });
-
-  return `${basePrompt}. Calendar date: ${dateStr}. Quote: "${quote}". High quality, detailed, suitable for calendar display.`;
+  return `${basePrompt}. High-end artistic photography or illustration, rich details, stunning visual impact, NO TEXT, NO CALENDAR LAYOUT in image.`;
 }
 
-/**
- * 延迟函数
- */
-function delay(ms: number): Promise<void> {
-  return new Promise(resolve => setTimeout(resolve, ms));
+function getOpenAIImageSize(size: ImageGenerationParams['size']): string {
+  if (size === '1K') return '1024x1024';
+  if (size === '4K') return '2880x2880';
+  return '2048x2048';
 }
 
-/**
- * 计算重试延迟（指数退避）
- */
-function getRetryDelay(attempt: number): number {
-  const delay = Math.min(
-    RETRY_CONFIG.baseDelay * Math.pow(2, attempt),
-    RETRY_CONFIG.maxDelay
-  );
-  return delay;
+function getOpenAIEditEndpoint(endpoint: string): string {
+  return endpoint.replace(/\/images\/generations\/?$/, '/images/edits');
 }
 
-/**
- * 生成唯一 ID
- */
-function generateId(): string {
-  return `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-}
+export const seedreamService = {
+  generateImage: async (
+    params: ImageGenerationParams & { refImage?: string },
+    imageModelConfig?: SeedreamConfig
+  ): Promise<GeneratedImage> => {
+    const config = resolveImageModelConfig(
+      imageModelConfig ?? getDefaultImageModelConfig()
+    );
+    const prompt = params.visualPrompt?.trim()
+      || generatePrompt(params.theme, params.date, params.quote);
+    
+    console.log(`[Seedream] Requesting image with model: ${config.model}${params.refImage ? ' (Img2Img Mode)' : ''}`);
 
-/**
- * Seedream API 服务类
- */
-export class SeedreamService {
-  private config: SeedreamConfig;
-  private abortController: AbortController | null = null;
-
-  constructor(config?: Partial<SeedreamConfig>) {
-    this.config = {
-      ...getConfig(),
-      ...config,
-    };
-  }
-
-  /**
-   * 更新配置
-   */
-  updateConfig(config: Partial<SeedreamConfig>): void {
-    this.config = {
-      ...this.config,
-      ...config,
-    };
-  }
-
-  /**
-   * 验证配置
-   */
-  validateConfig(): { valid: boolean; error?: string } {
-    if (!this.config.apiKey) {
-      return { valid: false, error: 'API Key 未配置，请设置 VITE_SEEDREAM_API_KEY 环境变量' };
-    }
-    if (!this.config.apiEndpoint) {
-      return { valid: false, error: 'API Endpoint 未配置' };
-    }
-    return { valid: true };
-  }
-
-  /**
-   * 生成图片
-   * @param params 生成参数
-   * @param options 可选配置
-   * @returns 生成的图片信息
-   */
-  async generateImage(
-    params: ImageGenerationParams,
-    options?: { cancelPrevious?: boolean }
-  ): Promise<GeneratedImage> {
-    const validation = this.validateConfig();
-    if (!validation.valid) {
-      throw new Error(validation.error);
+    const configErrors = validateImageModelConfig(config);
+    if (configErrors.length > 0) {
+      throw new Error(`生图模型配置不完整：${configErrors.join('；')}`);
     }
 
-    const { date, theme, quote, size, quality } = params;
-    const prompt = generatePrompt(theme, date, quote);
+    try {
+      const body: {
+        model: string;
+        prompt: string;
+        size: string;
+        quality: string;
+        n: number;
+        response_format?: string;
+        ref_image_url?: string;
+        strength?: number;
+      } = {
+        model: config.model,
+        prompt,
+        size: config.provider === 'openai'
+          ? getOpenAIImageSize(params.size)
+          : '2048x2048',
+        quality: config.provider === 'openai'
+          ? params.quality === 'hd' ? 'high' : 'medium'
+          : params.quality || 'standard',
+        n: 1,
+      };
 
-    const requestBody: SeedreamGenerationRequest = {
-      prompt,
-      size,
-      quality,
-      n: 1,
-      response_format: 'url',
-    };
+      let endpoint = config.apiEndpoint;
+      let multipart:
+        | { imageDataUrl: string; imageField: string; filename: string }
+        | undefined;
 
-    // 取消之前的请求（默认行为，可通过 options.cancelPrevious: false 禁用）
-    if (options?.cancelPrevious !== false) {
-      this.cancelGeneration();
-    }
-    this.abortController = new AbortController();
-
-    let lastError: Error | null = null;
-
-    // 重试循环
-    for (let attempt = 0; attempt <= RETRY_CONFIG.maxRetries; attempt++) {
-      try {
-        const response = await fetch(this.config.apiEndpoint, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${this.config.apiKey}`,
-          },
-          body: JSON.stringify({
-            model: this.config.model,
-            ...requestBody,
-          }),
-          signal: this.abortController.signal,
-        });
-
-        if (!response.ok) {
-          const errorData = await response.json().catch(() => null) as SeedreamError | null;
-
-          // 处理特定错误码
-          if (response.status === 401) {
-            throw new Error('API Key 无效，请检查配置');
-          }
-          if (response.status === 429) {
-            throw new Error('请求过于频繁，请稍后再试');
-          }
-          if (response.status >= 500) {
-            // 服务器错误，可以重试
-            throw new Error(`服务器错误 (${response.status})，正在重试...`);
-          }
-
-          throw new Error(
-            errorData?.error?.message || `请求失败 (${response.status})`
-          );
-        }
-
-        const data = await response.json() as SeedreamGenerationResponse;
-
-        if (!data.data || data.data.length === 0) {
-          throw new Error('API 返回空数据');
-        }
-
-        const result = data.data[0];
-
-        return {
-          id: generateId(),
-          url: result.url || '',
-          base64: result.b64_json,
-          metadata: {
-            generatedAt: new Date(),
-            prompt,
-            theme,
-            size,
-            quality,
-          },
+      if (config.provider === 'openai' && params.refImage) {
+        endpoint = getOpenAIEditEndpoint(config.apiEndpoint);
+        multipart = {
+          imageDataUrl: params.refImage,
+          imageField: 'image',
+          filename: 'reference.jpg',
         };
-      } catch (error) {
-        lastError = error instanceof Error ? error : new Error(String(error));
-
-        // 如果是用户取消，直接抛出
-        if (lastError.name === 'AbortError') {
-          throw new Error('生成已取消');
-        }
-
-        // 最后一次尝试，抛出错误
-        if (attempt === RETRY_CONFIG.maxRetries) {
-          break;
-        }
-
-        // 等待后重试
-        const retryDelay = getRetryDelay(attempt);
-        console.warn(`生成失败，${retryDelay}ms 后重试 (${attempt + 1}/${RETRY_CONFIG.maxRetries}):`, lastError.message);
-        await delay(retryDelay);
+      } else if (params.refImage) {
+        body.ref_image_url = params.refImage; // 已经是 data:image/jpeg;base64,... 格式
+        body.strength = 0.6;
+        body.response_format = 'url';
+      } else if (config.provider !== 'openai') {
+        body.response_format = 'url';
       }
+
+      const response = await requestAIJson<SeedreamResponse>(
+        endpoint,
+        config.apiKey,
+        body,
+        multipart
+      );
+
+      if (!response.ok) {
+        console.error(`[Seedream] API Error: ${response.status}`, response.data);
+        throw new Error(`AI 绘图失败: ${response.status}. ${response.data.error?.message || ''}`);
+      }
+
+      const image = response.data.data?.[0];
+      const imageUrl = image?.url ?? (
+        image?.b64_json ? `data:image/png;base64,${image.b64_json}` : ''
+      );
+
+      if (!imageUrl) {
+        throw new Error('AI 绘图失败：响应中没有图片');
+      }
+
+      console.log('[Seedream] Image generated successfully!');
+      
+      return {
+        id: `${Date.now()}`,
+        url: imageUrl,
+        metadata: { 
+          generatedAt: new Date(), 
+          prompt, 
+          theme: params.theme, 
+          size: params.size,
+          quality: params.quality || 'standard',
+          provider: config.provider,
+          model: config.model,
+        }
+      };
+    } catch (error) {
+      console.error('[Seedream] Error:', error);
+      throw error;
     }
+  },
+  cancelGeneration: () => {}
+};
 
-    throw lastError || new Error('生成失败，请稍后重试');
-  }
-
-  /**
-   * 取消正在进行的生成
-   */
-  cancelGeneration(): void {
-    if (this.abortController) {
-      this.abortController.abort();
-      this.abortController = null;
-    }
-  }
-
-  /**
-   * 获取支持的图片尺寸
-   */
-  getSupportedSizes(): Array<'1K' | '2K' | '4K'> {
-    return ['1K', '2K', '4K'];
-  }
-
-  /**
-   * 获取支持的图片质量
-   */
-  getSupportedQualities(): string[] {
-    return ['standard', 'hd'];
-  }
-}
-
-// 导出单例实例
-export const seedreamService = new SeedreamService();
-
-// 导出便捷函数
+// 兼容性导出
 export async function generateCalendarImage(
-  params: ImageGenerationParams
+  params: ImageGenerationParams,
+  imageModelConfig?: SeedreamConfig
 ): Promise<GeneratedImage> {
-  return seedreamService.generateImage(params);
+  return seedreamService.generateImage(params, imageModelConfig);
 }
 
 export function cancelImageGeneration(): void {

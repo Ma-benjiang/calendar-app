@@ -1,5 +1,20 @@
-const { app, BrowserWindow } = require('electron');
+const { app, BrowserWindow, protocol } = require('electron');
 const path = require('path');
+const { getLocalImagePath } = require('./imageStorage');
+
+protocol.registerSchemesAsPrivileged([
+  {
+    scheme: 'calendar-image',
+    privileges: {
+      standard: true,
+      secure: true,
+      corsEnabled: true,
+      supportFetchAPI: true,
+    },
+  },
+]);
+
+require('./ipc');
 
 let mainWindow;
 
@@ -8,21 +23,29 @@ function createWindow() {
     width: 1200,
     height: 800,
     webPreferences: {
-      nodeIntegration: true,
-      contextIsolation: false,
-      enableRemoteModule: true
+      preload: path.join(__dirname, 'preload.js'),
+      nodeIntegration: false,
+      contextIsolation: true,
+      sandbox: true,
     },
     titleBarStyle: 'hiddenInset',
     show: false
   });
 
-  // 加载应用
-  if (process.env.NODE_ENV === 'development') {
+  if (!app.isPackaged || process.env.NODE_ENV === 'development') {
     mainWindow.loadURL('http://localhost:5173');
     mainWindow.webContents.openDevTools();
   } else {
-    mainWindow.loadFile(path.join(__dirname, '../web/dist/index.html'));
+    mainWindow.loadFile(path.join(process.resourcesPath, 'renderer/index.html'));
   }
+
+  mainWindow.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
+  mainWindow.webContents.on('will-navigate', (event, url) => {
+    const currentURL = mainWindow.webContents.getURL();
+    if (currentURL && url !== currentURL) {
+      event.preventDefault();
+    }
+  });
 
   mainWindow.once('ready-to-show', () => {
     mainWindow.show();
@@ -33,7 +56,14 @@ function createWindow() {
   });
 }
 
-app.whenReady().then(createWindow);
+app.whenReady().then(() => {
+  const imageDirectory = path.join(app.getPath('userData'), 'daily-calendar-images');
+  protocol.registerFileProtocol('calendar-image', (request, callback) => {
+    const imagePath = getLocalImagePath(request.url, imageDirectory);
+    callback(imagePath ? { path: imagePath } : { error: -6 });
+  });
+  createWindow();
+});
 
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {

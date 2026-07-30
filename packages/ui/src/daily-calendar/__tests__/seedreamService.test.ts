@@ -1,69 +1,30 @@
-/**
- * Seedream API 服务单元测试
- */
-
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { SeedreamService, generateCalendarImage } from '../services/seedreamService';
-import { ImageGenerationParams, ThemeType } from '../types';
+import {
+  generateCalendarImage,
+  seedreamService,
+} from '../services/seedreamService';
+import { ImageGenerationParams, ImageModelConfig, ThemeType } from '../types';
 
 describe('seedreamService', () => {
-  let service: SeedreamService;
-
   beforeEach(() => {
-    service = new SeedreamService({
-      apiKey: 'test-api-key',
-    });
-
     // Mock fetch
-    global.fetch = vi.fn();
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        data: [{ url: 'https://example.com/image.png' }]
+      })
+    });
+    vi.stubEnv('VITE_SEEDREAM_API_KEY', 'test-key');
+    vi.stubEnv('VITE_SEEDREAM_MODEL', 'test-model');
   });
 
   afterEach(() => {
+    delete (window as unknown as { calendarDesktop?: unknown }).calendarDesktop;
     vi.restoreAllMocks();
+    vi.unstubAllEnvs();
   });
 
-  describe('validateConfig', () => {
-    it('should return valid for correct config', () => {
-      const result = service.validateConfig();
-
-      expect(result.valid).toBe(true);
-    });
-
-    it('should return invalid when API key is missing', () => {
-      const invalidService = new SeedreamService({ apiKey: '' });
-      const result = invalidService.validateConfig();
-
-      expect(result.valid).toBe(false);
-      expect(result.error).toContain('API Key');
-    });
-  });
-
-  describe('updateConfig', () => {
-    it('should update config', () => {
-      service.updateConfig({ apiKey: 'new-api-key' });
-
-      const validation = service.validateConfig();
-      expect(validation.valid).toBe(true);
-    });
-  });
-
-  describe('getSupportedSizes', () => {
-    it('should return supported sizes', () => {
-      const sizes = service.getSupportedSizes();
-
-      expect(sizes).toEqual(['1K', '2K', '4K']);
-    });
-  });
-
-  describe('getSupportedQualities', () => {
-    it('should return supported qualities', () => {
-      const qualities = service.getSupportedQualities();
-
-      expect(qualities).toEqual(['standard', 'hd']);
-    });
-  });
-
-  describe('generateImage', () => {
+  describe('generateCalendarImage', () => {
     const mockParams: ImageGenerationParams = {
       date: new Date(2026, 2, 3),
       theme: 'vintage' as ThemeType,
@@ -73,112 +34,129 @@ describe('seedreamService', () => {
     };
 
     it('should generate image successfully', async () => {
-      const mockResponse = {
-        data: [{
-          url: 'https://example.com/image.png',
-          revised_prompt: 'Generated prompt',
-        }],
-      };
-
-      (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
-        ok: true,
-        json: async () => mockResponse,
-      });
-
-      const result = await service.generateImage(mockParams);
-
-      expect(result).toBeDefined();
+      const result = await generateCalendarImage(mockParams);
       expect(result.url).toBe('https://example.com/image.png');
-      expect(result.metadata.theme).toBe('vintage');
       expect(result.metadata.size).toBe('2K');
+      expect(result.metadata.model).toBe('test-model');
+      expect(global.fetch).toHaveBeenCalled();
     });
 
-    it('should throw error for 401 response', async () => {
-      (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
-        ok: false,
-        status: 401,
-        json: async () => ({ error: { message: 'Unauthorized' } }),
-      });
-
-      await expect(service.generateImage(mockParams)).rejects.toThrow();
-    }, 10000);
-
-    it('should throw error for 429 response', async () => {
-      (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
-        ok: false,
-        status: 429,
-        json: async () => ({ error: { message: 'Rate limited' } }),
-      });
-
-      await expect(service.generateImage(mockParams)).rejects.toThrow();
-    }, 10000);
-
-    it('should retry on server error', async () => {
-      // First call fails with 500
-      (global.fetch as ReturnType<typeof vi.fn>)
-        .mockResolvedValueOnce({
-          ok: false,
-          status: 500,
-          json: async () => ({ error: { message: 'Server error' } }),
-        })
-        // Second call succeeds
-        .mockResolvedValueOnce({
-          ok: true,
-          json: async () => ({
-            data: [{ url: 'https://example.com/image.png' }],
-          }),
-        });
-
-      // Note: The actual implementation may need adjustment for retry logic test
-      // This is a simplified test
-      try {
-        await service.generateImage(mockParams);
-      } catch (e) {
-        // Expected to potentially fail in test environment
-      }
-
-      expect(global.fetch).toHaveBeenCalled();
-    }, 10000);
-
-    it('should handle abort error', async () => {
-      (global.fetch as ReturnType<typeof vi.fn>).mockRejectedValueOnce(
-        new DOMException('Aborted', 'AbortError')
-      );
-
-      await expect(service.generateImage(mockParams)).rejects.toThrow();
-    }, 10000);
-  });
-
-  describe('cancelGeneration', () => {
-    it('should cancel ongoing generation', () => {
-      // Start a generation
-      const params: ImageGenerationParams = {
-        date: new Date(),
-        theme: 'vintage' as ThemeType,
-        quote: 'test',
-        size: '1K',
-        quality: 'standard',
+    it('should use the configured endpoint, key and model', async () => {
+      const config: ImageModelConfig = {
+        provider: 'volcengine',
+        apiEndpoint: 'https://images.example.com/api/v3/images/generations',
+        apiKey: 'custom-key',
+        model: 'custom-image-model',
       };
 
-      // Mock fetch to never resolve
-      (global.fetch as ReturnType<typeof vi.fn>).mockImplementationOnce(
-        () => new Promise(() => {}) // Never resolves
-      );
+      await generateCalendarImage(mockParams, config);
 
-      // Start generation but don't await
-      service.generateImage(params);
-
-      // Cancel it
-      service.cancelGeneration();
-
-      // Should not throw
-      expect(() => service.cancelGeneration()).not.toThrow();
+      const [endpoint, request] = vi.mocked(global.fetch).mock.calls[0];
+      const body = JSON.parse(request?.body as string);
+      expect(endpoint).toBe(config.apiEndpoint);
+      expect(request?.headers).toMatchObject({
+        Authorization: 'Bearer custom-key',
+      });
+      expect(body.model).toBe(config.model);
     });
-  });
-});
 
-describe('generateCalendarImage', () => {
-  it('should be a function', () => {
-    expect(typeof generateCalendarImage).toBe('function');
+    it('should request images through the desktop bridge when available', async () => {
+      const request = vi.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        data: {
+          data: [{ url: 'https://example.com/desktop-image.png' }],
+        },
+      });
+      (window as unknown as {
+        calendarDesktop: { ai: { request: typeof request } };
+      }).calendarDesktop = { ai: { request } };
+
+      const result = await generateCalendarImage(mockParams);
+
+      expect(result.url).toBe('https://example.com/desktop-image.png');
+      expect(request).toHaveBeenCalledWith(expect.objectContaining({
+        endpoint: '/volces-api/api/v3/images/generations',
+        apiKey: 'test-key',
+      }));
+      expect(global.fetch).not.toHaveBeenCalled();
+    });
+
+    it('should reject incomplete model configuration before requesting', async () => {
+      await expect(generateCalendarImage(mockParams, {
+        provider: 'volcengine',
+        apiEndpoint: '',
+        apiKey: '',
+        model: '',
+      })).rejects.toThrow('生图模型配置不完整');
+      expect(global.fetch).not.toHaveBeenCalled();
+    });
+
+    it('should support GPT Image 2 base64 responses', async () => {
+      vi.mocked(global.fetch).mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          data: [{ b64_json: 'ZmFrZS1pbWFnZQ==' }],
+        }),
+      } as Response);
+      const config: ImageModelConfig = {
+        provider: 'openai',
+        apiEndpoint: 'https://api.openai.com/v1/images/generations',
+        apiKey: 'openai-key',
+        model: 'gpt-image-2',
+      };
+
+      const result = await generateCalendarImage({
+        ...mockParams,
+        visualPrompt: '一幅无文字的春日静物摄影，柔和自然光，留白构图，细节丰富',
+      }, config);
+
+      const [endpoint, request] = vi.mocked(global.fetch).mock.calls[0];
+      const body = JSON.parse(request?.body as string);
+      expect(endpoint).toBe(config.apiEndpoint);
+      expect(body).toMatchObject({
+        model: 'gpt-image-2',
+        size: '2048x2048',
+        quality: 'medium',
+      });
+      expect(body.response_format).toBeUndefined();
+      expect(result.url).toBe('data:image/png;base64,ZmFrZS1pbWFnZQ==');
+      expect(result.metadata.provider).toBe('openai');
+    });
+
+    it('should use the GPT Image 2 edits endpoint for a reference image', async () => {
+      const request = vi.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        data: {
+          data: [{ b64_json: 'ZWRpdGVkLWltYWdl' }],
+        },
+      });
+      (window as unknown as {
+        calendarDesktop: { ai: { request: typeof request } };
+      }).calendarDesktop = { ai: { request } };
+
+      await seedreamService.generateImage({
+        ...mockParams,
+        refImage: 'data:image/jpeg;base64,ZmFrZQ==',
+      }, {
+        provider: 'openai',
+        apiEndpoint: 'https://api.openai.com/v1/images/generations',
+        apiKey: 'openai-key',
+        model: 'gpt-image-2',
+      });
+
+      expect(request).toHaveBeenCalledWith(expect.objectContaining({
+        endpoint: 'https://api.openai.com/v1/images/edits',
+        multipart: expect.objectContaining({
+          imageDataUrl: 'data:image/jpeg;base64,ZmFrZQ==',
+          imageField: 'image',
+        }),
+      }));
+    });
+
+    it('should be a function', () => {
+      expect(typeof generateCalendarImage).toBe('function');
+    });
   });
 });

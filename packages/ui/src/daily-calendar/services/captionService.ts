@@ -48,10 +48,14 @@ const QUOTES_LIBRARY: Quote[] = [
   { id: 'inspire-008', text: '不积跬步，无以至千里', category: 'inspirational', themes: ['zen', 'vintage'] },
 
   // 节气类
-  { id: 'solar-001', text: '立春至，万物生', category: 'solar-term', themes: ['nature', 'zen'], applicableSolarTerms: ['立春'] },
-  { id: 'solar-002', text: '雨水润物细无声', category: 'solar-term', themes: ['nature', 'zen'], applicableSolarTerms: ['雨水'] },
-  { id: 'solar-003', text: '春雷响，万物长', category: 'solar-term', themes: ['nature'], applicableSolarTerms: ['惊蛰'] },
-  { id: 'solar-004', text: '春分雨脚落声微', category: 'solar-term', themes: ['nature', 'art'], applicableSolarTerms: ['春分'] },
+  { id: 'solar-001a', text: '立春至，万物生', category: 'solar-term', themes: ['nature', 'zen'], applicableSolarTerms: ['立春'] },
+  { id: 'solar-001b', text: '东风解冻，春回大地', category: 'solar-term', themes: ['nature', 'minimal'], applicableSolarTerms: ['立春'] },
+  { id: 'solar-002a', text: '雨水润物细无声', category: 'solar-term', themes: ['nature', 'zen'], applicableSolarTerms: ['雨水'] },
+  { id: 'solar-002b', text: '随风潜入夜，润物细无声', category: 'solar-term', themes: ['art', 'zen'], applicableSolarTerms: ['雨水'] },
+  { id: 'solar-003a', text: '春雷响，万物长', category: 'solar-term', themes: ['nature'], applicableSolarTerms: ['惊蛰'] },
+  { id: 'solar-003b', text: '微雨众卉新，一雷惊蛰始', category: 'solar-term', themes: ['nature', 'art'], applicableSolarTerms: ['惊蛰'] },
+  { id: 'solar-004a', text: '春分雨脚落声微', category: 'solar-term', themes: ['nature', 'art'], applicableSolarTerms: ['春分'] },
+  { id: 'solar-004b', text: '仲春初九日，春色正中分', category: 'solar-term', themes: ['minimal', 'zen'], applicableSolarTerms: ['春分'] },
   { id: 'solar-005', text: '清明时节雨纷纷', category: 'solar-term', themes: ['nature', 'zen'], applicableSolarTerms: ['清明'] },
   { id: 'solar-006', text: '谷雨春光晓', category: 'solar-term', themes: ['nature'], applicableSolarTerms: ['谷雨'] },
   { id: 'solar-007', text: '立夏将离春去也', category: 'solar-term', themes: ['nature'], applicableSolarTerms: ['立夏'] },
@@ -70,12 +74,19 @@ const QUOTES_LIBRARY: Quote[] = [
   { id: 'solar-020', text: '冬至阳生春又来', category: 'solar-term', themes: ['zen', 'nature'], applicableSolarTerms: ['冬至'] },
 
   // 节日类
-  { id: 'holiday-001', text: '新春快乐，万事如意', category: 'holiday', themes: ['vintage', 'art', 'zen'], applicableHolidays: ['春节'] },
-  { id: 'holiday-002', text: '元宵节快乐，月圆人团圆', category: 'holiday', themes: ['art', 'zen'], applicableHolidays: ['元宵节'] },
+  { id: 'holiday-001a', text: '新春快乐，万事如意', category: 'holiday', themes: ['vintage', 'art', 'zen'], applicableHolidays: ['春节'] },
+  { id: 'holiday-001b', text: '千门万户瞳瞳日，总把新桃换旧符', category: 'holiday', themes: ['vintage', 'art'], applicableHolidays: ['春节'] },
+  { id: 'holiday-001c', text: '爆竹声中一岁除，春风送暖入屠苏', category: 'holiday', themes: ['vintage', 'zen'], applicableHolidays: ['春节'] },
+  { id: 'holiday-002a', text: '元宵节快乐，月圆人团圆', category: 'holiday', themes: ['art', 'zen'], applicableHolidays: ['元宵节'] },
+  { id: 'holiday-002b', text: '众里寻他千百度，蓦然回首，那人却在灯火阑珊处', category: 'holiday', themes: ['art', 'cosmic'], applicableHolidays: ['元宵节'] },
+  { id: 'holiday-002c', text: '一曲笙歌春如海，千门灯火夜似昼', category: 'holiday', themes: ['vintage', 'art'], applicableHolidays: ['元宵节'] },
+  { id: 'holiday-002d', text: '月上柳梢头，人约黄昏后', category: 'holiday', themes: ['minimal', 'zen'], applicableHolidays: ['元宵节'] },
   { id: 'holiday-003', text: '清明时节，慎终追远', category: 'holiday', themes: ['zen', 'nature'], applicableHolidays: ['清明节'] },
   { id: 'holiday-004', text: '端午安康，粽叶飘香', category: 'holiday', themes: ['nature', 'vintage'], applicableHolidays: ['端午节'] },
   { id: 'holiday-005', text: '七夕快乐，愿有情人终成眷属', category: 'holiday', themes: ['art', 'cosmic'], applicableHolidays: ['七夕节'] },
-  { id: 'holiday-006', text: '中秋快乐，月圆人团圆', category: 'holiday', themes: ['art', 'zen', 'cosmic'], applicableHolidays: ['中秋节'] },
+  { id: 'holiday-006a', text: '中秋快乐，月圆人团圆', category: 'holiday', themes: ['art', 'zen', 'cosmic'], applicableHolidays: ['中秋节'] },
+  { id: 'holiday-006b', text: '但愿人长久，千里共婵娟', category: 'holiday', themes: ['art', 'cosmic', 'zen'], applicableHolidays: ['中秋节'] },
+  { id: 'holiday-006c', text: '海上生明月，天涯共此时', category: 'holiday', themes: ['nature', 'art', 'cosmic'], applicableHolidays: ['中秋节'] },
   { id: 'holiday-007', text: '重阳节快乐，敬老尊贤', category: 'holiday', themes: ['zen', 'vintage'], applicableHolidays: ['重阳节'] },
   { id: 'holiday-008', text: '新年快乐，万象更新', category: 'holiday', themes: ['minimal', 'art'], applicableHolidays: ['元旦'] },
   { id: 'holiday-009', text: '劳动节快乐，致敬每一位劳动者', category: 'holiday', themes: ['minimal', 'art'], applicableHolidays: ['劳动节'] },
@@ -91,28 +102,29 @@ const MAX_RECENT_QUOTES = 30;
 /**
  * 获取特殊日期文案
  */
-function getSpecialDayQuote(dateInfo: CalendarDateInfo): Quote | null {
+function getSpecialDayQuotes(dateInfo: CalendarDateInfo): Quote[] {
   const { special } = dateInfo;
+  const results: Quote[] = [];
 
   // 节假日优先
   if (special.isHoliday && special.holidayName) {
-    const holidayQuote = QUOTES_LIBRARY.find(q =>
+    const holidayQuotes = QUOTES_LIBRARY.filter(q =>
       q.category === 'holiday' &&
       q.applicableHolidays?.includes(special.holidayName!)
     );
-    if (holidayQuote) return holidayQuote;
+    results.push(...holidayQuotes);
   }
 
   // 节气其次
   if (special.isSolarTerm && special.solarTermName) {
-    const solarQuote = QUOTES_LIBRARY.find(q =>
+    const solarQuotes = QUOTES_LIBRARY.filter(q =>
       q.category === 'solar-term' &&
       q.applicableSolarTerms?.includes(special.solarTermName!)
     );
-    if (solarQuote) return solarQuote;
+    results.push(...solarQuotes);
   }
 
-  return null;
+  return results;
 }
 
 /**
@@ -208,19 +220,22 @@ export function selectDailyQuote(
   theme: ThemeType,
   dateInfo: CalendarDateInfo
 ): Quote {
-  // 1. 特殊日期优先
-  const specialQuote = getSpecialDayQuote(dateInfo);
-  if (specialQuote) {
-    return specialQuote;
-  }
-
-  // 2. 按主题筛选
+  // 1. 获取特殊日期文案池
+  const specialQuotes = getSpecialDayQuotes(dateInfo);
+  
+  // 2. 获取按主题筛选的文案池
   const themeQuotes = getQuotesByTheme(theme);
 
-  // 3. 按星期/月份筛选
-  const contextualQuotes = filterByContext(themeQuotes, date);
+  // 3. 组合最终备选池
+  // 即使是节日，我们也允许混入一些高质量的主题文案，确保每次点击都有新鲜感
+  const pool = specialQuotes.length > 0 
+    ? [...specialQuotes, ...themeQuotes.slice(0, 5)] 
+    : themeQuotes;
 
-  // 4. 随机选择（避免近期重复）
+  // 4. 按星期/月份再次筛选
+  const contextualQuotes = filterByContext(pool, date);
+
+  // 5. 随机选择（内部逻辑会避开最近使用过的）
   return randomSelect(contextualQuotes);
 }
 

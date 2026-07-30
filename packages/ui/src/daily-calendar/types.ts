@@ -32,6 +32,8 @@ export interface WeekdayInfo {
 export interface SpecialDayInfo {
   isHoliday: boolean;
   holidayName?: string;   // "春节"
+  isWorkdayAdjustment?: boolean;
+  holidayStatus?: 'off' | 'workday';
   isSolarTerm: boolean;
   solarTermName?: string; // "立春"
   constellation: string;  // "双鱼座"
@@ -46,7 +48,7 @@ export interface CalendarDateInfo {
 
 // ==================== 主题类型 ====================
 
-export type ThemeType = 'vintage' | 'minimal' | 'nature' | 'art' | 'zen' | 'cosmic';
+export type ThemeType = 'vintage' | 'minimal' | 'nature' | 'art' | 'zen' | 'cosmic' | 'clay' | 'sticker' | 'illustration' | 'cyberpunk' | 'ukiyoe' | 'ghibli';
 
 export interface ThemeConfig {
   id: ThemeType;
@@ -61,23 +63,11 @@ export interface ThemeConfig {
   };
 }
 
-export type ThemeStrategyType = 'manual' | 'seasonal' | 'daily-random' | 'ai-recommended';
-
-export interface ThemePreferences {
-  favorites: ThemeType[];
-  excluded: ThemeType[];
-  seasonalMapping: {
-    spring: ThemeType[];
-    summer: ThemeType[];
-    autumn: ThemeType[];
-    winter: ThemeType[];
-  };
-}
+export type ThemeStrategyType = 'manual' | 'daily-random';
 
 export interface ThemeStrategy {
   type: ThemeStrategyType;
   currentTheme: ThemeType;
-  preferences: ThemePreferences;
 }
 
 // ==================== 文案类型 ====================
@@ -98,6 +88,22 @@ export interface Quote {
 
 export type ImageSize = '1K' | '2K' | '4K';
 export type ImageQuality = 'standard' | 'hd';
+export type LLMModelProvider = 'deepseek';
+export type ImageModelProvider = 'volcengine' | 'openai';
+
+export interface LLMModelConfig {
+  provider: LLMModelProvider;
+  apiEndpoint: string;
+  apiKey: string;
+  model: string;
+}
+
+export interface ImageModelConfig {
+  provider: ImageModelProvider;
+  apiEndpoint: string;
+  apiKey: string;
+  model: string;
+}
 
 export interface ImageGenerationParams {
   date: Date;
@@ -105,6 +111,7 @@ export interface ImageGenerationParams {
   quote: string;
   size: ImageSize;
   quality: ImageQuality;
+  visualPrompt?: string;
 }
 
 export interface GeneratedImage {
@@ -117,6 +124,8 @@ export interface GeneratedImage {
     theme: ThemeType;
     size: ImageSize;
     quality: ImageQuality;
+    provider?: ImageModelProvider;
+    model?: string;
   };
 }
 
@@ -141,15 +150,13 @@ export interface UserPreferences {
   defaultImageQuality: ImageQuality;
   language: 'zh' | 'en';
   autoGenerate: boolean;
+  llmModel: LLMModelConfig;
+  imageModel: ImageModelConfig;
 }
 
 // ==================== API 类型 ====================
 
-export interface SeedreamConfig {
-  apiEndpoint: string;
-  apiKey: string;
-  model: string;
-}
+export type SeedreamConfig = ImageModelConfig;
 
 export interface SeedreamGenerationRequest {
   prompt: string;
@@ -206,23 +213,17 @@ export interface CalendarCaptionProps {
 export interface ThemeSelectorProps {
   currentTheme: ThemeType;
   strategy: ThemeStrategyType;
-  onThemeChange: (theme: ThemeType) => void;
-  onStrategyChange: (strategy: ThemeStrategyType) => void;
-}
-
-export interface HistoryGridProps {
-  records: DailyCalendarRecord[];
-  currentMonth: Date;
-  onMonthChange: (date: Date) => void;
-  onSelectDate: (date: string) => void;
+  onSave: (strategy: ThemeStrategyType, theme: ThemeType) => void;
 }
 
 export interface HistoryCalendarProps {
-  records: Map<string, DailyCalendarRecord>;
+  records: Record<string, DailyCalendarRecord>;
   currentMonth: Date;
   onMonthChange: (date: Date) => void;
   onSelectDate: (date: string) => void;
   selectedDate?: string;
+  onClose: () => void;
+  isOpen: boolean;
 }
 
 // ==================== Hook 返回类型 ====================
@@ -233,17 +234,17 @@ export interface UseDailyCalendarReturn {
   error: Error | null;
   generateCalendar: (date?: Date, theme?: ThemeType) => Promise<void>;
   regenerateCalendar: () => Promise<void>;
-  changeTheme: (theme: ThemeType) => Promise<void>;
 }
 
 export interface UseCalendarStorageReturn {
-  records: Map<string, DailyCalendarRecord>;
-  preferences: UserPreferences | null;
+  records: Record<string, DailyCalendarRecord>;
+  preferences: UserPreferences;
   saveRecord: (record: DailyCalendarRecord) => Promise<void>;
-  getRecord: (date: string) => DailyCalendarRecord | null;
-  savePreferences: (prefs: UserPreferences) => Promise<void>;
-  getPreferences: () => UserPreferences | null;
-  clearHistory: () => Promise<void>;
+  getRecord: (date: string | Date) => DailyCalendarRecord | null;
+  deleteRecord: (date: string | Date) => Promise<void>;
+  updateLLMModel: (config: LLMModelConfig) => void;
+  updateImageModel: (config: ImageModelConfig) => void;
+  isLoaded: boolean;
 }
 
 export interface UseImageGenerationReturn {

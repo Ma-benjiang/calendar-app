@@ -1,6 +1,7 @@
 import React, { useState, useCallback } from 'react';
 import { CalendarEvent, Task } from '@calendar/core';
 import { TaskCalendarItem } from './useTaskCalendar';
+import { getChinaHoliday } from './services/chinaHolidayService';
 
 interface DayViewProps {
   date: Date;
@@ -78,13 +79,29 @@ export const DayView: React.FC<DayViewProps> = ({
   }, [date, onTaskDrop]);
 
   const formatDate = (date: Date) => {
-    return `${date.getFullYear()}年${date.getMonth() + 1}月${date.getDate()}日`;
+    const year = date.getFullYear();
+    const month = date.getMonth() + 1;
+    const day = date.getDate();
+    const weekday = ['星期日', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六'][date.getDay()];
+    const holiday = getChinaHoliday(date);
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+        <div style={{ fontSize: '12px', color: '#9a9a97', fontWeight: '800', letterSpacing: '0.2em' }}>{year}年{month}月</div>
+        <div style={{ fontSize: '48px', color: '#37352f', fontWeight: '900', fontFamily: 'Georgia, serif', margin: '10px 0' }}>{day}</div>
+        <div style={{ fontSize: '14px', color: '#eb5757', fontWeight: '700' }}>{weekday}</div>
+        {holiday && (
+          <div className={`day-holiday ${holiday.isOffDay ? 'off' : 'workday'}`}>
+            {holiday.name} · {holiday.isOffDay ? '休息' : '补班'}
+          </div>
+        )}
+      </div>
+    );
   };
 
   return (
     <div className="day-view">
-      <div className="day-header">
-        <h2>{formatDate(date)}</h2>
+      <div className="day-header" style={{ padding: '40px 0', borderBottom: '1px solid #f0ede4' }}>
+        {formatDate(date)}
       </div>
       <div className="day-timeline">
         {hours.map(hour => {

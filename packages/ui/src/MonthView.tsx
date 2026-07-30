@@ -1,6 +1,7 @@
 import React, { useState, useCallback } from 'react';
 import { CalendarCore, CalendarEvent, Task } from '@calendar/core';
 import { TaskCalendarItem } from './useTaskCalendar';
+import { getChinaHoliday } from './services/chinaHolidayService';
 
 interface MonthViewProps {
   year: number;
@@ -103,17 +104,39 @@ export const MonthView: React.FC<MonthViewProps> = ({
           const isCurrentMonth = date.getMonth() === month;
           const dateKey = formatDateKey(date);
           const isDragOver = dragOverDate === dateKey;
+          const holiday = getChinaHoliday(date);
 
           return (
             <div
               key={index}
-              className={`day-cell ${!isCurrentMonth ? 'other-month' : ''} ${isDragOver ? 'drag-over' : ''}`}
+              className={`day-cell ${!isCurrentMonth ? 'other-month' : ''} ${isDragOver ? 'drag-over' : ''} ${
+                holiday?.isOffDay ? 'holiday-off' : holiday ? 'holiday-workday' : ''
+              } ${
+                date.getDate() === new Date().getDate() && 
+                date.getMonth() === new Date().getMonth() && 
+                date.getFullYear() === new Date().getFullYear() ? 'today' : ''
+              }`}
               onClick={() => onDateClick?.(date)}
               onDragOver={(e) => handleDragOver(e, dateKey)}
               onDragLeave={handleDragLeave}
               onDrop={(e) => handleDrop(e, date)}
             >
-              <span className="day-number">{date.getDate()}</span>
+              <div className="day-heading">
+                <span className="day-number">{date.getDate()}</span>
+                {holiday && (
+                  <span
+                    className={`holiday-badge ${holiday.isOffDay ? 'off' : 'workday'}`}
+                    title={`${holiday.name}${holiday.isOffDay ? '休息日' : '调休工作日'}`}
+                  >
+                    {holiday.isOffDay ? '休' : '班'}
+                  </span>
+                )}
+              </div>
+              {holiday && (
+                <div className={`holiday-name ${holiday.isOffDay ? 'off' : 'workday'}`}>
+                  {holiday.name}
+                </div>
+              )}
               <div className="day-events">
                 {/* Show calendar items (events + tasks) */}
                 {dayItems.slice(0, 3).map(item => (
