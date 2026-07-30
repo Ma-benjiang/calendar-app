@@ -167,6 +167,13 @@ describe('dateUtils', () => {
       const result = addMonths(date, 2);
       expect(result.getMonth()).toBe(4); // May
     });
+
+    it('should not skip short months when starting at month end', () => {
+      const result = addMonths(new Date(2026, 0, 31), 1);
+      expect(result.getFullYear()).toBe(2026);
+      expect(result.getMonth()).toBe(1);
+      expect(result.getDate()).toBe(28);
+    });
   });
 
   describe('getConstellation', () => {

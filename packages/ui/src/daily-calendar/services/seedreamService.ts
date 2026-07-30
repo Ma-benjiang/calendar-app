@@ -9,20 +9,20 @@ import {
   GeneratedImage,
   ThemeType,
 } from '../types';
+import {
+  getDefaultImageModelConfig,
+  resolveImageModelConfig,
+  validateImageModelConfig,
+} from './imageModelConfig';
+import { requestAIJson } from './desktopAIRequest';
 
-// 默认配置 - 绘图大师
-const DEFAULT_CONFIG: SeedreamConfig = {
-  apiEndpoint: '/volces-api/api/v3/images/generations',
-  apiKey: '',
-  model: 'doubao-seedream-5-0-260128',
-};
-
-function getConfig(): SeedreamConfig {
-  const env = (import.meta as unknown as { env: Record<string, string | undefined> }).env || {};
-  return {
-    ...DEFAULT_CONFIG,
-    apiKey: env.VITE_SEEDREAM_API_KEY || '',
-    model: env.VITE_SEEDREAM_MODEL || DEFAULT_CONFIG.model,
+interface SeedreamResponse {
+  data?: Array<{
+    url?: string;
+    b64_json?: string;
+  }>;
+  error?: {
+    message?: string;
   };
 }
 
@@ -49,15 +49,32 @@ function generatePrompt(theme: ThemeType, _date: Date, _quote: string): string {
   return `${basePrompt}. High-end artistic photography or illustration, rich details, stunning visual impact, NO TEXT, NO CALENDAR LAYOUT in image.`;
 }
 
+function getOpenAIImageSize(size: ImageGenerationParams['size']): string {
+  if (size === '1K') return '1024x1024';
+  if (size === '4K') return '2880x2880';
+  return '2048x2048';
+}
+
+function getOpenAIEditEndpoint(endpoint: string): string {
+  return endpoint.replace(/\/images\/generations\/?$/, '/images/edits');
+}
+
 export const seedreamService = {
-  generateImage: async (params: ImageGenerationParams & { refImage?: string }) => {
-    const config = getConfig();
-    const prompt = generatePrompt(params.theme, params.date, params.quote);
+  generateImage: async (
+    params: ImageGenerationParams & { refImage?: string },
+    imageModelConfig?: SeedreamConfig
+  ): Promise<GeneratedImage> => {
+    const config = resolveImageModelConfig(
+      imageModelConfig ?? getDefaultImageModelConfig()
+    );
+    const prompt = params.visualPrompt?.trim()
+      || generatePrompt(params.theme, params.date, params.quote);
     
     console.log(`[Seedream] Requesting image with model: ${config.model}${params.refImage ? ' (Img2Img Mode)' : ''}`);
-    
-    if (!config.apiKey) {
-      throw new Error('VITE_SEEDREAM_API_KEY is not configured');
+
+    const configErrors = validateImageModelConfig(config);
+    if (configErrors.length > 0) {
+      throw new Error(`生图模型配置不完整：${configErrors.join('；')}`);
     }
 
     try {
@@ -67,41 +84,62 @@ export const seedreamService = {
         size: string;
         quality: string;
         n: number;
-        response_format: string;
+        response_format?: string;
         ref_image_url?: string;
         strength?: number;
       } = {
         model: config.model,
         prompt,
-        // 核心修复：Seedream 5.0 要求分辨率至少 368.6 万像素，1024x1024 会报错
-        size: '2048x2048', 
-        quality: params.quality || 'standard',
+        size: config.provider === 'openai'
+          ? getOpenAIImageSize(params.size)
+          : '2048x2048',
+        quality: config.provider === 'openai'
+          ? params.quality === 'hd' ? 'high' : 'medium'
+          : params.quality || 'standard',
         n: 1,
-        response_format: 'url',
       };
 
-      if (params.refImage) {
+      let endpoint = config.apiEndpoint;
+      let multipart:
+        | { imageDataUrl: string; imageField: string; filename: string }
+        | undefined;
+
+      if (config.provider === 'openai' && params.refImage) {
+        endpoint = getOpenAIEditEndpoint(config.apiEndpoint);
+        multipart = {
+          imageDataUrl: params.refImage,
+          imageField: 'image',
+          filename: 'reference.jpg',
+        };
+      } else if (params.refImage) {
         body.ref_image_url = params.refImage; // 已经是 data:image/jpeg;base64,... 格式
-        body.strength = 0.6; 
+        body.strength = 0.6;
+        body.response_format = 'url';
+      } else if (config.provider !== 'openai') {
+        body.response_format = 'url';
       }
 
-      const response = await fetch(config.apiEndpoint, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${config.apiKey}`,
-        },
-        body: JSON.stringify(body),
-      });
+      const response = await requestAIJson<SeedreamResponse>(
+        endpoint,
+        config.apiKey,
+        body,
+        multipart
+      );
 
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        console.error(`[Seedream] API Error: ${response.status}`, errorData);
-        throw new Error(`AI 绘图失败: ${response.status}. ${errorData.error?.message || ''}`);
+        console.error(`[Seedream] API Error: ${response.status}`, response.data);
+        throw new Error(`AI 绘图失败: ${response.status}. ${response.data.error?.message || ''}`);
       }
 
-      const data = await response.json();
-      const imageUrl = data.data[0].url;
+      const image = response.data.data?.[0];
+      const imageUrl = image?.url ?? (
+        image?.b64_json ? `data:image/png;base64,${image.b64_json}` : ''
+      );
+
+      if (!imageUrl) {
+        throw new Error('AI 绘图失败：响应中没有图片');
+      }
+
       console.log('[Seedream] Image generated successfully!');
       
       return {
@@ -111,8 +149,10 @@ export const seedreamService = {
           generatedAt: new Date(), 
           prompt, 
           theme: params.theme, 
-          size: '2048x2048', 
-          quality: params.quality || 'standard' 
+          size: params.size,
+          quality: params.quality || 'standard',
+          provider: config.provider,
+          model: config.model,
         }
       };
     } catch (error) {
@@ -124,8 +164,11 @@ export const seedreamService = {
 };
 
 // 兼容性导出
-export async function generateCalendarImage(params: ImageGenerationParams): Promise<GeneratedImage> {
-  return seedreamService.generateImage(params);
+export async function generateCalendarImage(
+  params: ImageGenerationParams,
+  imageModelConfig?: SeedreamConfig
+): Promise<GeneratedImage> {
+  return seedreamService.generateImage(params, imageModelConfig);
 }
 
 export function cancelImageGeneration(): void {

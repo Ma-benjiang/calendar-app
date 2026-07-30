@@ -1,6 +1,7 @@
 import React, { useState, useCallback } from 'react';
 import { CalendarEvent, Task } from '@calendar/core';
 import { TaskCalendarItem } from './useTaskCalendar';
+import { getChinaHoliday } from './services/chinaHolidayService';
 
 interface DayViewProps {
   date: Date;
@@ -82,11 +83,17 @@ export const DayView: React.FC<DayViewProps> = ({
     const month = date.getMonth() + 1;
     const day = date.getDate();
     const weekday = ['星期日', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六'][date.getDay()];
+    const holiday = getChinaHoliday(date);
     return (
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
         <div style={{ fontSize: '12px', color: '#9a9a97', fontWeight: '800', letterSpacing: '0.2em' }}>{year}年{month}月</div>
         <div style={{ fontSize: '48px', color: '#37352f', fontWeight: '900', fontFamily: 'Georgia, serif', margin: '10px 0' }}>{day}</div>
         <div style={{ fontSize: '14px', color: '#eb5757', fontWeight: '700' }}>{weekday}</div>
+        {holiday && (
+          <div className={`day-holiday ${holiday.isOffDay ? 'off' : 'workday'}`}>
+            {holiday.name} · {holiday.isOffDay ? '休息' : '补班'}
+          </div>
+        )}
       </div>
     );
   };

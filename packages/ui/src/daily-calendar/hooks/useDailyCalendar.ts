@@ -6,16 +6,22 @@
 import { useState, useCallback, useEffect } from 'react';
 import {
   DailyCalendarRecord,
+  ImageModelConfig,
+  LLMModelConfig,
   ThemeType,
   ThemeStrategyType,
 } from '../types';
 import { seedreamService } from '../services/seedreamService';
 import { selectDailyQuote } from '../services/captionService';
 import { captionAIService } from '../services/captionAIService';
+import { buildFallbackImagePrompt } from '../services/captionAIService';
+import {
+  persistCalendarImage,
+  removeCalendarImage,
+} from '../services/localImageService';
 import {
   getCalendarDateInfo,
   formatDateKey,
-  getSeason,
   isToday,
 } from '../utils/dateUtils';
 import { useCalendarStorage } from './useCalendarStorage';
@@ -28,31 +34,15 @@ function generateId(): string {
 // 根据策略选择主题
 function selectThemeByStrategy(
   strategy: ThemeStrategyType,
-  preferences: { favorites: ThemeType[]; excluded: ThemeType[]; seasonalMapping: Record<string, ThemeType[]> },
-  date: Date
+  manualTheme: ThemeType
 ): ThemeType {
   const allThemes: ThemeType[] = ['vintage', 'minimal', 'nature', 'art', 'zen', 'cosmic', 'clay', 'sticker', 'illustration', 'cyberpunk', 'ukiyoe', 'ghibli'];
 
-  switch (strategy) {
-    case 'manual':
-      return preferences.favorites[0] || 'vintage';
-    case 'seasonal': {
-      const season = getSeason(date);
-      const seasonThemes = preferences.seasonalMapping[season] || allThemes;
-      const availableThemes = seasonThemes.filter(t => !preferences.excluded.includes(t));
-      const pool = availableThemes.length > 0 ? availableThemes : allThemes;
-      return pool[Math.floor(Math.random() * pool.length)];
-    }
-    case 'daily-random': {
-      const availableThemes = allThemes.filter(t => !preferences.excluded.includes(t));
-      const pool = availableThemes.length > 0 ? availableThemes : allThemes;
-      return pool[Math.floor(Math.random() * pool.length)];
-    }
-    case 'ai-recommended':
-      return 'vintage';
-    default:
-      return 'vintage';
+  if (strategy === 'manual') {
+    return manualTheme;
   }
+
+  return allThemes[Math.floor(Math.random() * allThemes.length)];
 }
 
 export interface UseDailyCalendarReturn {
@@ -65,18 +55,20 @@ export interface UseDailyCalendarReturn {
   generateCalendar: (date?: Date, theme?: ThemeType, refImage?: string) => Promise<void>;
   regenerateCalendar: (refImage?: string) => Promise<void>;
   deleteCurrentRecord: () => Promise<void>;
-  changeTheme: (theme: ThemeType) => Promise<void>;
   changeDate: (date: Date) => void;
   goToToday: () => void;
   goToPrevDay: () => void;
   goToNextDay: () => void;
   currentTheme: ThemeType;
   themeStrategy: ThemeStrategyType;
-  setThemeStrategy: (strategy: ThemeStrategyType) => void;
-  setManualTheme: (theme: ThemeType) => void;
+  setThemeStrategy: (strategy: ThemeStrategyType, theme?: ThemeType) => void;
   hasRecordForDate: (date: Date) => boolean;
   getRecordForDate: (date: Date) => DailyCalendarRecord | null;
   records: Record<string, DailyCalendarRecord>;
+  imageModelConfig: ImageModelConfig;
+  updateImageModelConfig: (config: ImageModelConfig) => void;
+  llmModelConfig: LLMModelConfig;
+  updateLLMModelConfig: (config: LLMModelConfig) => void;
 }
 
 export function useDailyCalendar(): UseDailyCalendarReturn {
@@ -87,7 +79,8 @@ export function useDailyCalendar(): UseDailyCalendarReturn {
     getRecord,
     deleteRecord,
     updateThemeStrategy,
-    switchTheme,
+    updateLLMModel,
+    updateImageModel,
     isLoaded,
   } = useCalendarStorage();
 
@@ -129,6 +122,10 @@ export function useDailyCalendar(): UseDailyCalendarReturn {
     refImage?: string
   ) => {
     if (isGenerating) return;
+    if (!isToday(date)) {
+      setError(new Error('只能生成今天的台历'));
+      return;
+    }
     
     console.log(`[Calendar] Starting generation for ${formatDateKey(date)}`);
     setIsLoading(true);
@@ -138,51 +135,75 @@ export function useDailyCalendar(): UseDailyCalendarReturn {
 
     try {
       const dateKey = formatDateKey(date);
+      const existingRecord = getRecord(dateKey);
       const dateInfo = getCalendarDateInfo(date);
       const selectedTheme = theme || selectThemeByStrategy(
         preferences.themeStrategy.type,
-        preferences.themeStrategy.preferences,
-        date
+        preferences.themeStrategy.currentTheme
       );
 
-      // A. 生成文案 (优先 LLM)
+      // 一次 LLM 调用同时生成文案和视觉 Prompt，失败时回退本地方案。
       setProgress(20);
-      let quote = await captionAIService.generateQuote(date, selectedTheme, dateInfo);
-      if (!quote) {
-        console.log('[Calendar] Falling back to static quote library');
-        quote = selectDailyQuote(date, selectedTheme, dateInfo);
-      }
-
-      // B. 生成图片
-      setProgress(40);
-      const generatedImage = await seedreamService.generateImage({
+      const creativePlan = await captionAIService.generateCreativePlan(
         date,
-        theme: selectedTheme,
-        quote: quote.text,
-        size: preferences.defaultImageSize,
-        quality: preferences.defaultImageQuality,
-        refImage, 
-      });
+        selectedTheme,
+        dateInfo,
+        preferences.llmModel
+      );
+      const quote = creativePlan?.quote
+        ?? selectDailyQuote(date, selectedTheme, dateInfo);
+      const visualPrompt = creativePlan?.imagePrompt
+        ?? buildFallbackImagePrompt(date, selectedTheme, quote, dateInfo);
+
+      // 生成无文字背景图，日期和文案由客户端排版。
+      setProgress(40);
+      const generatedImage = await seedreamService.generateImage(
+        {
+          date,
+          theme: selectedTheme,
+          quote: quote.text,
+          size: preferences.defaultImageSize,
+          quality: preferences.defaultImageQuality,
+          refImage,
+          visualPrompt,
+        },
+        preferences.imageModel
+      );
+      const previousImageURL = existingRecord?.image.url;
+      const persistedImageURL = await persistCalendarImage(
+        generatedImage.url,
+        dateKey
+      );
+      const persistedImage = {
+        ...generatedImage,
+        url: persistedImageURL,
+      };
 
       const newRecord: DailyCalendarRecord = {
-        id: generateId(),
+        id: existingRecord?.id ?? generateId(),
         date: dateKey,
         dateInfo,
         theme: selectedTheme,
         quote,
-        image: generatedImage,
-        createdAt: new Date(),
+        image: persistedImage,
+        createdAt: existingRecord?.createdAt ?? new Date(),
         updatedAt: new Date(),
       };
 
       console.log(`[Calendar] Saving and displaying new record for ${dateKey}`);
-      await saveRecord(newRecord);
+      try {
+        await saveRecord(newRecord);
+      } catch (storageError) {
+        await removeCalendarImage(persistedImageURL);
+        throw storageError;
+      }
+      if (previousImageURL && previousImageURL !== persistedImageURL) {
+        removeCalendarImage(previousImageURL).catch((cleanupError) => {
+          console.warn('[Calendar] Failed to remove replaced image:', cleanupError);
+        });
+      }
       setCurrentRecord(newRecord);
       setProgress(100);
-
-      if (isToday(date)) {
-        switchTheme(selectedTheme);
-      }
     } catch (err) {
       const error = err instanceof Error ? err : new Error(String(err));
       setError(error);
@@ -191,26 +212,43 @@ export function useDailyCalendar(): UseDailyCalendarReturn {
       setIsLoading(false);
       setIsGenerating(false);
     }
-  }, [currentDate, preferences, saveRecord, switchTheme, isGenerating]);
+  }, [currentDate, preferences, saveRecord, isGenerating, getRecord]);
 
   const deleteCurrentRecord = useCallback(async () => {
+    if (!isToday(currentDate)) {
+      setError(new Error('历史台历仅支持查看，不能删除'));
+      return;
+    }
     const dateKey = formatDateKey(currentDate);
+    const imageURL = currentRecord?.image.url;
     await deleteRecord(dateKey);
+    removeCalendarImage(imageURL).catch((cleanupError) => {
+      console.warn('[Calendar] Failed to remove discarded image:', cleanupError);
+    });
     setCurrentRecord(null);
-  }, [currentDate, deleteRecord]);
+  }, [currentDate, currentRecord, deleteRecord]);
 
   const regenerateCalendar = useCallback(async (refImage?: string) => {
-    setCurrentRecord(null);
+    if (!isToday(currentDate)) {
+      setError(new Error('历史台历仅支持查看，不能重新生成'));
+      return;
+    }
     await generateCalendar(currentDate, undefined, refImage);
   }, [currentDate, generateCalendar]);
 
-  const changeTheme = useCallback(async (theme: ThemeType) => {
-    switchTheme(theme);
-    setCurrentRecord(null);
-    await generateCalendar(currentDate, theme);
-  }, [currentDate, generateCalendar, switchTheme]);
-
   const changeDate = useCallback((date: Date) => {
+    const requestedDate = new Date(
+      date.getFullYear(),
+      date.getMonth(),
+      date.getDate()
+    );
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    if (requestedDate.getTime() > today.getTime()) {
+      setError(new Error('不能查看或生成未来日期的台历'));
+      return;
+    }
+
     console.log(`[Calendar] Changing date to ${formatDateKey(date)}`);
     setCurrentDate(date);
     setError(null);
@@ -238,12 +276,8 @@ export function useDailyCalendar(): UseDailyCalendarReturn {
     changeDate(nextDate);
   }, [currentDate, changeDate]);
 
-  const setThemeStrategy = useCallback((strategy: ThemeStrategyType) => {
-    updateThemeStrategy(strategy);
-  }, [updateThemeStrategy]);
-
-  const setManualTheme = useCallback((theme: ThemeType) => {
-    updateThemeStrategy('manual', theme);
+  const setThemeStrategy = useCallback((strategy: ThemeStrategyType, theme?: ThemeType) => {
+    updateThemeStrategy(strategy, theme);
   }, [updateThemeStrategy]);
 
   const hasRecordForDate = useCallback((date: Date): boolean => {
@@ -264,7 +298,6 @@ export function useDailyCalendar(): UseDailyCalendarReturn {
     generateCalendar,
     regenerateCalendar,
     deleteCurrentRecord,
-    changeTheme,
     changeDate,
     goToToday,
     goToPrevDay,
@@ -272,10 +305,13 @@ export function useDailyCalendar(): UseDailyCalendarReturn {
     currentTheme,
     themeStrategy,
     setThemeStrategy,
-    setManualTheme,
     hasRecordForDate,
     getRecordForDate,
     records,
+    llmModelConfig: preferences.llmModel,
+    updateLLMModelConfig: updateLLMModel,
+    imageModelConfig: preferences.imageModel,
+    updateImageModelConfig: updateImageModel,
   };
 }
 

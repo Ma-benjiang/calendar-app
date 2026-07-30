@@ -296,20 +296,89 @@
   transition: background 0.2s;
 }
 
+.day-cell.holiday-off {
+  background: rgba(191, 74, 63, 0.035);
+}
+
+.day-cell.holiday-workday {
+  background: rgba(164, 116, 33, 0.04);
+}
+
 .day-cell:hover {
   background: rgba(247, 246, 243, 0.5);
+}
+
+.day-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 24px;
 }
 
 .day-number {
   font-size: 16px;
   font-weight: 800;
-  margin-bottom: 12px;
+}
+
+.holiday-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 7px;
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.holiday-badge.off {
+  color: #a43d34;
+  background: #f4dfda;
+}
+
+.holiday-badge.workday {
+  color: #815d1d;
+  background: #eee3c9;
+}
+
+.holiday-name {
+  margin: 2px 0 9px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+.holiday-name.off,
+.week-holiday.off,
+.day-holiday.off {
+  color: #a43d34;
+}
+
+.holiday-name.workday,
+.week-holiday.workday,
+.day-holiday.workday {
+  color: #815d1d;
 }
 
 .day-cell.today .day-number {
   color: #eb5757;
   text-decoration: underline;
   text-underline-offset: 4px;
+}
+
+.week-holiday {
+  margin-top: 3px;
+  font-size: 9px;
+  font-weight: 800;
+}
+
+.day-holiday {
+  margin-top: 10px;
+  padding: 4px 10px;
+  border: 1px solid currentColor;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 800;
 }
 
 /* Week View Skeuo */

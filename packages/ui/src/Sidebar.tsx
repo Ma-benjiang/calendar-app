@@ -206,7 +206,7 @@ const SidebarContent: React.FC<SidebarContentProps> = ({
     <div className="sidebar-inner" style={{ display: 'flex', flexDirection: 'column', height: '100%', width: 260 }}>
       {/* Header */}
       <div className="sidebar-header">
-        <img src="/logo.png" alt="Logo" className="sidebar-logo" />
+        <img src="./logo.png" alt="Pie Calendar" className="sidebar-logo" />
         <span className="sidebar-app-name">Pie Calendar</span>
       </div>
 

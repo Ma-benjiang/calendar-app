@@ -6,12 +6,10 @@ import { DayView } from './DayView';
 import { EventForm } from './EventForm';
 import { Sidebar } from './Sidebar';
 import { TaskList } from './TaskList';
-import { SmartSchedule } from './SmartSchedule';
-import { useTaskCalendar } from './useTaskCalendar';
+import { useTaskCalendar, type TaskCalendarView } from './useTaskCalendar';
 import { DailyCalendarPage } from './daily-calendar';
+import { useChinaHolidays } from './hooks/useChinaHolidays';
 import './CalendarApp.css';
-
-type ViewType = 'month' | 'week' | 'day' | 'tasks' | 'daily-calendar';
 
 // 侧边栏示例数据 - 纯净导航列表
 const sidebarItems = [
@@ -39,19 +37,24 @@ export const CalendarAppWithSidebar: React.FC = () => {
     updateTask,
     deleteTask,
     toggleTaskCompletion,
-    scheduleTask,
     handleTaskDrop,
     goToToday,
     goToPrev,
     goToNext,
   } = useTaskCalendar();
+  const holidayYears = [currentDate.getFullYear()];
+  if (currentDate.getMonth() === 0) {
+    holidayYears.push(currentDate.getFullYear() - 1);
+  } else if (currentDate.getMonth() === 11) {
+    holidayYears.push(currentDate.getFullYear() + 1);
+  }
+  useChinaHolidays(holidayYears);
 
   const [showEventForm, setShowEventForm] = useState(false);
   const [editingEvent, setEditingEvent] = useState<CalendarEvent | undefined>(undefined);
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [showTaskDetail, setShowTaskDetail] = useState(false);
-  const [showSmartSchedule, setShowSmartSchedule] = useState(false);
 
   // Sidebar state
   const [isSidebarExpanded, setIsSidebarExpanded] = useState(true);
@@ -152,7 +155,7 @@ export const CalendarAppWithSidebar: React.FC = () => {
               <button className="today-btn" onClick={goToToday}>今天</button>
             </div>
             <div className="view-switcher">
-              {(['month', 'week', 'day', 'tasks'] as ViewType[]).map((v) => (
+              {(['month', 'week', 'day', 'tasks'] as TaskCalendarView[]).map((v) => (
                 <button
                   key={v}
                   className={`view-btn ${view === v ? 'active' : ''}`}
@@ -298,13 +301,6 @@ export const CalendarAppWithSidebar: React.FC = () => {
           </div>
         )}
 
-        <SmartSchedule
-          isOpen={showSmartSchedule}
-          unscheduledTasks={unscheduledTasks}
-          events={events}
-          onScheduleTask={scheduleTask}
-          onClose={() => setShowSmartSchedule(false)}
-        />
       </div>
     </div>
   );

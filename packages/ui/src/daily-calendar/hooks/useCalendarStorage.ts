@@ -4,14 +4,18 @@
  * 使用纯对象 Record 代替 Map 以提高 React 兼容性
  */
 
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import {
   DailyCalendarRecord,
   UserPreferences,
   ThemeType,
   ThemeStrategyType,
+  ImageModelConfig,
+  LLMModelConfig,
 } from '../types';
 import { formatDateKey } from '../utils/dateUtils';
+import { getDefaultImageModelConfig } from '../services/imageModelConfig';
+import { getDefaultLLMModelConfig } from '../services/llmModelConfig';
 import { getStorageAdapter } from '@calendar/storage';
 
 // Storage keys
@@ -23,21 +27,13 @@ const DEFAULT_PREFERENCES: UserPreferences = {
   themeStrategy: {
     type: 'daily-random',
     currentTheme: 'vintage',
-    preferences: {
-      favorites: [],
-      excluded: [],
-      seasonalMapping: {
-        spring: ['nature', 'zen', 'art'],
-        summer: ['nature', 'minimal', 'cosmic'],
-        autumn: ['vintage', 'art', 'nature'],
-        winter: ['zen', 'vintage', 'cosmic'],
-      },
-    },
   },
   defaultImageSize: '2K',
   defaultImageQuality: 'standard',
   language: 'zh',
   autoGenerate: false, // 默认关闭，让用户手动按快门
+  llmModel: getDefaultLLMModelConfig(),
+  imageModel: getDefaultImageModelConfig(),
 };
 
 function serializeRecord(record: DailyCalendarRecord): string {
@@ -76,6 +72,8 @@ export function useCalendarStorage() {
   const [records, setRecords] = useState<Record<string, DailyCalendarRecord>>({});
   const [preferences, setPreferences] = useState<UserPreferences>(DEFAULT_PREFERENCES);
   const [isLoaded, setIsLoaded] = useState(false);
+  const recordsRef = useRef<Record<string, DailyCalendarRecord>>({});
+  const recordsWriteQueueRef = useRef<Promise<void>>(Promise.resolve());
 
   // 1. 从适配器加载初始数据
   useEffect(() => {
@@ -94,6 +92,7 @@ export function useCalendarStorage() {
               console.warn(`Failed to parse record for ${date}:`, e);
             }
           });
+          recordsRef.current = recordsObj;
           setRecords(recordsObj);
           console.log(`[Storage] Loaded ${Object.keys(recordsObj).length} records from storage`);
         }
@@ -115,28 +114,35 @@ export function useCalendarStorage() {
   }, [adapter]);
 
   // 2. 自动持久化函数
-  const persistToPhysicalStorage = useCallback(async (currentRecords: Record<string, DailyCalendarRecord>) => {
-    try {
-      const serializedObj: Record<string, unknown> = {};
-      Object.entries(currentRecords).forEach(([date, record]) => {
-        serializedObj[date] = JSON.parse(serializeRecord(record));
+  const persistToPhysicalStorage = useCallback((currentRecords: Record<string, DailyCalendarRecord>) => {
+    const writeOperation = recordsWriteQueueRef.current
+      .catch(() => undefined)
+      .then(async () => {
+        const serializedObj: Record<string, unknown> = {};
+        Object.entries(currentRecords).forEach(([date, record]) => {
+          serializedObj[date] = JSON.parse(serializeRecord(record));
+        });
+        await adapter.setItem(STORAGE_KEY_RECORDS, JSON.stringify(serializedObj));
+        console.log(`[Storage] Successfully persisted ${Object.keys(currentRecords).length} records`);
       });
-      await adapter.setItem(STORAGE_KEY_RECORDS, JSON.stringify(serializedObj));
-      console.log(`[Storage] Successfully persisted ${Object.keys(currentRecords).length} records`);
-    } catch (error) {
-      console.error('Failed to persist records:', error);
-    }
+    recordsWriteQueueRef.current = writeOperation;
+    return writeOperation;
   }, [adapter]);
 
   // 公开操作方法
   const saveRecord = useCallback(async (record: DailyCalendarRecord) => {
     console.log(`[Storage] Saving new record for ${record.date}`);
-    setRecords(prev => {
-      const next = { ...prev, [record.date]: record };
-      // 立即触发异步持久化
-      persistToPhysicalStorage(next);
-      return next;
-    });
+    const previous = recordsRef.current;
+    const next = { ...previous, [record.date]: record };
+    recordsRef.current = next;
+    setRecords(next);
+    try {
+      await persistToPhysicalStorage(next);
+    } catch (error) {
+      recordsRef.current = previous;
+      setRecords(previous);
+      throw error;
+    }
   }, [persistToPhysicalStorage]);
 
   const getRecord = useCallback((date: string | Date): DailyCalendarRecord | null => {
@@ -151,12 +157,18 @@ export function useCalendarStorage() {
 
   const deleteRecord = useCallback(async (date: string | Date) => {
     const dateKey = typeof date === 'string' ? date : formatDateKey(date);
-    setRecords(prev => {
-      const next = { ...prev };
-      delete next[dateKey];
-      persistToPhysicalStorage(next);
-      return next;
-    });
+    const previous = recordsRef.current;
+    const next = { ...previous };
+    delete next[dateKey];
+    recordsRef.current = next;
+    setRecords(next);
+    try {
+      await persistToPhysicalStorage(next);
+    } catch (error) {
+      recordsRef.current = previous;
+      setRecords(previous);
+      throw error;
+    }
   }, [persistToPhysicalStorage]);
 
   const savePreferencesToStorage = useCallback(async (newPrefs: UserPreferences) => {
@@ -183,10 +195,18 @@ export function useCalendarStorage() {
     savePreferencesToStorage(newPrefs);
   }, [preferences, savePreferencesToStorage]);
 
-  const switchTheme = useCallback((theme: ThemeType) => {
+  const updateImageModel = useCallback((imageModel: ImageModelConfig) => {
     const newPrefs: UserPreferences = {
       ...preferences,
-      themeStrategy: { ...preferences.themeStrategy, currentTheme: theme },
+      imageModel,
+    };
+    savePreferencesToStorage(newPrefs);
+  }, [preferences, savePreferencesToStorage]);
+
+  const updateLLMModel = useCallback((llmModel: LLMModelConfig) => {
+    const newPrefs: UserPreferences = {
+      ...preferences,
+      llmModel,
     };
     savePreferencesToStorage(newPrefs);
   }, [preferences, savePreferencesToStorage]);
@@ -199,7 +219,8 @@ export function useCalendarStorage() {
     deleteRecord,
     preferences,
     updateThemeStrategy,
-    switchTheme,
+    updateLLMModel,
+    updateImageModel,
     isLoaded,
   };
 }

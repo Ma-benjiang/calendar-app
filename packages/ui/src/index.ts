@@ -22,6 +22,13 @@ export {
   type PositionedItem,
 } from './useViewMode';
 export { useDragAndDrop, type DragItem, type DragState, type DropResult } from './useDragAndDrop';
+export { useChinaHolidays } from './hooks/useChinaHolidays';
+export {
+  getChinaHoliday,
+  syncChinaHolidayYear,
+  type ChinaHolidayDay,
+  type ChinaHolidayYear,
+} from './services/chinaHolidayService';
 
 // Export components
 export { Sidebar } from './Sidebar';
@@ -40,11 +47,7 @@ export { EventForm } from './EventForm';
 export { TaskList } from './TaskList';
 export { TaskView } from './TaskView';
 export { TaskStatsBoard } from './TaskStatsBoard';
-export { SmartSchedule } from './SmartSchedule';
-export { RecurrencePicker } from './RecurrencePicker';
 export { useCalendar } from './useCalendar';
-export { useNotifications } from './useNotifications';
-export { ExportImport } from './ExportImport';
 
 // Daily Calendar Feature
 export * from './daily-calendar';

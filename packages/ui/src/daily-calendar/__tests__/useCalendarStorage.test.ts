@@ -3,7 +3,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { renderHook, act } from '@testing-library/react';
+import { renderHook, act, waitFor } from '@testing-library/react';
 import { useCalendarStorage } from '../hooks/useCalendarStorage';
 import { DailyCalendarRecord } from '../types';
 
@@ -11,16 +11,19 @@ describe('useCalendarStorage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     localStorage.clear();
+    delete (window as unknown as { calendarDesktop?: unknown }).calendarDesktop;
   });
 
   afterEach(() => {
     vi.restoreAllMocks();
+    vi.unstubAllEnvs();
   });
 
   describe('records', () => {
-    it('should initialize with empty records', () => {
+    it('should initialize with empty records', async () => {
       const { result } = renderHook(() => useCalendarStorage());
 
+      await waitFor(() => expect(result.current.isLoaded).toBe(true));
       expect(Object.keys(result.current.records).length).toBe(0);
     });
 
@@ -64,17 +67,63 @@ describe('useCalendarStorage', () => {
 
       expect(result.current.getRecord('2024-03-15')).toEqual(mockRecord);
     });
+
+    it('should wait for desktop persistence before resolving record changes', async () => {
+      let finishWrite: (() => void) | undefined;
+      const setItem = vi.fn(() => new Promise<void>((resolve) => {
+        finishWrite = resolve;
+      }));
+      (window as unknown as {
+        calendarDesktop: {
+          storage: {
+            getItem: () => Promise<null>;
+            setItem: typeof setItem;
+            removeItem: () => Promise<void>;
+          };
+        };
+      }).calendarDesktop = {
+        storage: {
+          getItem: vi.fn().mockResolvedValue(null),
+          setItem,
+          removeItem: vi.fn().mockResolvedValue(undefined),
+        },
+      };
+      const { result } = renderHook(() => useCalendarStorage());
+      await waitFor(() => expect(result.current.isLoaded).toBe(true));
+
+      let settled = false;
+      let deletion: Promise<void>;
+      act(() => {
+        deletion = result.current.deleteRecord('2026-07-30');
+        deletion.then(() => {
+          settled = true;
+        });
+      });
+
+      await waitFor(() => expect(setItem).toHaveBeenCalled());
+      expect(settled).toBe(false);
+      await act(async () => {
+        finishWrite?.();
+        await deletion;
+      });
+      expect(settled).toBe(true);
+    });
   });
 
   describe('preferences', () => {
-    it('should switch theme', async () => {
+    it('should save a manual theme', async () => {
       const { result } = renderHook(() => useCalendarStorage());
 
-      await act(async () => {
-        result.current.switchTheme('nature');
+      act(() => {
+        result.current.updateThemeStrategy('manual', 'nature');
       });
 
-      expect(result.current.preferences.themeStrategy.currentTheme).toBe('nature');
+      await waitFor(() => {
+        expect(result.current.preferences.themeStrategy).toEqual({
+          type: 'manual',
+          currentTheme: 'nature',
+        });
+      });
     });
 
     it('should update theme strategy', async () => {
@@ -86,6 +135,61 @@ describe('useCalendarStorage', () => {
 
       expect(result.current.preferences.themeStrategy.type).toBe('daily-random');
       expect(result.current.preferences.themeStrategy.currentTheme).toBe('art');
+    });
+
+    it('should persist image model configuration', async () => {
+      const { result } = renderHook(() => useCalendarStorage());
+
+      await waitFor(() => expect(result.current.isLoaded).toBe(true));
+      act(() => {
+        result.current.updateImageModel({
+          provider: 'openai',
+          apiEndpoint: 'https://images.example.com/api/v3/images/generations',
+          apiKey: 'local-key',
+          model: 'custom-model',
+        });
+      });
+
+      await waitFor(() => {
+        expect(result.current.preferences.imageModel.model).toBe('custom-model');
+      });
+      const stored = JSON.parse(localStorage.getItem('daily-calendar-preferences') || '{}');
+      expect(stored.data.imageModel.apiEndpoint).toBe('https://images.example.com/api/v3/images/generations');
+    });
+
+    it('should persist LLM model configuration', async () => {
+      const { result } = renderHook(() => useCalendarStorage());
+
+      await waitFor(() => expect(result.current.isLoaded).toBe(true));
+      act(() => {
+        result.current.updateLLMModel({
+          provider: 'deepseek',
+          apiEndpoint: 'https://api.deepseek.com/chat/completions',
+          apiKey: 'local-deepseek-key',
+          model: 'deepseek-v4-flash',
+        });
+      });
+
+      await waitFor(() => {
+        expect(result.current.preferences.llmModel.model).toBe('deepseek-v4-flash');
+      });
+      const stored = JSON.parse(localStorage.getItem('daily-calendar-preferences') || '{}');
+      expect(stored.data.llmModel.apiKey).toBe('local-deepseek-key');
+    });
+
+    it('should not copy environment secrets into persisted preferences', async () => {
+      vi.stubEnv('VITE_SEEDREAM_API_KEY', 'environment-secret');
+      vi.stubEnv('VITE_DEEPSEEK_API_KEY', 'deepseek-environment-secret');
+      const { result } = renderHook(() => useCalendarStorage());
+
+      await waitFor(() => expect(result.current.isLoaded).toBe(true));
+      act(() => result.current.updateThemeStrategy('manual', 'art'));
+
+      await waitFor(() => {
+        const stored = JSON.parse(localStorage.getItem('daily-calendar-preferences') || '{}');
+        expect(stored.data.imageModel.apiKey).toBe('');
+        expect(stored.data.llmModel.apiKey).toBe('');
+      });
     });
   });
 });

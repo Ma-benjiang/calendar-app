@@ -30,6 +30,8 @@ export interface UseTaskCalendarOptions {
   initialTaskSortBy?: TaskSortOption;
 }
 
+export type TaskCalendarView = 'month' | 'week' | 'day' | 'tasks' | 'daily-calendar';
+
 export function useTaskCalendar(options: UseTaskCalendarOptions = {}) {
   const { initialTaskFilter = {}, initialTaskSortBy = 'dueDate-asc' } = options;
 
@@ -42,7 +44,7 @@ export function useTaskCalendar(options: UseTaskCalendarOptions = {}) {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [currentDate, setCurrentDate] = useState(new Date());
-  const [view, setView] = useState<'month' | 'week' | 'day' | 'tasks'>('month');
+  const [view, setView] = useState<TaskCalendarView>('month');
   const [taskFilter, setTaskFilter] = useState<TaskFilter>(initialTaskFilter);
   const [taskSortBy, setTaskSortBy] = useState<TaskSortOption>(initialTaskSortBy);
   const [isLoading, setIsLoading] = useState(true);

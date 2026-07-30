@@ -2,16 +2,15 @@
  * ThemeSelector - Notion 风格主题选择器
  */
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Check, Sparkles, Palette, Calendar, Shuffle, Bot } from 'lucide-react';
+import { X, Check, Camera, Palette, Shuffle } from 'lucide-react';
 import { ThemeType, ThemeStrategyType, ThemeConfig } from '../types';
 
 interface ThemeSelectorProps {
   currentTheme: ThemeType;
   strategy: ThemeStrategyType;
-  onThemeChange: (theme: ThemeType) => void;
-  onStrategyChange: (strategy: ThemeStrategyType) => void;
+  onSave: (strategy: ThemeStrategyType, theme: ThemeType) => void;
   isOpen: boolean;
   onClose: () => void;
 }
@@ -104,21 +103,26 @@ const THEMES: ThemeConfig[] = [
 ];
 
 const STRATEGIES: { id: ThemeStrategyType; name: string; description: string; icon: React.ReactNode }[] = [
+  { id: 'daily-random', name: '随机主题', description: '每次点击相机时随机选择主题', icon: <Shuffle className="w-4 h-4" /> },
   { id: 'manual', name: '手动选择', description: '固定使用选定的主题', icon: <Palette className="w-4 h-4" /> },
-  { id: 'seasonal', name: '季节自动', description: '根据当前季节自动切换主题', icon: <Calendar className="w-4 h-4" /> },
-  { id: 'daily-random', name: '每日随机', description: '每天随机选择一个主题', icon: <Shuffle className="w-4 h-4" /> },
-  { id: 'ai-recommended', name: 'AI 推荐', description: '根据日期和天气智能推荐', icon: <Bot className="w-4 h-4" /> },
 ];
 
 export const ThemeSelector: React.FC<ThemeSelectorProps> = ({
   currentTheme,
   strategy,
-  onThemeChange,
-  onStrategyChange,
+  onSave,
   isOpen,
   onClose,
 }) => {
-  const [activeTab, setActiveTab] = useState<'theme' | 'strategy'>('theme');
+  const [draftStrategy, setDraftStrategy] = useState(strategy);
+  const [draftTheme, setDraftTheme] = useState(currentTheme);
+
+  useEffect(() => {
+    if (isOpen) {
+      setDraftStrategy(strategy);
+      setDraftTheme(currentTheme);
+    }
+  }, [currentTheme, isOpen, strategy]);
 
   return (
     <AnimatePresence>
@@ -141,47 +145,65 @@ export const ThemeSelector: React.FC<ThemeSelectorProps> = ({
             {/* Header */}
             <div className="flex items-center justify-between px-5 py-4 border-b border-[var(--color-border)]">
               <h2 className="text-sm font-semibold text-[var(--color-text-primary)] tracking-tight">配置台历风格</h2>
-              <button onClick={onClose} className="p-1 hover:bg-[var(--color-bg-hover)] rounded-md transition-colors text-[var(--color-text-tertiary)] hover:text-[var(--color-text-primary)]">
+              <button aria-label="关闭主题设置" onClick={onClose} className="p-1 hover:bg-[var(--color-bg-hover)] rounded-md transition-colors text-[var(--color-text-tertiary)] hover:text-[var(--color-text-primary)]">
                 <X size={18} />
               </button>
             </div>
 
-            {/* Tabs */}
-            <div className="flex px-5 border-b border-[var(--color-border)] gap-6">
-              {[
-                { id: 'theme' as const, label: '主题风格' },
-                { id: 'strategy' as const, label: '切换策略' }
-              ].map(tab => (
-                <button
-                  key={tab.id}
-                  className={`py-3 text-xs font-medium transition-all relative ${
-                    activeTab === tab.id ? 'text-[var(--color-text-primary)]' : 'text-[var(--color-text-tertiary)] hover:text-[var(--color-text-secondary)]'
-                  }`}
-                  onClick={() => setActiveTab(tab.id)}
-                >
-                  {tab.label}
-                  {activeTab === tab.id && (
-                    <motion.div layoutId="activeTab" className="absolute bottom-0 left-0 right-0 h-0.5 bg-[var(--color-text-primary)]" />
-                  )}
-                </button>
-              ))}
-            </div>
-
-            {/* Content */}
-            <div className="p-5 max-h-[50vh] overflow-y-auto">
-              {activeTab === 'theme' ? (
-                <div className="grid grid-cols-2 gap-4">
-                  {THEMES.map((theme) => (
+            <div className="max-h-[58vh] overflow-y-auto p-5">
+              <div className="mb-5">
+                <div className="mb-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--color-text-tertiary)]">
+                  切换策略
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  {STRATEGIES.map((item) => (
                     <button
-                      key={theme.id}
-                      className={`group relative p-4 rounded-lg border transition-all text-left flex flex-col gap-3 ${
-                        currentTheme === theme.id
+                      key={item.id}
+                      aria-label={item.name}
+                      className={`rounded-lg border p-4 text-left transition-all ${
+                        draftStrategy === item.id
                           ? 'border-[var(--color-text-primary)] bg-[var(--color-bg-secondary)]'
                           : 'border-[var(--color-border)] hover:border-[var(--color-border-hover)] hover:bg-[var(--color-bg-hover)]'
                       }`}
-                      onClick={() => onThemeChange(theme.id)}
+                      onClick={() => setDraftStrategy(item.id)}
                     >
-                      {currentTheme === theme.id && (
+                      <div className="mb-3 flex items-center justify-between">
+                        <div className={`rounded-md p-2 ${
+                          draftStrategy === item.id
+                            ? 'bg-[var(--color-text-primary)] text-[var(--color-bg-primary)]'
+                            : 'bg-[var(--color-bg-tertiary)] text-[var(--color-text-secondary)]'
+                        }`}>
+                          {item.icon}
+                        </div>
+                        {draftStrategy === item.id && (
+                          <Check size={14} strokeWidth={3} className="text-[var(--color-text-primary)]" />
+                        )}
+                      </div>
+                      <h3 className="text-xs font-semibold text-[var(--color-text-primary)]">{item.name}</h3>
+                      <p className="mt-1 text-[10px] leading-normal text-[var(--color-text-tertiary)]">{item.description}</p>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {draftStrategy === 'manual' ? (
+                <div>
+                  <div className="mb-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--color-text-tertiary)]">
+                    主题风格
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                  {THEMES.map((theme) => (
+                    <button
+                      key={theme.id}
+                      aria-label={theme.name}
+                      className={`group relative flex flex-col gap-3 rounded-lg border p-4 text-left transition-all ${
+                        draftTheme === theme.id
+                          ? 'border-[var(--color-text-primary)] bg-[var(--color-bg-secondary)]'
+                          : 'border-[var(--color-border)] hover:border-[var(--color-border-hover)] hover:bg-[var(--color-bg-hover)]'
+                      }`}
+                      onClick={() => setDraftTheme(theme.id)}
+                    >
+                      {draftTheme === theme.id && (
                         <div className="absolute top-3 right-3 text-[var(--color-text-primary)]">
                           <Check size={14} strokeWidth={3} />
                         </div>
@@ -200,40 +222,30 @@ export const ThemeSelector: React.FC<ThemeSelectorProps> = ({
                     </button>
                   ))}
                 </div>
+                </div>
               ) : (
-                <div className="flex flex-col gap-2">
-                  {STRATEGIES.map((s) => (
-                    <button
-                      key={s.id}
-                      className={`w-full p-4 rounded-lg border transition-all flex items-center gap-4 ${
-                        strategy === s.id
-                          ? 'border-[var(--color-text-primary)] bg-[var(--color-bg-secondary)]'
-                          : 'border-[var(--color-border)] hover:border-[var(--color-border-hover)] hover:bg-[var(--color-bg-hover)]'
-                      }`}
-                      onClick={() => onStrategyChange(s.id)}
-                    >
-                      <div className={`p-2 rounded-md ${
-                        strategy === s.id ? 'bg-[var(--color-text-primary)] text-[var(--color-bg-primary)]' : 'bg-[var(--color-bg-tertiary)] text-[var(--color-text-secondary)]'
-                      }`}>
-                        {s.icon}
-                      </div>
-                      <div className="text-left flex-1">
-                        <h3 className="text-xs font-semibold text-[var(--color-text-primary)]">{s.name}</h3>
-                        <p className="text-[10px] text-[var(--color-text-tertiary)] mt-0.5">{s.description}</p>
-                      </div>
-                      {strategy === s.id && (
-                        <Check size={14} strokeWidth={3} className="text-[var(--color-text-primary)]" />
-                      )}
-                    </button>
-                  ))}
+                <div className="flex items-center gap-3 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-secondary)] p-4">
+                  <Camera size={16} className="text-[var(--color-text-secondary)]" />
+                  <p className="text-[11px] text-[var(--color-text-secondary)]">
+                    保存后，每次点击相机都会从全部主题中随机选择一个。
+                  </p>
                 </div>
               )}
             </div>
 
-            {/* Footer */}
-            <div className="px-5 py-4 bg-[var(--color-bg-secondary)] border-t border-[var(--color-border)] flex items-center gap-2">
-              <Sparkles size={12} className="text-[var(--color-text-tertiary)]" />
-              <span className="text-[10px] text-[var(--color-text-tertiary)] font-medium">切换主题后将根据新风格重新绘制台历</span>
+            <div className="flex items-center justify-end gap-2 border-t border-[var(--color-border)] bg-[var(--color-bg-secondary)] px-5 py-4">
+              <button
+                onClick={onClose}
+                className="rounded-md px-4 py-2 text-xs font-medium text-[var(--color-text-secondary)] transition-colors hover:bg-[var(--color-bg-hover)]"
+              >
+                取消
+              </button>
+              <button
+                onClick={() => onSave(draftStrategy, draftTheme)}
+                className="rounded-md bg-[var(--color-text-primary)] px-4 py-2 text-xs font-semibold text-[var(--color-bg-primary)] transition-opacity hover:opacity-80"
+              >
+                保存设置
+              </button>
             </div>
           </motion.div>
         </>

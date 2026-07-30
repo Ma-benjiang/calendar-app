@@ -1,4 +1,4 @@
-// 存储抽象层 - 支持 localStorage 和 SQLite
+// 存储抽象层 - 支持浏览器回退和桌面 SQLite
 import { CalendarEvent, Task } from '@calendar/core';
 
 export interface StorageAdapter {
@@ -7,7 +7,7 @@ export interface StorageAdapter {
   removeItem(key: string): Promise<void>;
 }
 
-// Web 存储适配器
+// 浏览器开发环境回退
 export class LocalStorageAdapter implements StorageAdapter {
   async getItem(key: string): Promise<string | null> {
     return localStorage.getItem(key);
@@ -22,38 +22,26 @@ export class LocalStorageAdapter implements StorageAdapter {
   }
 }
 
-interface IpcRenderer {
-  invoke(channel: string, ...args: unknown[]): Promise<unknown>;
+interface DesktopStorageBridge {
+  getItem(key: string): Promise<string | null>;
+  setItem(key: string, value: string): Promise<void>;
+  removeItem(key: string): Promise<void>;
 }
 
 // Electron SQLite 适配器
 export class ElectronSQLiteAdapter implements StorageAdapter {
-  private ipc: IpcRenderer | null = null;
-
-  constructor() {
-    if (typeof window !== 'undefined' && 'require' in window) {
-      try {
-        const electron = (window as unknown as { require(module: string): { ipcRenderer: IpcRenderer } }).require('electron');
-        this.ipc = electron.ipcRenderer;
-      } catch (e) {
-        console.warn('Electron ipcRenderer not available');
-      }
-    }
-  }
+  constructor(private bridge: DesktopStorageBridge) {}
 
   async getItem(key: string): Promise<string | null> {
-    if (!this.ipc) return null;
-    return this.ipc.invoke('storage-get', key);
+    return this.bridge.getItem(key);
   }
 
   async setItem(key: string, value: string): Promise<void> {
-    if (!this.ipc) return;
-    await this.ipc.invoke('storage-set', key, value);
+    await this.bridge.setItem(key, value);
   }
 
   async removeItem(key: string): Promise<void> {
-    if (!this.ipc) return;
-    await this.ipc.invoke('storage-remove', key);
+    await this.bridge.removeItem(key);
   }
 }
 
@@ -61,14 +49,16 @@ export class ElectronSQLiteAdapter implements StorageAdapter {
  * 获取当前环境的最佳存储适配器
  */
 export function getStorageAdapter(): StorageAdapter {
-  const isElectron = typeof window !== 'undefined' && 
-                     'process' in window && 
-                     (window as unknown as { process: { type: string } }).process.type === 'renderer';
-  
-  if (isElectron) {
-    return new ElectronSQLiteAdapter();
+  const desktopBridge = typeof window !== 'undefined'
+    ? (window as unknown as {
+        calendarDesktop?: { storage?: DesktopStorageBridge };
+      }).calendarDesktop?.storage
+    : undefined;
+
+  if (desktopBridge) {
+    return new ElectronSQLiteAdapter(desktopBridge);
   }
-  
+
   return new LocalStorageAdapter();
 }
 
@@ -125,7 +115,6 @@ export class StorageManager {
         completedAt?: string;
         createdAt: string;
         updatedAt: string;
-        recurrence?: { endDate?: string };
         [key: string]: unknown;
       }>;
 
@@ -137,10 +126,6 @@ export class StorageManager {
         completedAt: t.completedAt ? new Date(t.completedAt) : undefined,
         createdAt: new Date(t.createdAt),
         updatedAt: new Date(t.updatedAt),
-        recurrence: t.recurrence ? {
-          ...t.recurrence,
-          endDate: t.recurrence.endDate ? new Date(t.recurrence.endDate) : undefined,
-        } : undefined,
       })) as Task[];
     } catch {
       return [];

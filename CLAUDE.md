@@ -448,7 +448,7 @@ Agent 系统仅在以下情况主动请示 CEO：
 2. 开发 + 本地验证
    pnpm lint
    pnpm test
-   pnpm build:web
+   pnpm build:renderer
 
 3. 提交到分支
    git commit -m "feat: xxx"

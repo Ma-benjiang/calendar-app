@@ -1,6 +1,7 @@
 import React, { useState, useCallback } from 'react';
 import { CalendarCore, CalendarEvent, Task } from '@calendar/core';
 import { TaskCalendarItem } from './useTaskCalendar';
+import { getChinaHoliday } from './services/chinaHolidayService';
 
 interface WeekViewProps {
   date: Date;
@@ -98,7 +99,9 @@ export const WeekView: React.FC<WeekViewProps> = ({
     <div className="week-view">
       <div className="week-header">
         <div className="hour-label-header" style={{ width: '60px', borderRight: '1px solid #f0ede4' }}></div>
-        {weekDays.map((day, index) => (
+        {weekDays.map((day, index) => {
+          const holiday = getChinaHoliday(day);
+          return (
           <div key={index} className="week-day-header">
             <div className="day-name" style={{ fontSize: '10px', color: '#9a9a97', fontWeight: '800' }}>
               {['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'][day.getDay()]}
@@ -129,8 +132,16 @@ export const WeekView: React.FC<WeekViewProps> = ({
                 }} />
               )}
             </div>
+            {holiday && (
+              <div
+                className={`week-holiday ${holiday.isOffDay ? 'off' : 'workday'}`}
+              >
+                {holiday.name} · {holiday.isOffDay ? '休' : '班'}
+              </div>
+            )}
           </div>
-        ))}
+          );
+        })}
       </div>
       <div className="week-grid">
         {hours.map(hour => (

@@ -29,34 +29,12 @@ jobs:
       - name: Test
         run: pnpm test
 
-  build-web:
-    name: 🌐 Build Web
-    needs: quality-check
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'pnpm'
-      - name: Install dependencies
-        run: pnpm install --no-frozen-lockfile
-      - name: Build Web
-        run: pnpm run build:web
-      - name: Upload Build Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: web-dist
-          path: apps/web/dist/
-
   build-desktop:
     name: 💻 Build Desktop (${{ matrix.os }})
     needs: quality-check
     strategy:
       matrix:
-        os: [macos-latest, windows-latest]
+        os: [macos-latest, windows-latest, ubuntu-latest]
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
@@ -80,7 +58,7 @@ jobs:
 
   release:
     name: 🚀 Create Release
-    needs: [build-web, build-desktop]
+    needs: build-desktop
     if: startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-latest
     permissions:
@@ -98,6 +76,7 @@ jobs:
             artifacts/**/*.exe
             artifacts/**/*.dmg
             artifacts/**/*.zip
+            artifacts/**/*.AppImage
           generate_release_notes: true
           make_latest: true
         env:

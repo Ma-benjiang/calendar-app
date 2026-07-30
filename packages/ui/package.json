@@ -9,11 +9,11 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "react": "^18.2.0",
-    "react-dom": "^18.2.0",
+    "@calendar/core": "workspace:*",
     "framer-motion": "^10.16.0",
     "lucide-react": "^0.294.0",
-    "@calendar/core": "workspace:*"
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0"
   },
   "devDependencies": {
     "@testing-library/jest-dom": "^6.9.1",

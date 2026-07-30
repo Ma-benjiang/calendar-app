@@ -5,7 +5,7 @@
 import React, { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronLeft, ChevronRight, X, Image as ImageIcon } from 'lucide-react';
-import { DailyCalendarRecord } from '../types';
+import { HistoryCalendarProps } from '../types';
 import {
   getFirstDayOfMonth,
   getLastDayOfMonth,
@@ -13,16 +13,6 @@ import {
   formatDateKey,
   addMonths,
 } from '../utils/dateUtils';
-
-interface HistoryCalendarProps {
-  records: Record<string, DailyCalendarRecord>;
-  currentMonth: Date;
-  onMonthChange: (date: Date) => void;
-  onSelectDate: (date: string) => void;
-  selectedDate?: string;
-  onClose: () => void;
-  isOpen: boolean;
-}
 
 const WEEKDAYS = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
 
@@ -96,18 +86,33 @@ export const HistoryCalendar: React.FC<HistoryCalendarProps> = ({
               <div className="flex items-center gap-6">
                 <h2 className="text-sm font-bold text-[var(--color-text-primary)] tracking-tight">时光相册</h2>
                 <div className="flex items-center gap-1 bg-[var(--color-bg-secondary)] rounded-full p-0.5 border border-[var(--color-border)]">
-                  <button onClick={() => onMonthChange(addMonths(currentMonth, -1))} className="p-1 hover:bg-[var(--color-bg-primary)] rounded-full transition-colors">
+                  <button
+                    type="button"
+                    aria-label="上个月"
+                    onClick={() => onMonthChange(addMonths(currentMonth, -1))}
+                    className="p-1 hover:bg-[var(--color-bg-primary)] rounded-full transition-colors"
+                  >
                     <ChevronLeft className="w-3.5 h-3.5 text-[var(--color-text-secondary)]" />
                   </button>
                   <span className="text-[11px] font-bold text-[var(--color-text-primary)] min-w-[80px] text-center uppercase tracking-widest">
                     {currentMonth.getFullYear()} . {currentMonth.getMonth() + 1}
                   </span>
-                  <button onClick={() => onMonthChange(addMonths(currentMonth, 1))} className="p-1 hover:bg-[var(--color-bg-primary)] rounded-full transition-colors">
+                  <button
+                    type="button"
+                    aria-label="下个月"
+                    onClick={() => onMonthChange(addMonths(currentMonth, 1))}
+                    className="p-1 hover:bg-[var(--color-bg-primary)] rounded-full transition-colors"
+                  >
                     <ChevronRight className="w-3.5 h-3.5 text-[var(--color-text-secondary)]" />
                   </button>
                 </div>
               </div>
-              <button onClick={onClose} className="p-1.5 hover:bg-[var(--color-bg-hover)] rounded-md transition-colors text-[var(--color-text-tertiary)]">
+              <button
+                type="button"
+                aria-label="关闭时光相册"
+                onClick={onClose}
+                className="p-1.5 hover:bg-[var(--color-bg-hover)] rounded-md transition-colors text-[var(--color-text-tertiary)]"
+              >
                 <X size={18} />
               </button>
             </div>
@@ -130,6 +135,9 @@ export const HistoryCalendar: React.FC<HistoryCalendarProps> = ({
                   return (
                     <motion.button
                       key={day.dateKey}
+                      type="button"
+                      aria-label={`${day.dateKey}${hasRecord ? '，有记录' : '，无记录'}`}
+                      disabled={!hasRecord}
                       className={`
                         relative aspect-[3/4] rounded-md overflow-hidden border transition-all
                         ${day.isCurrentMonth ? 'bg-[var(--color-bg-primary)]' : 'bg-[var(--color-bg-secondary)] opacity-40'}
@@ -143,7 +151,11 @@ export const HistoryCalendar: React.FC<HistoryCalendarProps> = ({
                     >
                       {hasRecord ? (
                         <>
-                          <img src={day.record!.image.url} alt="" className="absolute inset-0 w-full h-full object-cover" />
+                          <img
+                            src={day.record!.image.url}
+                            alt={`${day.dateKey} 台历`}
+                            className="absolute inset-0 w-full h-full object-cover"
+                          />
                           <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
                           <div className={`absolute top-1.5 left-1.5 w-5 h-5 flex items-center justify-center rounded-full text-[10px] font-bold ${isToday ? 'bg-[var(--color-accent-blue)] text-white' : 'bg-white/90 text-black shadow-sm'}`}>
                             {day.date.getDate()}
@@ -175,7 +187,11 @@ export const HistoryCalendar: React.FC<HistoryCalendarProps> = ({
                 <span className="w-2 h-2 rounded-full bg-[var(--color-accent-blue)]" />
                 已珍藏 {Object.keys(records).length} 张回忆
               </div>
-              <button onClick={() => onMonthChange(new Date())} className="text-[10px] font-black text-[var(--color-text-primary)] hover:underline uppercase tracking-widest">
+              <button
+                type="button"
+                onClick={() => onMonthChange(new Date())}
+                className="text-[10px] font-black text-[var(--color-text-primary)] hover:underline uppercase tracking-widest"
+              >
                 回到今天
               </button>
             </div>

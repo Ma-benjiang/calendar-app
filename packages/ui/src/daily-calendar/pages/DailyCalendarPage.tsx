@@ -8,20 +8,28 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   Download,
   Camera,
-  RotateCcw,
   History,
   Palette,
   ChevronLeft,
   ChevronRight,
   Sparkles,
   Zap,
-  CameraOff
+  CameraOff,
+  Settings2
 } from 'lucide-react';
 import { useDailyCalendar } from '../hooks/useDailyCalendar';
 import { ThemeSelector } from '../components/ThemeSelector';
 import { HistoryCalendar } from '../components/HistoryCalendar';
-import { ThemeType } from '../types';
-import { getDaysInMonth, getCalendarDateInfo } from '../utils/dateUtils';
+import { ImageModelSettings } from '../components/ImageModelSettings';
+import { ThemeStrategyType, ThemeType } from '../types';
+import {
+  formatDateKey,
+  getDaysInMonth,
+  getCalendarDateInfo,
+} from '../utils/dateUtils';
+import { hasEnvironmentImageApiKey } from '../services/imageModelConfig';
+import { hasEnvironmentLLMApiKey } from '../services/llmModelConfig';
+import { useChinaHolidays } from '../../hooks/useChinaHolidays';
 
 interface DailyCalendarPageProps {
   isVisible?: boolean; // 新增：控制当前页面是否可见
@@ -32,10 +40,10 @@ export const DailyCalendarPage: React.FC<DailyCalendarPageProps> = ({ isVisible 
     currentRecord,
     currentDate,
     isGenerating,
+    error,
     generateCalendar,
     regenerateCalendar,
     deleteCurrentRecord,
-    changeTheme,
     changeDate,
     goToToday,
     goToPrevDay,
@@ -44,11 +52,19 @@ export const DailyCalendarPage: React.FC<DailyCalendarPageProps> = ({ isVisible 
     themeStrategy,
     setThemeStrategy,
     records,
+    llmModelConfig,
+    updateLLMModelConfig,
+    imageModelConfig,
+    updateImageModelConfig,
   } = useDailyCalendar();
+  useChinaHolidays([currentDate.getFullYear()]);
 
   const [showThemeSelector, setShowThemeSelector] = useState(false);
+  const [showImageModelSettings, setShowImageModelSettings] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
-  const [historyMonth, setHistoryMonth] = useState(new Date());
+  const [historyMonth, setHistoryMonth] = useState(
+    () => new Date(currentDate.getFullYear(), currentDate.getMonth(), 1)
+  );
   const [developmentStage, setDevelopmentStage] = useState(100);
   const [flash, setFlash] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
@@ -56,6 +72,12 @@ export const DailyCalendarPage: React.FC<DailyCalendarPageProps> = ({ isVisible 
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const [hasCamera, setHasCamera] = useState(false);
+  const isTodayDate = useMemo(() => {
+    const today = new Date();
+    return currentDate.getDate() === today.getDate() &&
+           currentDate.getMonth() === today.getMonth() &&
+           currentDate.getFullYear() === today.getFullYear();
+  }, [currentDate]);
 
   // 初始化相机取景器 - 只有在页面可见且没有照片时开启
   useEffect(() => {
@@ -74,7 +96,7 @@ export const DailyCalendarPage: React.FC<DailyCalendarPageProps> = ({ isVisible 
       }
     };
 
-    if (isVisible && !currentRecord && !isGenerating) {
+    if (isVisible && isTodayDate && !currentRecord && !isGenerating) {
       startCamera();
     } else {
       // 不可见或有照片时，关闭摄像头省电/隐私
@@ -88,7 +110,7 @@ export const DailyCalendarPage: React.FC<DailyCalendarPageProps> = ({ isVisible 
     return () => {
       if (stream) stream.getTracks().forEach(track => track.stop());
     };
-  }, [currentRecord, isGenerating, isVisible]);
+  }, [currentRecord, isGenerating, isTodayDate, isVisible]);
 
   useEffect(() => {
     if (isGenerating) {
@@ -108,7 +130,7 @@ export const DailyCalendarPage: React.FC<DailyCalendarPageProps> = ({ isVisible 
     return undefined;
   }, [isGenerating, currentRecord]);
 
-  const dateInfo = useMemo(() => {
+  const dateInfo = (() => {
     const weekdays = ['SUNDAY', 'MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY'];
     const months = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
     const liveDateInfo = getCalendarDateInfo(currentDate);
@@ -117,17 +139,21 @@ export const DailyCalendarPage: React.FC<DailyCalendarPageProps> = ({ isVisible 
       month: months[currentDate.getMonth()],
       day: String(currentDate.getDate()).padStart(2, '0'),
       weekday: weekdays[currentDate.getDay()],
-      lunar: liveDateInfo.lunarDate ? `${liveDateInfo.lunarDate.month}${liveDateInfo.lunarDate.day}` : '',
+      lunar: `${liveDateInfo.lunar.monthName}月${liveDateInfo.lunar.dayName}`,
       solarTerm: liveDateInfo.special?.solarTermName || '',
-      holiday: liveDateInfo.special?.holidayName || ''
+      holiday: liveDateInfo.special?.holidayName
+        ? `${liveDateInfo.special.holidayName}${
+            liveDateInfo.special.isWorkdayAdjustment ? ' · 班' : ''
+          }`
+        : ''
     };
-  }, [currentDate]);
+  })();
 
   const miniMonthGrid = useMemo(() => {
     try {
       const year = currentDate.getFullYear();
       const month = currentDate.getMonth();
-      const totalDays = getDaysInMonth(year, month);
+      const totalDays = getDaysInMonth(year, month + 1);
       const firstDayDate = new Date(year, month, 1);
       const firstDay = firstDayDate.getDay();
       const days = [];
@@ -192,17 +218,10 @@ export const DailyCalendarPage: React.FC<DailyCalendarPageProps> = ({ isVisible 
     generateCalendar(currentDate, undefined, frame || undefined);
   }, [isGenerating, currentDate, generateCalendar, captureFrame, triggerShutter]);
 
-  const handleThemeChange = useCallback((theme: ThemeType) => {
-    changeTheme(theme);
+  const handleThemeSettingsSave = useCallback((strategy: ThemeStrategyType, theme: ThemeType) => {
+    setThemeStrategy(strategy, theme);
     setShowThemeSelector(false);
-  }, [changeTheme]);
-
-  const isTodayDate = useMemo(() => {
-    const today = new Date();
-    return currentDate.getDate() === today.getDate() &&
-           currentDate.getMonth() === today.getMonth() &&
-           currentDate.getFullYear() === today.getFullYear();
-  }, [currentDate]);
+  }, [setThemeStrategy]);
 
   return (
     <div className="flex flex-col items-center bg-[#f0ede9] overflow-y-auto relative w-full h-full font-serif pb-12">
@@ -233,13 +252,14 @@ export const DailyCalendarPage: React.FC<DailyCalendarPageProps> = ({ isVisible 
       <div className="w-full max-w-5xl flex items-center justify-between px-8 py-6 z-50">
         <div className="flex items-center gap-6">
           <div className="flex items-center gap-3 bg-white/50 backdrop-blur-sm p-1 rounded-full border border-black/5">
-            <button onClick={goToPrevDay} className="p-2 hover:bg-white rounded-full transition-colors"><ChevronLeft size={18} /></button>
+            <button aria-label="前一天" onClick={goToPrevDay} className="p-2 hover:bg-white rounded-full transition-colors"><ChevronLeft size={18} /></button>
             <div className="text-center px-4 min-w-[140px]">
               <div className="text-sm font-bold tracking-tighter">{currentDate.getFullYear()} / {currentDate.getMonth()+1} / {dateInfo.day}</div>
               <div className="text-[9px] uppercase tracking-[0.2em] text-black/40 font-bold">{dateInfo.weekday}</div>
             </div>
             <button 
               onClick={goToNextDay} 
+              aria-label="后一天"
               disabled={isTodayDate || isGenerating}
               className={`p-2 rounded-full transition-all ${isTodayDate ? 'opacity-5 cursor-not-allowed scale-75' : 'hover:bg-white active:scale-90'}`}
             >
@@ -248,15 +268,63 @@ export const DailyCalendarPage: React.FC<DailyCalendarPageProps> = ({ isVisible 
           </div>
         </div>
         <div className="flex items-center gap-3">
-          <button onClick={() => setShowHistory(true)} className="p-2.5 bg-white/80 rounded-full shadow-sm border border-black/5 hover:bg-white transition-all group"><History size={18} /></button>
-          <button onClick={() => setShowThemeSelector(true)} className="p-2.5 bg-white/80 rounded-full shadow-sm border border-black/5 hover:bg-white transition-all group"><Palette size={18} /></button>
+          <button
+            aria-label="打开时光相册"
+            onClick={() => {
+              setHistoryMonth(new Date(
+                currentDate.getFullYear(),
+                currentDate.getMonth(),
+                1
+              ));
+              setShowHistory(true);
+            }}
+            className="p-2.5 bg-white/80 rounded-full shadow-sm border border-black/5 hover:bg-white transition-all group"
+          >
+            <History size={18} />
+          </button>
+          <button
+            onClick={() => setShowThemeSelector(true)}
+            disabled={!isTodayDate}
+            title={isTodayDate ? '选择今日主题' : '历史台历不能重新生成'}
+            className={`p-2.5 bg-white/80 rounded-full shadow-sm border border-black/5 transition-all group ${
+              isTodayDate ? 'hover:bg-white' : 'opacity-30 cursor-not-allowed'
+            }`}
+          >
+            <Palette size={18} />
+          </button>
+          <button
+            onClick={() => setShowImageModelSettings(true)}
+            aria-label="配置 AI 模型"
+            title={`文案：${llmModelConfig.model || '未配置'} · 生图：${imageModelConfig.model || '未配置'}`}
+            className="relative p-2.5 bg-white/80 rounded-full shadow-sm border border-black/5 hover:bg-white transition-all group"
+          >
+            <Settings2 size={18} />
+            {(
+              (!llmModelConfig.apiKey && !hasEnvironmentLLMApiKey()) ||
+              (!imageModelConfig.apiKey && !hasEnvironmentImageApiKey(imageModelConfig.provider))
+            ) && (
+              <span className="absolute right-0.5 top-0.5 w-2 h-2 rounded-full bg-amber-500 ring-2 ring-[#f0ede9]" />
+            )}
+          </button>
           <button onClick={goToToday} className="px-5 py-2 bg-black text-white rounded-full text-xs font-bold tracking-widest uppercase hover:bg-black/80 transition-colors shadow-lg active:scale-95">Today</button>
         </div>
       </div>
 
+      {error && (
+        <div role="alert" className="z-40 -mt-2 mb-3 flex items-center gap-3 rounded-full border border-red-200 bg-red-50 px-4 py-2 text-[10px] text-red-700 shadow-sm">
+          <span>{error.message}</span>
+          <button
+            onClick={() => setShowImageModelSettings(true)}
+            className="font-bold underline underline-offset-2"
+          >
+            检查配置
+          </button>
+        </div>
+      )}
+
       <div className="flex-1 w-full flex items-center justify-center relative min-h-[750px]">
         <div className={`relative transition-all duration-1000 ${currentRecord ? 'scale-75 opacity-20 blur-sm translate-y-[-100px]' : 'scale-100 opacity-100 blur-0'}`}>
-          {!currentRecord && !isGenerating && (
+          {!currentRecord && !isGenerating && isTodayDate && (
             <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="absolute -top-12 left-1/2 -translate-x-1/2 flex items-center gap-3 bg-white/80 backdrop-blur px-4 py-2 rounded-full shadow-sm border border-black/5 z-50 cursor-pointer" onClick={() => setImg2imgEnabled(!img2imgEnabled)}>
               {img2imgEnabled ? <><Zap size={14} className="text-amber-500 fill-amber-500" /><span className="text-[10px] tracking-[0.2em] uppercase font-bold text-black">AI Vision On</span></> : <><CameraOff size={14} className="text-gray-400" /><span className="text-[10px] tracking-[0.2em] uppercase font-bold text-gray-400">Pure Imagination</span></>}
             </motion.div>
@@ -267,14 +335,21 @@ export const DailyCalendarPage: React.FC<DailyCalendarPageProps> = ({ isVisible 
               {hasCamera && !isGenerating ? <video ref={videoRef} autoPlay playsInline muted className="w-full h-full object-cover scale-x-[-1] opacity-80" /> : <div className="w-full h-full flex flex-col items-center justify-center bg-black relative">{isGenerating ? <><div className="w-8 h-8 border-2 border-white/5 border-t-white/40 rounded-full animate-spin mb-2" /><div className="absolute inset-0 bg-blue-500/10 animate-pulse pointer-events-none" /></> : <Sparkles className="text-white/20" />}</div>}
               {hasCamera && img2imgEnabled && !isGenerating && <div className="absolute inset-0 border-4 border-amber-500/20 rounded-full animate-pulse pointer-events-none" />}
             </div>
-            {!currentRecord && !isGenerating && <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }} onClick={handleCapture} className="absolute z-20 rounded-full cursor-pointer" style={{ bottom: '38%', left: '15%', width: '16%', height: '16%' }} />}
+            {!currentRecord && !isGenerating && isTodayDate && <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }} onClick={handleCapture} className="absolute z-20 rounded-full cursor-pointer" style={{ bottom: '38%', left: '15%', width: '16%', height: '16%' }} />}
           </div>
-          {!currentRecord && !isGenerating && (
+          {!currentRecord && !isGenerating && isTodayDate && (
             <div className="absolute -bottom-16 left-0 right-0 text-center">
               <p className="text-black/30 text-[10px] tracking-[0.4em] uppercase mb-6">Click shutter to capture the day</p>
               <button onClick={handleCapture} className="px-10 py-4 bg-white rounded-full shadow-lg text-xs font-bold tracking-widest uppercase flex items-center gap-3 mx-auto border border-black/5 hover:bg-gray-50 transition-all">
                 <Camera size={16} /> Capture Today
               </button>
+            </div>
+          )}
+          {!currentRecord && !isGenerating && !isTodayDate && (
+            <div className="absolute -bottom-12 left-0 right-0 text-center">
+              <p className="text-black/35 text-[10px] tracking-[0.3em] uppercase">
+                该日期没有保存的台历
+              </p>
             </div>
           )}
         </div>
@@ -343,13 +418,27 @@ export const DailyCalendarPage: React.FC<DailyCalendarPageProps> = ({ isVisible 
                 {isHovered && (
                   <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }} className="absolute -right-16 top-0 flex flex-col gap-3">
                     <button className="p-3 bg-white rounded-full shadow-lg border border-black/5 hover:bg-black hover:text-white transition-all"><Download size={18} /></button>
-                    <button onClick={() => { triggerShutter(); regenerateCalendar(captureFrame() || undefined); }} className="p-3 bg-white rounded-full shadow-lg border border-black/5 hover:bg-black hover:text-white transition-all"><RotateCcw size={18} className={isGenerating ? 'animate-spin' : ''} /></button>
+                    {isTodayDate && (
+                      <button
+                        aria-label="重新拍摄今日台历"
+                        disabled={isGenerating}
+                        onClick={() => {
+                          triggerShutter();
+                          regenerateCalendar(captureFrame() || undefined);
+                        }}
+                        className="p-3 bg-white rounded-full shadow-lg border border-black/5 hover:bg-black hover:text-white transition-all disabled:cursor-not-allowed disabled:opacity-40"
+                      >
+                        <Camera size={18} />
+                      </button>
+                    )}
                   </motion.div>
                 )}
               </AnimatePresence>
-              <div className="absolute -bottom-20 left-0 right-0 text-center opacity-40 hover:opacity-100 transition-opacity">
-                <button onClick={() => deleteCurrentRecord()} className="text-[10px] tracking-[0.3em] uppercase underline underline-offset-4">Discard and Return to Camera</button>
-              </div>
+              {isTodayDate && (
+                <div className="absolute -bottom-20 left-0 right-0 text-center opacity-40 hover:opacity-100 transition-opacity">
+                  <button onClick={() => deleteCurrentRecord()} className="text-[10px] tracking-[0.3em] uppercase underline underline-offset-4">Discard and Return to Camera</button>
+                </div>
+              )}
             </motion.div>
           )}
         </AnimatePresence>
@@ -363,9 +452,25 @@ export const DailyCalendarPage: React.FC<DailyCalendarPageProps> = ({ isVisible 
         )}
       </div>
 
-      <ThemeSelector isOpen={showThemeSelector} currentTheme={currentTheme} strategy={themeStrategy} onThemeChange={handleThemeChange} onStrategyChange={setThemeStrategy} onClose={() => setShowThemeSelector(false)} />
+      <ThemeSelector
+        isOpen={showThemeSelector}
+        currentTheme={currentTheme}
+        strategy={themeStrategy}
+        onSave={handleThemeSettingsSave}
+        onClose={() => setShowThemeSelector(false)}
+      />
+      {showImageModelSettings && (
+        <ImageModelSettings
+          llmConfig={llmModelConfig}
+          imageConfig={imageModelConfig}
+          onSaveLLM={updateLLMModelConfig}
+          onSaveImage={updateImageModelConfig}
+          onClose={() => setShowImageModelSettings(false)}
+        />
+      )}
       <HistoryCalendar
         isOpen={showHistory} records={records} currentMonth={historyMonth} onMonthChange={setHistoryMonth}
+        selectedDate={formatDateKey(currentDate)}
         onSelectDate={(key) => { const [y, m, d] = key.split('-').map(Number); changeDate(new Date(y, m - 1, d)); setShowHistory(false); }}
         onClose={() => setShowHistory(false)}
       />

@@ -3,10 +3,12 @@ import {
   Task,
   TaskStatus,
   TaskPriority,
+  TaskFilter,
+  TaskSortOption,
   CreateTaskInput,
   getPriorityColor,
 } from '@calendar/core';
-import { ChevronRight, Plus, Trash2, Edit2, Sparkles } from 'lucide-react';
+import { Trash2, Edit2 } from 'lucide-react';
 import './TaskList.css';
 
 // ============== 类型定义 ==============
@@ -17,14 +19,8 @@ interface TaskListProps {
   onUpdateTask?: (id: string, updates: Partial<Task>) => void;
   onDeleteTask?: (id: string) => void;
   onToggleComplete?: (id: string) => void;
-  onScheduleTask?: (id: string, start: Date, end?: Date) => void;
   onTaskClick?: (task: Task) => void;
   onTaskDragStart?: (task: Task) => void;
-  onSmartSchedule?: () => void;
-  // 子任务相关
-  onCreateSubTask?: (parentId: string, input: CreateTaskInput) => void;
-  getSubTasks?: (parentId: string) => Task[];
-  getTaskProgress?: (taskId: string) => { completed: number; total: number; percentage: number };
   filter?: TaskFilter;
   sortBy?: TaskSortOption;
   viewMode?: 'list' | 'grouped';
@@ -40,11 +36,6 @@ interface TaskItemProps {
   onClick?: (task: Task) => void;
   onDragStart?: (task: Task) => void;
   isDragging?: boolean;
-  isSubTask?: boolean;
-  // 子任务相关
-  onCreateSubTask?: (parentId: string, input: CreateTaskInput) => void;
-  getSubTasks?: (parentId: string) => Task[];
-  getTaskProgress?: (taskId: string) => { completed: number; total: number; percentage: number };
 }
 
 interface QuickAddProps {
@@ -135,23 +126,13 @@ const TaskItem: React.FC<TaskItemProps> = (props) => {
     onClick,
     onDragStart,
     isDragging,
-    isSubTask,
-    onCreateSubTask,
-    getSubTasks,
-    getTaskProgress,
   } = props;
 
   const [isEditing, setIsEditing] = useState(false);
-  const [isExpanded, setIsExpanded] = useState(false);
-  const [isAddingSubTask, setIsAddingSubTask] = useState(false);
   const [editTitle, setEditTitle] = useState(task.title);
 
   const isCompleted = task.status === 'completed';
   const isCancelled = task.status === 'cancelled';
-
-  const subTasks = useMemo(() => getSubTasks?.(task.id) || [], [task.id, getSubTasks]);
-  const progress = useMemo(() => getTaskProgress?.(task.id), [task.id, getTaskProgress]);
-  const hasSubTasks = subTasks.length > 0;
 
   const handleToggle = useCallback((e: React.MouseEvent) => {
     e.stopPropagation();
@@ -159,11 +140,10 @@ const TaskItem: React.FC<TaskItemProps> = (props) => {
   }, [task.id, onToggleComplete]);
 
   const handleDragStart = useCallback((e: React.DragEvent) => {
-    if (isSubTask) return;
     e.dataTransfer.effectAllowed = 'move';
     e.dataTransfer.setData('application/json', JSON.stringify(task));
     onDragStart?.(task);
-  }, [task, onDragStart, isSubTask]);
+  }, [task, onDragStart]);
 
   const handleSaveEdit = useCallback(() => {
     if (editTitle.trim() && editTitle !== task.title) {
@@ -195,25 +175,13 @@ const TaskItem: React.FC<TaskItemProps> = (props) => {
 
   return (
     <div className="task-group-item">
-      <div className={`task-item-wrapper ${isSubTask ? 'is-subtask' : ''}`}>
+      <div className="task-item-wrapper">
         <div
           className={`task-item ${isCompleted ? 'completed' : ''} ${isCancelled ? 'cancelled' : ''} ${isDragging ? 'dragging' : ''}`}
-          draggable={!isEditing && !isSubTask}
+          draggable={!isEditing}
           onDragStart={handleDragStart}
           onClick={() => !isEditing && onClick?.(task)}
         >
-          {(hasSubTasks || onCreateSubTask) && (
-            <button 
-              className={`task-expand-btn ${isExpanded ? 'expanded' : ''}`}
-              onClick={(e) => {
-                e.stopPropagation();
-                setIsExpanded(!isExpanded);
-              }}
-            >
-              <ChevronRight size={12} />
-            </button>
-          )}
-
           <div
             className="task-priority-indicator"
             style={{ backgroundColor: getPriorityColor(task.priority) }}
@@ -246,11 +214,6 @@ const TaskItem: React.FC<TaskItemProps> = (props) => {
                   >
                     {task.title}
                   </span>
-                  {hasSubTasks && progress && (
-                    <div className="task-parent-progress" title={`${progress.completed}/${progress.total}`}>
-                      <div className="progress-fill" style={{ width: `${progress.percentage}%` }} />
-                    </div>
-                  )}
                 </div>
                 <div className="task-meta">
                   {task.tags.map((tag) => (
@@ -297,43 +260,6 @@ const TaskItem: React.FC<TaskItemProps> = (props) => {
           </div>
         </div>
       </div>
-
-      {isExpanded && (
-        <div className="task-subtasks-container">
-          {subTasks.map((subTask) => (
-            <TaskItem
-              key={subTask.id}
-              {...props}
-              task={subTask}
-              isSubTask={true}
-            />
-          ))}
-          
-          {onCreateSubTask && (
-            isAddingSubTask ? (
-              <div className="subtask-quick-add-wrapper" style={{ marginLeft: '36px' }}>
-                <QuickAdd 
-                  autoFocus={true}
-                  placeholder="添加子任务..."
-                  onAdd={(input) => {
-                    onCreateSubTask(task.id, input);
-                    setIsAddingSubTask(false);
-                  }}
-                  onCancel={() => setIsAddingSubTask(false)}
-                />
-              </div>
-            ) : (
-              <button 
-                className="subtask-add-btn"
-                onClick={() => setIsAddingSubTask(true)}
-              >
-                <Plus size={12} />
-                <span>添加子任务</span>
-              </button>
-            )
-          )}
-        </div>
-      )}
     </div>
   );
 };
@@ -344,7 +270,6 @@ export const TaskList: React.FC<TaskListProps> = (props) => {
   const {
     tasks,
     onCreateTask,
-    onSmartSchedule,
     showAddInput = true,
     className = '',
   } = props;
@@ -353,7 +278,7 @@ export const TaskList: React.FC<TaskListProps> = (props) => {
   const [searchQuery, setSearchQuery] = useState('');
 
   const filteredTasks = useMemo(() => {
-    let result = tasks.filter(t => !t.parentId);
+    let result = [...tasks];
     if (activeFilter !== 'all') {
       result = result.filter((t) => t.status === activeFilter);
     }
@@ -377,9 +302,9 @@ export const TaskList: React.FC<TaskListProps> = (props) => {
 
   const stats = useMemo(() => {
     return {
-      total: tasks.filter(t => !t.parentId).length,
-      todo: tasks.filter((t) => !t.parentId && t.status === 'todo').length,
-      completed: tasks.filter((t) => !t.parentId && t.status === 'completed').length,
+      total: tasks.length,
+      todo: tasks.filter((t) => t.status === 'todo').length,
+      completed: tasks.filter((t) => t.status === 'completed').length,
     };
   }, [tasks]);
 
@@ -392,25 +317,6 @@ export const TaskList: React.FC<TaskListProps> = (props) => {
             <span className="task-count">{filteredTasks.length} / {stats.total}</span>
           </div>
           
-          {onSmartSchedule && (
-            <button 
-              onClick={onSmartSchedule}
-              className="smart-schedule-icon-btn"
-              title="智能整理任务"
-              style={{
-                background: 'transparent',
-                border: 'none',
-                cursor: 'pointer',
-                color: '#9a9a97',
-                padding: '4px',
-                display: 'flex',
-                alignItems: 'center',
-                transition: 'all 0.2s'
-              }}
-            >
-              <Sparkles size={18} />
-            </button>
-          )}
         </div>
 
         <div className="task-list-filters">
