@@ -1,133 +1,166 @@
-# Pie - Notion 风格日历应用
+<p align="center">
+  <img src="apps/renderer/public/logo.png" width="128" alt="Pie Calendar logo">
+</p>
 
-[![Version](https://img.shields.io/github/v/release/Ma-benjiang/calendar-app?label=version)](https://github.com/Ma-benjiang/calendar-app/releases)
-[![CI](https://github.com/Ma-benjiang/calendar-app/actions/workflows/ci.yml/badge.svg)](https://github.com/Ma-benjiang/calendar-app/actions)
+<h1 align="center">Pie Calendar</h1>
 
-> 🥧 A Notion-style calendar and task app
-> 一款 Notion 风格的日历与任务应用
+<p align="center">
+  一款本地优先的桌面日历，将日程、任务与 AI 每日台历放进同一个工作空间。
+</p>
+
+<p align="center">
+  <a href="https://github.com/Ma-benjiang/calendar-app/releases/latest">
+    <img src="https://img.shields.io/github/v/release/Ma-benjiang/calendar-app?label=release" alt="Latest release">
+  </a>
+  <a href="https://github.com/Ma-benjiang/calendar-app/actions/workflows/ci.yml">
+    <img src="https://github.com/Ma-benjiang/calendar-app/actions/workflows/ci.yml/badge.svg" alt="CI status">
+  </a>
+  <a href="https://github.com/Ma-benjiang/calendar-app/releases">
+    <img src="https://img.shields.io/github/downloads/Ma-benjiang/calendar-app/total?label=downloads" alt="Downloads">
+  </a>
+  <a href="LICENSE">
+    <img src="https://img.shields.io/github/license/Ma-benjiang/calendar-app" alt="MIT License">
+  </a>
+</p>
+
+<p align="center">
+  <a href="https://github.com/Ma-benjiang/calendar-app/releases/latest"><strong>下载最新版</strong></a>
+  ·
+  <a href="#核心功能">核心功能</a>
+  ·
+  <a href="#本地开发">本地开发</a>
+  ·
+  <a href="CONTRIBUTING.md">参与贡献</a>
+</p>
+
+<p align="center">
+  <img src=".github/assets/daily-calendar.png" width="100%" alt="Pie Calendar 每日台历">
+</p>
 
 ## 下载
 
-| 平台 | 下载 |
-|------|------|
-| 🍎 macOS (Apple Silicon) | [Pie-1.4.0-arm64.dmg](https://github.com/Ma-benjiang/calendar-app/releases/latest/download/Pie-1.4.0-arm64.dmg) |
-| 🪟 Windows | [Pie.Setup.1.4.0.exe](https://github.com/Ma-benjiang/calendar-app/releases/latest/download/Pie.Setup.1.4.0.exe) |
-| 🐧 Linux | [Pie-1.4.0.AppImage](https://github.com/Ma-benjiang/calendar-app/releases/latest/download/Pie-1.4.0.AppImage) |
+前往 [GitHub Releases](https://github.com/Ma-benjiang/calendar-app/releases/latest) 获取最新安装包。
 
-## 技术栈
+| 平台 | 安装包 | 架构 |
+| --- | --- | --- |
+| macOS | DMG / ZIP | Apple Silicon |
+| Windows | NSIS EXE | x64 |
+| Linux | AppImage | x64 |
 
-- **桌面渲染层**: React 18 + TypeScript + Vite
-- **Styling**: Tailwind CSS + Notion 风格设计系统
-- **State Management**: Zustand
-- **桌面运行时**: Electron (macOS/Windows/Linux)
-- **AI 模型接入**: Vercel AI SDK（LLM）+ Images API（生图）
-- **存储**: SQLite（业务数据）+ localStorage（界面偏好）
+> 当前安装包未进行 Apple 或 Microsoft 商业证书签名，系统首次启动时可能显示安全提醒。请仅从本仓库 Releases 页面下载安装包。
 
-## 项目结构
+## 产品预览
 
-```
-calendar-app/
-├── apps/
-│   ├── renderer/     # Electron 渲染层 (Vite + React)
-│   └── desktop/      # Electron 桌面应用
-├── packages/
-│   ├── ui/           # 共享 UI 组件 (Notion 风格)
-│   ├── core/         # 核心逻辑（日历计算、事件管理）
-│   └── storage/      # 存储抽象层
-└── shared/
-    ├── types/        # TypeScript 类型定义
-    └── constants/    # 常量配置
-```
+<p align="center">
+  <img src=".github/assets/calendar-overview.png" width="100%" alt="Pie Calendar 日历与任务界面">
+</p>
 
 ## 核心功能
 
-### v1.4.0 - Notion 风格改造 🎨
+### 日历与任务
 
-- [x] **Notion 风格界面** - 侧边栏 + 内容区布局，类似 Notion 的操作体验
-- [x] **命令面板** - `Cmd/Ctrl + K` 快速执行命令
-- [x] **自然语言输入** - 支持 "明天下午3点开会" 快速创建事件
-- [x] **拖拽调整** - 拖拽事件调整时间和时长
-- [x] **内容块系统** - 事件详情支持富文本块
+- 月、周、日视图统一管理日程。
+- 任务清单支持创建、编辑、完成状态和拖拽安排。
+- 桌面端使用 SQLite 保存业务数据，不依赖在线账户。
 
-### 基础功能
+### AI 每日台历
 
-- [x] 月视图、周视图、日视图
-- [x] 事件创建、编辑、删除
-- [x] 每日台历与 AI 文案、生图模型配置
-- [x] 离线支持
-- [x] 深色/浅色主题
-
-### AI 模型
-
-在“每日台历”右上角打开 AI 模型设置：
-
-- 文案与 Prompt：配置 DeepSeek 模型 ID 和 API Key，使用 AI SDK 一次生成每日文案和无文字背景图 Prompt。
-- 生图模型：配置火山引擎 Seedream 或 OpenAI GPT Image 2。
-
-DeepSeek 和 Seedream 只需设置 API Key 与模型 ID，API Endpoint 由应用内置；OpenAI 生图额外支持配置 API Endpoint。手动填写的密钥保存在当前设备且不加密；公共设备建议使用环境变量。
-
-也可以通过环境变量提供默认配置，环境变量中的密钥不会写入应用存储：
-
-```bash
-VITE_DEEPSEEK_API_KEY=your-deepseek-api-key
-VITE_DEEPSEEK_MODEL=deepseek-v4-flash
-VITE_DEEPSEEK_API_ENDPOINT=https://api.deepseek.com/chat/completions
-
-VITE_SEEDREAM_API_KEY=your-api-key
-VITE_SEEDREAM_MODEL=doubao-seedream-5-0-260128
-VITE_SEEDREAM_API_ENDPOINT=/volces-api/api/v3/images/generations
-
-VITE_OPENAI_API_KEY=your-openai-api-key
-```
+- 自动组合公历、星期、农历、节气和中国法定节假日信息。
+- DeepSeek 一次生成每日文案与视觉 Prompt。
+- Seedream 或 OpenAI GPT Image 生成无文字背景图。
+- 应用在本地叠加准确日期、农历、节日和每日文案。
+- 主题支持“随机”和“手动”两种策略，保存配置不会自动生图。
 
 ### 时光相册
 
-每日台历仅允许为当天生成。当天再次生成会覆盖原记录并清理旧图片，不保留同一天的多个版本；历史日期只读，未来日期不可进入或生成。
-
-桌面端会将生成图片保存到本地应用数据目录，相册离线时仍可查看。点击相册中生成过台历的日期，会回到主界面显示对应台历；未生成的日期不可点击。
+- 仅允许生成今天的台历。
+- 再次点击相机会覆盖当天图片，不保留同一天的多个版本。
+- 历史日期只读，只有已经生成过的日期可以打开。
+- 生成图片保存到桌面应用数据目录，可离线查看历史记录。
 
 ### 中国节假日
 
-应用会静默同步中国法定节假日和调休工作日，并缓存到桌面 SQLite；
-首次加载年份或缓存超过 30 天时后台更新，断网时继续使用最近一次成功同步的数据。
+应用按年份静默同步中国法定节假日与调休工作日，并将结果缓存到本地。首次访问年份或缓存超过 30 天时才会更新，断网时继续使用最近一次成功同步的数据。
 
-数据来自 [NateScarlet/holiday-cn](https://github.com/NateScarlet/holiday-cn)，
-该项目根据国务院公告自动更新，采用 MIT License。
+节假日数据来自 [NateScarlet/holiday-cn](https://github.com/NateScarlet/holiday-cn)。
 
-## 开发
+## AI 模型配置
 
-```bash
-# 安装依赖
-pnpm install
+在“每日台历”右上角打开模型设置。
 
-# 启动 Vite 渲染层和 Electron
-pnpm dev
+| 用途 | 提供商 | 用户配置 |
+| --- | --- | --- |
+| 每日文案与视觉 Prompt | DeepSeek | 模型 ID、API Key |
+| 图片生成 | 火山引擎 Seedream | 模型 ID、API Key |
+| 图片生成 | OpenAI | API Endpoint、模型 ID、API Key |
 
-# 构建
-pnpm build:renderer # 仅构建桌面渲染资源
-pnpm build:desktop  # 桌面应用
+DeepSeek 与火山引擎的 API Endpoint 由应用内置，不需要手动填写。API Key 保存在当前设备，但目前未加密；请勿在公共设备中保存生产密钥。
 
-# 测试
-pnpm test
-pnpm test:coverage
+## 技术架构
+
+| 层级 | 技术 |
+| --- | --- |
+| 桌面运行时 | Electron |
+| 渲染层 | React 18、TypeScript、Vite |
+| UI | Tailwind CSS、Framer Motion |
+| 本地存储 | SQLite、文件系统 |
+| AI | Vercel AI SDK、DeepSeek、Seedream、OpenAI Images API |
+| 工程化 | pnpm workspace、Turborepo、Vitest、GitHub Actions |
+
+```text
+calendar-app/
+├── apps/
+│   ├── desktop/       # Electron 主进程、IPC 与打包配置
+│   └── renderer/      # Vite 渲染入口
+├── packages/
+│   ├── core/          # 日历与事件领域逻辑
+│   ├── storage/       # SQLite / localStorage 适配器
+│   └── ui/            # React 界面与每日台历功能
+└── scripts/           # 版本校验与发布工具
 ```
 
-## 发布
+## 本地开发
 
-Pull Request 只运行 lint、测试和渲染层构建。合并到 `master` 后，通过版本 Tag 触发 macOS、Windows 和 Linux 安装包构建及 GitHub Release：
+### 环境要求
+
+- Node.js 22+
+- pnpm 11.1+
+- macOS、Windows 或 Linux
 
 ```bash
-# 在发布分支统一所有工作区版本
-pnpm version:set 1.5.0
+git clone https://github.com/Ma-benjiang/calendar-app.git
+cd calendar-app
+pnpm install --frozen-lockfile
+pnpm dev
+```
+
+常用命令：
+
+```bash
+pnpm lint             # 代码检查
+pnpm test             # 全仓测试
+pnpm build:renderer   # 构建渲染层
+pnpm build:desktop    # 构建当前平台安装包
+```
+
+## 发布流程
+
+Pull Request 只运行一次 lint、测试与渲染构建。合并到 `master` 后，推送与项目版本一致的 `v*` 标签，Release workflow 才会构建三个平台的安装包并创建 GitHub Release。
+
+```bash
+pnpm version:set 1.6.0
 pnpm version:check
 
-# 提交版本更新并合并到 master 后，在 master 创建标签
-git tag -a v1.5.0 -m "Release v1.5.0"
-git push origin v1.5.0
+git tag -a v1.6.0 -m "Release v1.6.0"
+git push origin v1.6.0
 ```
 
-Tag 必须与桌面包版本一致，否则 Release workflow 会终止。发布流程仅接受 `v*` 标签，并在三个平台全部构建成功后创建 Release。
+Tag 与包版本不一致时，发版会自动终止。
+
+## 贡献
+
+提交问题或功能建议请使用 [GitHub Issues](https://github.com/Ma-benjiang/calendar-app/issues)。代码贡献流程见 [CONTRIBUTING.md](CONTRIBUTING.md)。
 
 ## License
 
-MIT
+[MIT](LICENSE)
