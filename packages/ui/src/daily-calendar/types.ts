@@ -181,41 +181,6 @@ export interface SeedreamError {
   };
 }
 
-// ==================== 组件 Props 类型 ====================
-
-export interface CalendarCardProps {
-  record: DailyCalendarRecord;
-  isLoading?: boolean;
-  onRegenerate?: () => void;
-  onSave?: () => void;
-  onShare?: () => void;
-}
-
-export interface CalendarHeaderProps {
-  dateInfo: CalendarDateInfo;
-  className?: string;
-}
-
-export interface CalendarImageProps {
-  imageUrl: string;
-  alt: string;
-  isLoading?: boolean;
-  onLoad?: () => void;
-  onError?: () => void;
-}
-
-export interface CalendarCaptionProps {
-  quote: Quote;
-  theme: ThemeType;
-  className?: string;
-}
-
-export interface ThemeSelectorProps {
-  currentTheme: ThemeType;
-  strategy: ThemeStrategyType;
-  onSave: (strategy: ThemeStrategyType, theme: ThemeType) => void;
-}
-
 export interface HistoryCalendarProps {
   records: Record<string, DailyCalendarRecord>;
   currentMonth: Date;

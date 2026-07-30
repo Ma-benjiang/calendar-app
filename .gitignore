@@ -7,11 +7,13 @@ node_modules/
 coverage/
 *.test-results.json
 INTEGRATION-TEST-REPORT.md
+.playwright-mcp/
 
 # Production builds
 dist/
 build/
 *.tsbuildinfo
+.turbo/
 
 # Environment
 .env
@@ -21,6 +23,8 @@ build/
 # IDE
 .vscode/
 .idea/
+.claude/
+.codex/
 *.swp
 *.swo
 
@@ -38,6 +42,8 @@ yarn-error.log*
 # Internal docs (not for public)
 .sprint/
 docs/
+config/mcporter.json
+
 # Temporary files
 *.tmp
 *.temp
