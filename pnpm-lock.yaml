@@ -47,12 +47,6 @@ importers:
       ai:
         specifier: 6.0.238
         version: 6.0.238(zod@4.4.3)
-      bindings:
-        specifier: ^1.5.0
-        version: 1.5.0
-      file-uri-to-path:
-        specifier: 1.0.0
-        version: 1.0.0
       sqlite3:
         specifier: ^5.1.7
         version: 5.1.7
@@ -72,12 +66,6 @@ importers:
 
   apps/renderer:
     dependencies:
-      '@calendar/core':
-        specifier: workspace:*
-        version: link:../../packages/core
-      '@calendar/storage':
-        specifier: workspace:*
-        version: link:../../packages/storage
       '@calendar/ui':
         specifier: workspace:*
         version: link:../../packages/ui
@@ -170,6 +158,9 @@ importers:
       '@calendar/core':
         specifier: workspace:*
         version: link:../core
+      '@calendar/storage':
+        specifier: workspace:*
+        version: link:../storage
       framer-motion:
         specifier: ^10.16.0
         version: 10.18.0(react-dom@18.3.1(react@18.3.1))(react@18.3.1)

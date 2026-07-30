@@ -63,8 +63,6 @@
   "dependencies": {
     "@ai-sdk/deepseek": "2.0.51",
     "ai": "6.0.238",
-    "bindings": "^1.5.0",
-    "file-uri-to-path": "1.0.0",
     "sqlite3": "^5.1.7",
     "zod": "4.4.3"
   }
