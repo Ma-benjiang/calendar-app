@@ -1,6 +1,6 @@
 {
   "name": "@calendar/desktop",
-  "version": "1.4.0",
+  "version": "1.5.0",
   "description": "Pie - AI驱动的智能日程管理桌面应用",
   "author": "Pie Team <team@pie.app>",
   "main": "src/main.js",

@@ -16,7 +16,9 @@
     "dev:desktop": "wait-on http-get://127.0.0.1:5173 && pnpm --dir apps/desktop start",
     "lint": "turbo run lint",
     "test": "turbo run test",
-    "test:coverage": "vitest run --coverage"
+    "test:coverage": "vitest run --coverage",
+    "version:check": "node scripts/check-version.mjs",
+    "version:set": "node scripts/set-version.mjs"
   },
   "devDependencies": {
     "@testing-library/user-event": "^14.6.1",

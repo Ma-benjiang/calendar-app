@@ -114,12 +114,19 @@ pnpm test:coverage
 
 ## 发布
 
-新版本通过 GitHub Actions 自动构建和发布：
+Pull Request 只运行 lint、测试和渲染层构建。合并到 `master` 后，通过版本 Tag 触发 macOS、Windows 和 Linux 安装包构建及 GitHub Release：
 
-1. 更新版本号 (`package.json`)
-2. 打 tag: `git tag v1.x.x`
-3. 推送到远程: `git push origin v1.x.x`
-4. CI 自动构建并创建 Release
+```bash
+# 在发布分支统一所有工作区版本
+pnpm version:set 1.5.0
+pnpm version:check
+
+# 提交版本更新并合并到 master 后，在 master 创建标签
+git tag -a v1.5.0 -m "Release v1.5.0"
+git push origin v1.5.0
+```
+
+Tag 必须与桌面包版本一致，否则 Release workflow 会终止。发布流程仅接受 `v*` 标签，并在三个平台全部构建成功后创建 Release。
 
 ## License
 

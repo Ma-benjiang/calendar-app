@@ -38,6 +38,8 @@ calendar-app/
 | `pnpm build:desktop` | 构建桌面安装包 |
 | `pnpm test` | 运行单元测试 |
 | `pnpm lint` | 代码检查 |
+| `pnpm version:set 1.5.0` | 同步所有工作区版本 |
+| `pnpm version:check` | 校验工作区及 Release Tag 版本 |
 
 ## 架构说明
 
@@ -75,3 +77,5 @@ calendar-app/
 3. 提交更改 (`git commit -m 'Add amazing feature'`)
 4. 推送分支 (`git push origin feature/amazing`)
 5. 创建 Pull Request
+
+Pull Request 通过 CI 并合并到 `master` 后，维护者才可在该合并提交上创建 `v*` 发布标签。功能分支不应直接创建发布标签。
